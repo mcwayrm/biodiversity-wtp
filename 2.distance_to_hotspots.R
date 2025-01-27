@@ -47,9 +47,8 @@ saveRDS(ebird, './rds/ebird_trip_hotspots.rds')
 
 # Keep trips w/n radius to reduce API calls
 #ebird <- filter(ebird, geo_dist <= radius)
-
-# set.api.key('AIzaSyDX03oAN2t3rZfXBXfNKznpHOIyE5Vq20c')
-# 'AIzaSyAEkNsXMrOPez46M0JB2q33QlDNGsFjfy4'
+api_key = rio::import("../data/api-key-ebird-raahil.txt")
+# set.api.key(api_key)
 # map_by_slice <- function(i){
 #   print(i)
 #   this_slice <- tryCatch({

@@ -6,7 +6,7 @@
 require(units)
 source('/Users/rmadhok/Dropbox/biodiversity-wtp/scripts/R/functions/hotspot_clustering.R')
 
-choice_set <- function(df,
+choice_set <- function(df,s
                        module = 'cluster', 
                        radius = 20, 
                        clust_size = 10){
