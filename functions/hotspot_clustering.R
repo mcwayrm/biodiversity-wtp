@@ -55,7 +55,7 @@ rec_clust <- function(df,
     
     # Save intermediate
     df <- select(df, -hsid)
-    saveRDS(df, paste('./data/rds/intermediate/hotspots/hotspots_all_', clust_size, 'km.rds', sep=''))
+    saveRDS(df, paste('./data/intermediate/hotspots/hotspots_all_', clust_size, 'km.rds', sep=''))
     
     return(df)
   
@@ -79,7 +79,7 @@ rec_clust <- function(df,
     df <- filter(df, !is.na(c_code_2011))
     
     # Save intermediate data
-    writeRDS(df, paste('./data/rds/intermediate/hotspots/hotspots_clust_', clust_size, 'km.rds', sep=''))
+    writeRDS(df, paste('./data/intermediate/hotspots/hotspots_clust_', clust_size, 'km.rds', sep=''))
    
     return(df)
   
