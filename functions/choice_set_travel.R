@@ -6,7 +6,7 @@
 require(units)
 source('/Users/rmadhok/Dropbox/biodiversity-wtp/scripts/R/functions/hotspot_clustering.R')
 
-choice_set <- function(df,s
+choice_set <- function(df,
                        module = 'cluster', 
                        radius = 20, 
                        clust_size = 10){
@@ -96,11 +96,11 @@ choice_set <- function(df,s
   # Save intermediate
   if(module == 'cluster'){
     
-    saveRDS(choice, paste('./data/rds/intermediate/choice_sets/choice_set_', radius, 'km_clust_', clust_size, 'km.rds', sep=''))
+    saveRDS(choice, paste('./data/intermediate/choice_sets/choice_set_', radius, 'km_clust_', clust_size, 'km.rds', sep=''))
   
     } else{
       
-    saveRDS(choice, paste('./data/rds/intermediate/choice_sets/choice_set_', radius, 'km.rds', sep=''))
+    saveRDS(choice, paste('./data/intermediate/choice_sets/choice_set_', radius, 'km.rds', sep=''))
     }
   
   return(choice)

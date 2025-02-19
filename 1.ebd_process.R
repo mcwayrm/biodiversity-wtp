@@ -72,7 +72,7 @@ user_home$c_code_2011_home_real <- st_join(st_as_sf(user_home,
                                            join = st_intersects)$c_code_2011
 # Save
 setwd(LOCAL)
-saveRDS(user_home, paste('./data/rds/user_home_real.rds', sep=''))
+saveRDS(user_home, paste('./data/intermediate/ebird/user_home_real.rds', sep=''))
 
 # Imputed Home --------------------------------------
 # 1. Estimate gravitational center of all trips
@@ -140,7 +140,7 @@ rm(list=c('centroids', 'user_na'))
 
 # Save user list
 setwd(LOCAL)
-saveRDS(user, './data/rds/user_home_impute.rds')
+saveRDS(user, './data/intermediate/ebird/user_home_impute.rds')
 
 #-----------------------------------------------------
 # Filter Trips
@@ -185,4 +185,4 @@ ebird <- left_join(ebird, user, by='user_id')
 
 # Save
 setwd(LOCAL)
-saveRDS(ebird, './data/rds/ebird_trip_clean.rds')
+saveRDS(ebird, './data/intermediate/ebird/ebird_trip_clean.rds')
