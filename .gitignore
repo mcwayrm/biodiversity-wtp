@@ -3,3 +3,4 @@
 /data/intermediate/*
 .Rhistory
 /functions/.Rhistory
+*.DS_Store
