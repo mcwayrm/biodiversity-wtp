@@ -4,10 +4,10 @@
 ### SET-UP
 # Directories
 rm(list=ls())
-# setwd('/Users/rmadhok/Dropbox/biodiversity-wtp/')
 
 # Load Packages
-source('./functions/choice_set_travel.R')
+source("replicate-matt/load_config.R")
+source(config$choice_set_travel_path)
 packages <- c('sf', 'tidyverse', 'data.table')
 pacman::p_load(packages, character.only = TRUE, install = FALSE)
 
@@ -21,7 +21,7 @@ clust_size <- 10       # recreation area size (10km or 5km)
 # CONSTRUCT COUTERFACTUAL CHOICE SET
 # ----------------------------------------------------
 # Read observed trips
-trips <- readRDS('./data/intermediate/hotspots/ebird_trip_hotspots.rds')
+trips <- readRDS(config$ebird_trip_hotspots_path)
 trips <- filter(trips, geo_dist <= radius) # subset trips w/n radius
 
 # Random sample of users
@@ -33,7 +33,8 @@ sample <- inner_join(trips, users, by='user_id')
 
 # Read hotspots
 cols <- c('loc_id', 'country', 'state', 'county', 'lat', 'lon', 'name', 'time', 'v9')
-hotspots <- readRDS('./data/rds/hotspots.rds')
+hotspots <- readRDS(config$hotspots_path)
+  # './data/rds/hotspots.rds')
 colnames(hotspots) <- cols
 hotspots <- hotspots[, c('lat', 'lon', 'name')]
 
@@ -113,11 +114,16 @@ if(module == 'cluster'){
   # Remove locality -- save disk space
   master <- select(master, -locality)
   
-  saveRDS(master, paste('./data/intermediate/choice_sets/master_cs', radius, 'km_clust_', clust_size,'km.rds', sep=''))
+  # Construct full path
+  file_name <- paste0("master_cs", radius, "km_clust_", clust_size, "km.rds")
+  output_path <- do.call(file.path, append(config$choice_sets_dir, file_name))
+  saveRDS(master, output_path)
   print('fin!')
 } else{
-  
-  saveRDS(master, paste('./data/intermediate/choice_sets/master_cs', radius, 'km.rds', sep=''))
+    # Construct full path
+  file_name <- paste0("master_cs", radius, "km_clust_", clust_size, "km.rds")
+  output_path <- do.call(file.path, append(config$choice_sets_dir, file_name))
+  saveRDS(master, output_path)
   print('fin!')
 }
 

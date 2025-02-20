@@ -4,8 +4,7 @@
 ### SET-UP
 # Directories
 rm(list=ls())
-LOCAL <- file.path('/Users/mbraaksma/Files/base_data/biodiversity-wtp')
-REPO <- file.path('/Users/mbraaksma/Files/biodiversity-wtp/biodiversity-wtp')
+source("replicate-matt/load_config.R")
 
 # Load Packages
 packages <- c('sf', 'tidyverse', 'data.table', 'lubridate')
@@ -13,8 +12,7 @@ if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
 pacman::p_load(packages, character.only = TRUE, install = FALSE)
 
 # Load District Map
-setwd(REPO)
-dist <- st_read('./data/shp/district-2011/district-2011.shp') %>%
+dist <- st_read(config$district_path) %>%
   dplyr::select(c_code_11) %>% rename(c_code_2011 = c_code_11)
 
 #-----------------------------------------------------
@@ -23,8 +21,7 @@ dist <- st_read('./data/shp/district-2011/district-2011.shp') %>%
 
 # load ebird (20 mins)
 # note: data are at the user-trip-species-time level
-setwd(LOCAL)
-ebird = fread('./ebd_IN_201501_202412_relDec-2024/ebd_IN_201501_202412_relDec-2024.txt',
+ebird = fread(config$ebird_basic_path,
               select = c('LATITUDE', 'LONGITUDE','OBSERVATION DATE', 
                          'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER', 
                          'PROTOCOL TYPE','DURATION MINUTES', 
@@ -72,8 +69,7 @@ user_home$c_code_2011_home_real <- st_join(st_as_sf(user_home,
                                                     crs=4326), dist, 
                                            join = st_intersects)$c_code_2011
 # Save
-setwd(REPO)
-saveRDS(user_home, paste('././data/rds/user_home_real.rds', sep=''))
+saveRDS(user_home, config$user_home_real_path)
 
 # Imputed Home --------------------------------------
 # 1. Estimate gravitational center of all trips
@@ -140,8 +136,7 @@ user <- rbind(filter(user, !is.na(c_code_2011_home)), user_na)
 rm(list=c('centroids', 'user_na'))
 
 # Save user list
-setwd(REPO)
-saveRDS(user, "././data/rds/user_home_impute.rds")
+saveRDS(user, config$user_home_impute_path)
 
 #-----------------------------------------------------
 # Filter Trips
@@ -185,5 +180,4 @@ ebird <- mutate(ebird, distance = replace(distance, is.na(distance), 0))
 ebird <- left_join(ebird, user, by='user_id')
 
 # Save
-setwd(REPO)
-saveRDS(ebird, '././data/rds/ebird_trip_clean.rds')
+saveRDS(ebird, config$ebird_trip_clean_path)

@@ -1,0 +1,71 @@
+# Configuration File for eBird Data Processing
+# --------------------------------------------
+# This YAML file defines the directory structure and file paths 
+# used in processing eBird data. It includes:
+# - Default directories and paths for storing shapefiles, intermediate data, and functions.
+# - User-specific configurations that adjust input data paths.
+# - A reference file structure for clarity.
+#
+# The file is structured to allow easy customization while maintaining 
+# a consistent framework for data organization.
+
+default:
+  # Directories: Define paths for various data and function files
+  district_dir: [".", "data", "shp", "district-2011"]
+  district_path: !expr do.call(file.path, c(as.list(district_dir), "district-2011.shp"))
+
+  ebird_dir: [".", "data", "intermediate", "ebird"]
+  ebird_trip_clean_path: !expr do.call(file.path, c(as.list(ebird_dir), "ebird_trip_clean.rds"))
+  user_home_impute_path: !expr do.call(file.path, c(as.list(ebird_dir), "user_home_impute.rds"))
+  user_home_real_path: !expr do.call(file.path, c(as.list(ebird_dir), "user_home_real.rds"))
+
+  hotspot_dir: [".", "data", "intermediate", "hotspots"]
+  ebird_trip_hotspots_path: !expr do.call(file.path, c(as.list(hotspot_dir), "ebird_trip_hotspots.rds"))
+
+  choice_sets_dir: [".", "data", "intermediate", "choice_sets"]
+
+  functions_dir: [".", "functions"]
+  choice_set_travel_path: !expr do.call(file.path, c(as.list(functions_dir), "choice_set_travel.R"))
+  hotspot_clustering_path: !expr do.call(file.path, c(as.list(functions_dir), "hotspot_clustering.R"))
+
+  rds_dir: [".", "data", "rds"]
+  hotspots_path: !expr do.call(file.path, c(as.list(rds_dir), "hotspots.rds"))
+
+  # File Structure Overview (for reference, not used in execution)
+  file_structure: |
+    data/
+    ├── shp/
+    │   ├── district-2011/
+    │   │   ├── district-2011.shp
+    │   ├── intermediate/
+    │   │   ├── ebird/
+    │   │   │   ├── ebird_trip_clean.rds
+    │   │   │   ├── user_home_impute.rds
+    │   │   │   ├── user_home_real.rds
+    │   │   ├── hotspots/
+    │   │   │   ├── ebird_trip_hotspots.rds
+    │   ├── choice_sets/
+    │   ├── rds/
+    │   │   ├── hotspots.rds
+    ├── functions/
+    │   ├── choice_set_travel.R
+    │   ├── hotspot_clustering.R
+
+# User-Specific Configurations
+mbraaksma:
+  inherit: default
+  input_data_dir: ["..", "..", "base_data", "biodiversity-wtp", "ebd_IN_201501_202412_relDec-2024"]
+  ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
+  ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
+
+rmadhok:
+  inherit: default
+  input_data_dir: '/Volumes/Backup Plus 1/research/data/ebird_wtp/ebird'
+  ebird_basic_filename: "ebird_master.txt"
+  ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
+
+rmcway:
+  inherit: default
+  input_data_dir: ''
+  ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
+  ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
