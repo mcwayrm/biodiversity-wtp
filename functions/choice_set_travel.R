@@ -4,7 +4,7 @@
 
 # Load Packages
 require(units)
-source('/Users/rmadhok/Dropbox/biodiversity-wtp/scripts/R/functions/hotspot_clustering.R')
+source('./functions/hotspot_clustering.R')
 
 choice_set <- function(df,
                        module = 'cluster', 
@@ -63,7 +63,7 @@ choice_set <- function(df,
   }
   
   # User List
-  ebird <- readRDS('./data/rds/ebird_trip_hotspots.rds') # observed hotspot trips
+  ebird <- readRDS('./data/intermediate/hotspots/ebird_trip_hotspots.rds') # observed hotspot trips
   ebird <- filter(ebird, geo_dist <= radius) # observed trips  w/n radius 
   user <- distinct(ebird, user_id, .keep_all=T) %>% # User list 
     select(user_id, lon_home, lat_home) %>%
