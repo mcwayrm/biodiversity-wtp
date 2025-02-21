@@ -53,19 +53,16 @@ default:
 
 # User-Specific Configurations
 mbraaksma:
-  inherit: default
   input_data_dir: ["..", "..", "base_data", "biodiversity-wtp", "ebd_IN_201501_202412_relDec-2024"]
   ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
 
 rmadhok:
-  inherit: default
   input_data_dir: '/Volumes/Backup Plus 1/research/data/ebird_wtp/ebird'
   ebird_basic_filename: "ebird_master.txt"
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
 
 rmcway:
-  inherit: default
   input_data_dir: ''
   ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
