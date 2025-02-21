@@ -5,7 +5,8 @@
 require(cluster)    # clustering algorithms
 require(factoextra)
 
-rec_clust <- function(df, 
+rec_clust <- function(df,
+                      config,
                       module = 'all',
                       clust_size = 10){
   
@@ -18,7 +19,7 @@ rec_clust <- function(df,
   ## df: dataframe of hotspots with rec area ID's
   
   # Load district map
-  india_dist <- st_read('./data/shp/district-2011/district-2011.shp')
+  india_dist <- st_read(config$district_path)
   
   
   # add district code to hostpots
@@ -55,7 +56,9 @@ rec_clust <- function(df,
     
     # Save intermediate
     df <- select(df, -hsid)
-    saveRDS(df, paste('./data/intermediate/hotspots/hotspots_all_', clust_size, 'km.rds', sep=''))
+    file_name <- paste0("hotspots_all_", clust_size, "km.rds")
+    output_path <- do.call(file.path, c(as.list(config$hotspots_dir), file_name))
+    saveRDS(df, output_path)
     
     return(df)
   
@@ -79,8 +82,9 @@ rec_clust <- function(df,
     df <- filter(df, !is.na(c_code_2011))
     
     # Save intermediate data
-    saveRDS(df, paste('./data/intermediate/hotspots/hotspots_clust_', clust_size, 'km.rds', sep=''))
-   
+    file_name <- paste0("hotspots_clust_", clust_size, "km.rds")
+    output_path <- do.call(file.path, c(as.list(config$hotspots_dir), file_name))
+    saveRDS(df, output_path)
     return(df)
   
     }

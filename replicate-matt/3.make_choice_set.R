@@ -43,6 +43,7 @@ if(module == 'cluster'){
   
   # Construct on the fly
   cset <- choice_set(hotspots,
+                     config = config,
                      module = module, 
                      radius = radius, 
                      clust_size = clust_size)
@@ -63,7 +64,8 @@ if(module == 'cluster'){
 } else{
   
   # Construct on the fly
-  cset <- choice_set(hotspots, 
+  cset <- choice_set(hotspots,
+                     config = config,
                      module = module, 
                      radius = radius)
   
@@ -115,13 +117,13 @@ if(module == 'cluster'){
   master <- select(master, -locality)
   
   # Construct full path
-  file_name <- paste0("master_cs", radius, "km_clust_", clust_size, "km.rds")
+  file_name <- paste0("master_cs_", radius, "km_clust_", clust_size, "km.rds")
   output_path <- do.call(file.path, append(config$choice_sets_dir, file_name))
   saveRDS(master, output_path)
   print('fin!')
 } else{
-    # Construct full path
-  file_name <- paste0("master_cs", radius, "km_clust_", clust_size, "km.rds")
+  # Construct full path
+  file_name <- paste0("master_cs_", radius, "km_clust_", clust_size, "km.rds")
   output_path <- do.call(file.path, append(config$choice_sets_dir, file_name))
   saveRDS(master, output_path)
   print('fin!')

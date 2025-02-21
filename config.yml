@@ -19,8 +19,8 @@ default:
   user_home_impute_path: !expr do.call(file.path, c(as.list(ebird_dir), "user_home_impute.rds"))
   user_home_real_path: !expr do.call(file.path, c(as.list(ebird_dir), "user_home_real.rds"))
 
-  hotspot_dir: [".", "data", "intermediate", "hotspots"]
-  ebird_trip_hotspots_path: !expr do.call(file.path, c(as.list(hotspot_dir), "ebird_trip_hotspots.rds"))
+  hotspots_dir: [".", "data", "intermediate", "hotspots"]
+  ebird_trip_hotspots_path: !expr do.call(file.path, c(as.list(hotspots_dir), "ebird_trip_hotspots.rds"))
 
   choice_sets_dir: [".", "data", "intermediate", "choice_sets"]
 

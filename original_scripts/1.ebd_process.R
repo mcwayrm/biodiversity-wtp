@@ -4,14 +4,16 @@
 ### SET-UP
 # Directories
 rm(list=ls())
-source("0.load_config.R")
+BACKUP <- '/Volumes/Backup Plus 1/research/data/ebird_wtp'
+LOCAL <- '/Users/rmadhok/Dropbox/biodiversity-wtp/'
 
 # Load Packages
 packages <- c('sf', 'tidyverse', 'data.table', 'lubridate')
 pacman::p_load(packages, character.only = TRUE, install = FALSE)
 
 # Load District Map
-dist <- st_read(config$district_path) %>%
+setwd(LOCAL)
+dist <- st_read('./data/shp/district-2011/district-2011.shp') %>%
   dplyr::select(c_code_11) %>% rename(c_code_2011 = c_code_11)
 
 #-----------------------------------------------------
@@ -20,7 +22,8 @@ dist <- st_read(config$district_path) %>%
 
 # load ebird (20 mins)
 # note: data are at the user-trip-species-time level
-ebird = fread(config$ebird_basic_path,
+setwd(BACKUP)
+ebird = fread('./ebird/ebird_master.txt',
               select = c('LATITUDE', 'LONGITUDE','OBSERVATION DATE', 
                          'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER', 
                          'PROTOCOL TYPE','DURATION MINUTES', 
@@ -68,7 +71,8 @@ user_home$c_code_2011_home_real <- st_join(st_as_sf(user_home,
                                                     crs=4326), dist, 
                                            join = st_intersects)$c_code_2011
 # Save
-saveRDS(user_home, config$user_home_real_path)
+setwd(LOCAL)
+saveRDS(user_home, paste('./data/intermediate/ebird/user_home_real.rds', sep=''))
 
 # Imputed Home --------------------------------------
 # 1. Estimate gravitational center of all trips
@@ -135,7 +139,8 @@ user <- rbind(filter(user, !is.na(c_code_2011_home)), user_na)
 rm(list=c('centroids', 'user_na'))
 
 # Save user list
-saveRDS(user, config$user_home_impute_path)
+setwd(LOCAL)
+saveRDS(user, './data/intermediate/ebird/user_home_impute.rds')
 
 #-----------------------------------------------------
 # Filter Trips
@@ -179,4 +184,5 @@ ebird <- mutate(ebird, distance = replace(distance, is.na(distance), 0))
 ebird <- left_join(ebird, user, by='user_id')
 
 # Save
-saveRDS(ebird, config$ebird_trip_clean_path)
+setwd(LOCAL)
+saveRDS(ebird, './data/intermediate/ebird/ebird_trip_clean.rds')

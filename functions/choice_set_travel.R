@@ -4,9 +4,10 @@
 
 # Load Packages
 require(units)
-source('./functions/hotspot_clustering.R')
+source(config$hotspot_clustering_path)
 
 choice_set <- function(df,
+                       config,
                        module = 'cluster', 
                        radius = 20, 
                        clust_size = 10){
@@ -32,7 +33,8 @@ choice_set <- function(df,
     print('Processing hotspots...')
     
     # hotspots
-    hs <- rec_clust(df, 
+    hs <- rec_clust(df,
+                    config = config,
                     module = module) %>%
       mutate(lat2 = lat, lon2 = lon)
   }
@@ -43,7 +45,8 @@ choice_set <- function(df,
     print(paste('Computing recreation areas of size: ', clust_size, ' km...', sep=''))
     
     # hotspots
-    hs <- rec_clust(df, 
+    hs <- rec_clust(df,
+                    config = config,
                     module = module, 
                     clust_size = clust_size) %>%
       mutate(lat2 = lat, lon2 = lon)
@@ -63,7 +66,7 @@ choice_set <- function(df,
   }
   
   # User List
-  ebird <- readRDS('./data/intermediate/hotspots/ebird_trip_hotspots.rds') # observed hotspot trips
+  ebird <- readRDS(config$ebird_trip_hotspots_path) # observed hotspot trips
   ebird <- filter(ebird, geo_dist <= radius) # observed trips  w/n radius 
   user <- distinct(ebird, user_id, .keep_all=T) %>% # User list 
     select(user_id, lon_home, lat_home) %>%
@@ -95,12 +98,14 @@ choice_set <- function(df,
   
   # Save intermediate
   if(module == 'cluster'){
-    
-    saveRDS(choice, paste('./data/intermediate/choice_sets/choice_set_', radius, 'km_clust_', clust_size, 'km.rds', sep=''))
+    file_name <- paste0("choice_set_", radius, "km_clust_", clust_size, "km.rds")
+    output_path <- do.call(file.path, c(as.list(config$choice_sets_dir), file_name))
+    saveRDS(choice, output_path)
   
     } else{
-      
-    saveRDS(choice, paste('./data/intermediate/choice_sets/choice_set_', radius, 'km.rds', sep=''))
+    file_name <- paste0("choice_set_", radius, "km_clust_", clust_size, "km.rds")
+    output_path <- do.call(file.path, c(as.list(config$choice_sets_dir), file_name))
+    saveRDS(choice, output_path)
     }
   
   return(choice)

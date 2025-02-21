@@ -4,7 +4,7 @@
 ### SET-UP
 # Directories
 rm(list=ls())
-source("0.load_config.R")
+setwd('/Users/rmadhok/Dropbox/biodiversity-wtp/data/')
 
 # Load Packages
 packages <- c('sf', 'tidyverse', 'units')
@@ -21,7 +21,7 @@ pacman::p_load(packages, character.only = TRUE, install = FALSE)
 # from home to every hotspot visited
 
 # Read ebird trips
-ebird <- readRDS(config$ebird_trip_clean_path)
+ebird <- readRDS('./intermediate/ebird/ebird_trip_clean.rds')
 
 # Select trips to hotspots (n = 1,347,758 hotspot trips; n =30,327 users)
 ebird <- ebird %>%
@@ -39,7 +39,7 @@ ebird$geo_dist <- st_distance(st_as_sf(ebird,
 ebird$geo_dist <- as.numeric(ebird$geo_dist)
 
 # Save observed choice
-saveRDS(ebird, config$ebird_trip_hotspots_path)
+saveRDS(ebird, './intermediate/ebird/ebird_trip_hotspots.rds')
 
 #--------------------------------------
 # Driving Distance To Destination
