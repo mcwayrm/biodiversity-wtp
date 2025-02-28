@@ -40,7 +40,7 @@ ebird <- ebird %>%
          complete = all_species_reported)
 
 # collapse to user-trip-time level (n = 3,463,250 trips)
-ebird <- distinct(ebird, trip_id, .keep_all = T)
+ebird <- distinct(ebird, trip_id, .keep_all = TRUE)
 
 # Dates
 ebird$date <- ymd(ebird$observation_date)
@@ -60,8 +60,8 @@ user_home <- ebird %>%
                     my terrace|my backyard|my street|
                     my yard|my veranda')) %>%
   group_by(user_id) %>%
-  summarize(lon_home_real = mean(lon, na.rm=T),
-            lat_home_real = mean(lat, na.rm=T))
+  summarize(lon_home_real = mean(lon, na.rm=TRUE),
+            lat_home_real = mean(lat, na.rm=TRUE))
 
 # district where user lives
 user_home$c_code_2011_home_real <- st_join(st_as_sf(user_home, 
@@ -80,8 +80,8 @@ saveRDS(user_home, config$user_home_real_path)
 # Center of user's trips
 user <- distinct(ebird, user_id, lon, lat) %>%
   group_by(user_id) %>%
-  mutate(lon_home = mean(lon, na.rm=T),
-         lat_home = mean(lat, na.rm=T))
+  mutate(lon_home = mean(lon, na.rm=TRUE),
+         lat_home = mean(lat, na.rm=TRUE))
 
 # straight-line distance from center to each site 
 user$distance <- st_distance(st_as_sf(user, 
@@ -90,7 +90,7 @@ user$distance <- st_distance(st_as_sf(user,
                              st_as_sf(user, 
                                       coords = c('lon', 'lat'),
                                       crs=4326), 
-                             by_element = T)
+                             by_element = TRUE)
 user$distance <- as.numeric(user$distance)/1000 # in km
 
 # Remove outlier trips
@@ -102,8 +102,8 @@ user <- user %>%
 # Recompute home 
 user <- user %>%
   group_by(user_id) %>%
-  summarize(lon_home=mean(lon, na.rm=T),
-            lat_home=mean(lat, na.rm=T))
+  summarize(lon_home=mean(lon, na.rm=TRUE),
+            lat_home=mean(lat, na.rm=TRUE))
 
 # Overlay home districts
 # -------------------------------------

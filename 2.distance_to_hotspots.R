@@ -35,7 +35,7 @@ ebird$geo_dist <- st_distance(st_as_sf(ebird,
                               st_as_sf(ebird, 
                                        coords = c('lon', 'lat'),
                                        crs=4326), 
-                              by_element = T) %>% set_units(km)
+                              by_element = TRUE) %>% set_units(km)
 ebird$geo_dist <- as.numeric(ebird$geo_dist)
 
 # Save observed choice
