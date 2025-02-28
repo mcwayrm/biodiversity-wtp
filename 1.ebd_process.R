@@ -26,7 +26,8 @@ ebird = fread(config$ebird_basic_path,
                         'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
                         'PROTOCOL TYPE','DURATION MINUTES',
                         'EFFORT DISTANCE KM','ALL SPECIES REPORTED',
-                        'LOCALITY', 'LOCALITY TYPE'))
+                        'LOCALITY', 'LOCALITY TYPE'),
+              quote = "")
 colnames(ebird) <- gsub('\\.', '_', tolower(make.names(colnames(ebird))))
 
 # Clean names
