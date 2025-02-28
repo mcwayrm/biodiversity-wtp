@@ -67,7 +67,27 @@ These are the input data (raw files) prior to processing:
 
 These are the intermediate files generated through the scripts but not the main files for analysis: 
 
-- 
+Generated in 1.ebd_process.R
+- User's Real Home Coordinates (`config$user_home_real_path`)
+    - This file contains the home coordinates of users who explicitly recorded observations at their home (e.g., "my home," "my backyard").
+    - It includes user_id, lon_home_real, lat_home_real, and c_code_2011_home_real (district code).
+- User's Imputed Home Coordinates (`config$user_home_impute_path`)
+    - This file estimates home locations for users who did not explicitly record home observations based on the center of all recorded trips.
+    - This file includes user_id, lon_home, lat_home, and c_code_2011_home
+- Cleaned eBird Trip Data (config$ebird_trip_clean_path)
+    - This dataset contains cleaned and filtered eBird trip records.
+    - Key steps include assigning trips to census districts (`c_code_2011`), removing out-of-bounds trips, setting distance to 0 for stationary trips, and merging in imputed home coordinates.
+    - The final dataset includes key trip details like user_id, trip_id, date, duration, distance, protocol_type, and district codes.
+
+Generated in 2.distance_to_hotspots.R
+- Processed Hotspot Trips (`config$ebird_trip_hotspots_path`)
+    - This dataset includes only trips to eBird hotspots (locality_type == 'H').
+    - The final dataset includes key trip details like user_id, trip_id, date, duration, distance, geo_dist (home-to-hotspot distance), and c_code_2011 (district code).
+
+Generated in 3.make_choice_set.R
+- Processed Choice Set (`config$choice_sets_dir/master_cs{radius}km_clust_{clust_size}km.rds`)
+    - This dataset includes both observed eBird trips and counterfactual (unobserved) choices within a specified radius around the user's home.
+    - The final dataset includes key trip details like user_id, trip_id, date, choice (observed vs. counterfactual), c_code_2011_home (home district), and assigned choice set information.
 
 # Final
 
