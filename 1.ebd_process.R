@@ -14,6 +14,7 @@ pacman::p_load(packages, character.only = TRUE, install = FALSE)
 dist <- st_read(config$district_path) %>%
   dplyr::select(c_code_11) %>% rename(c_code_2011 = c_code_11)
 
+
 #-----------------------------------------------------
 # 1. Pre-Process
 #-----------------------------------------------------

@@ -108,6 +108,11 @@ This is a section to ask questions and assign team members to respond to them. B
     - Answer: Well, you simply follow this example. You ask a question and direct it towards an individual or generally and provide details about the specific files, tasks, or code that is of concern. Adding details assists us in the future and helps us document ongoing concerns and potential problems. 
 
 - Put you questions here...
+- @rmadhok I am getting stuck with opening the data for e-birds. So I am looking for how to compress the information in memory. Here is the error I get from `/1.ebd_process.R`: 
+
+> Error in fread(config$ebird_basic_path, select = c("LATITUDE", "LONGITUDE",  : 
+  Opened 21.74GB (23338050377 bytes) file ok but could not memory map it. This is a 64bit process. There is probably not enough contiguous virtual memory available.
+
 - @m-braaksma I am trying to document necessary software. Do you need anything to run a YAML file? Like do we need to download YAML software or Docker to run this component? 
 - @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
 - @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
