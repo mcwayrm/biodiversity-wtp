@@ -1,0 +1,36 @@
+---
+title: "The Economic Value of Biodiversity in India"
+subtitle: "Running Notes"
+author: 
+    - Raahil Madhok
+    - Matt Braaksma
+    - Ryan Mcway
+    - Jovin Lasway
+toc: true
+format: 
+    html:
+        theme: sandstone
+        html-math-method: katex
+        embed-resources: true
+        code-fold: true
+        code-tools: true
+        code-overflow: wrap
+    pdf:  
+        documentclass: article
+        papersize: letter
+number-sections: false
+jupyter: python3
+---
+
+## Project Description
+
+This project...
+
+## Notes
+
+::: {.callout-note  collapse="true"}
+# 02/28/25
+- note
+- note
+- todo
+:::
