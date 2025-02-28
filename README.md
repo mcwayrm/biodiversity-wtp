@@ -109,6 +109,5 @@ This is a section to ask questions and assign team members to respond to them. B
 
 - Put you questions here...
 - @m-braaksma I am trying to document necessary software. Do you need anything to run a YAML file? Like do we need to download YAML software or Docker to run this component? 
-- @m-braaksma If I am running `/0.load_config.R` on line 16 `config_list <- yaml::read_yaml("config.yml", readLines.warn=FALSE, eval.expr=FALSE)`, I can only do this from VS Code. I need to define my directory if I call if from R Studio... perhaps we can fix this. This might also be because I am running it from an external hard-drive. So it is on my D: drive not my C: drive which has a username...
 - @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
 - @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
