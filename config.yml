@@ -64,5 +64,5 @@ rmadhok:
 
 ryanm:
   input_data_dir: [".."]
-  ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
+  ebird_basic_filename: "ebd_IN_smp_relJan-2025.txt"
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))

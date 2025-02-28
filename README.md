@@ -55,9 +55,25 @@ This describes the scripts in the repository. To perform the analysis, run the f
 
 This describes the data needed to run the code. For each data set, we describe it and explain how it is used in the analysis. 
 
+## Inputs
+
+These are the input data (raw files) prior to processing: 
+
 - `data/rds/hotspots.rds`: 
 - `data/shp/district-2011`: This is the administrative boundaries for India from 2011 provided by GADM.
 - `../ebd_IN_smp_relJan-2025.zip`: This is the e-bird data set of bird observations by users for the India sample. 
+
+## Intermediates
+
+These are the intermediate files generated through the scripts but not the main files for analysis: 
+
+- 
+
+# Final
+
+These are the final data sets generated for the main analysis: 
+
+- 
 
 # Dependencies
 
@@ -89,3 +105,5 @@ This is a section to ask questions and assign team members to respond to them. B
 - Put you questions here...
 - @m-braaksma I am trying to document necessary software. Do you need anything to run a YAML file? Like do we need to download YAML software or Docker to run this component? 
 - @m-braaksma If I am running `/0.load_config.R` on line 16 `config_list <- yaml::read_yaml("config.yml", readLines.warn=FALSE, eval.expr=FALSE)`, I can only do this from VS Code. I need to define my directory if I call if from R Studio... perhaps we can fix this. This might also be because I am running it from an external hard-drive. So it is on my D: drive not my C: drive which has a username...
+- @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
+- @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
