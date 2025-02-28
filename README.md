@@ -49,7 +49,7 @@ This describes the scripts in the repository. To perform the analysis, run the f
 - `0.load_config.R`: This script sets up the configuration of the file paths and allows for flexible loading of the data for each user. Modifications to the personal users preferences can be made in `config.yml`. 
 - `1.ebd_process.R`: This script cleans the e-bird data set and creates the data set of homes for the users, trips by the users, and attributes about the users. 
 - `2.distance_to_hotspot.R`: This script determines the distance of birders from observed hotspots to create the counterfactual options for travel and their potential travel cost. 
-- `3.make_choice_sets.R`: This script performs the mixed logit analysis of comparing the selected destination over possible desitinations. 
+- `3.make_choice_sets.R`: This script performs the mixed logit analysis of comparing the selected destination over possible desitinations. This uses the random utility model (RUM).
 
 # Data
 
@@ -116,3 +116,9 @@ This is a section to ask questions and assign team members to respond to them. B
 - @m-braaksma I am trying to document necessary software. Do you need anything to run a YAML file? Like do we need to download YAML software or Docker to run this component? 
 - @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
 - @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
+
+# Tasks
+
+This is a section to provide directed tasks to others, or as reminders for one's self. 
+
+- Create a preamble script to handle the clear and loading of scripts. Make this a bit simplier and just call for each new script (similar to the config script)

@@ -3,7 +3,7 @@
 
 ### SET-UP
 # Directories
-rm(list=ls())
+rm(list = ls())
 
 # Load Packages
 source("0.load_config.R")
