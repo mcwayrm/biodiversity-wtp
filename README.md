@@ -95,6 +95,11 @@ For R:
 - `lubridate`: Handles date formating. 
 - `units`: 
 
+## Functions: 
+
+- `/functions/choice_set_travel.R`: This function...
+- `/functions/hotspot_clustering.R`: This function...
+
 # Questions
 
 This is a section to ask questions and assign team members to respond to them. Below is an example. 
