@@ -3,25 +3,22 @@
 
 ### SET-UP
 # Directories
-rm(list=ls())
-setwd('/Users/rmadhok/Dropbox/biodiversity-wtp/data/')
+rm(list = ls())
+source("0.load_config.R")
 
 # Load Packages
 packages <- c('sf', 'tidyverse', 'units')
 pacman::p_load(packages, character.only = TRUE, install = FALSE)
 #require(gmapsdistance)
 
-# Set great circle radius (for google map)
-# radius <- 30
-
 #-----------------------------------------
 # Select observed hotspots
 #-----------------------------------------
-# We identify the straight-line distance 
+# We identify the straight-line distance
 # from home to every hotspot visited
 
 # Read ebird trips
-ebird <- readRDS('./intermediate/ebird/ebird_trip_clean.rds')
+ebird <- readRDS(config$ebird_trip_clean_path)
 
 # Select trips to hotspots (n = 1,347,758 hotspot trips; n =30,327 users)
 ebird <- ebird %>%
@@ -30,24 +27,28 @@ ebird <- ebird %>%
 
 # Straight-line dist from home to hotspot
 ebird$geo_dist <- st_distance(st_as_sf(ebird, 
-                                       coords = c('lon_home', 'lat_home'),
-                                       crs=4326), 
+                                      coords = c('lon_home', 'lat_home'),
+                                      crs=4326), # World Geodetic System 1984
                               st_as_sf(ebird, 
-                                       coords = c('lon', 'lat'),
-                                       crs=4326), 
-                              by_element = T) %>% set_units(km)
+                                      coords = c('lon', 'lat'),
+                                      crs=4326), # World Geodetic System 1984
+                              by_element = TRUE) %>% set_units(km)
 ebird$geo_dist <- as.numeric(ebird$geo_dist)
 
 # Save observed choice
-saveRDS(ebird, './intermediate/ebird/ebird_trip_hotspots.rds')
+saveRDS(ebird, config$ebird_trip_hotspots_path)
 
 #--------------------------------------
 # Driving Distance To Destination
 #--------------------------------------
+# NOTE: Reason we don't do this is because it is expensive. Need to pay to run the google maps API.
+
+# Set great circle radius (for google map)
+# radius <- 30
 
 # Keep trips w/n radius to reduce API calls
 #ebird <- filter(ebird, geo_dist <= radius)
-api_key = rio::import("../data/api-key-ebird-raahil.txt")
+# api_key = rio::import("../data/api-key-ebird-raahil.txt")
 # set.api.key(api_key)
 # map_by_slice <- function(i){
 #   print(i)
