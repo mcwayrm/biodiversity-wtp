@@ -22,16 +22,16 @@ ebird <- readRDS(config$ebird_trip_clean_path)
 
 # Select trips to hotspots (n = 1,347,758 hotspot trips; n =30,327 users)
 ebird <- ebird %>%
-  filter(locality_type == 'H') %>%
-  select(-c(locality_type, locality))
+        filter(locality_type == 'H') %>%
+        select(-c(locality_type, locality))
 
 # Straight-line dist from home to hotspot
 ebird$geo_dist <- st_distance(st_as_sf(ebird, 
-                                      coords = c('lon_home', 'lat_home'),
-                                      crs=4326), # World Geodetic System 1984
+                                coords = c('lon_home', 'lat_home'),
+                                crs=4326), # World Geodetic System 1984
                               st_as_sf(ebird, 
-                                      coords = c('lon', 'lat'),
-                                      crs=4326), # World Geodetic System 1984
+                                coords = c('lon', 'lat'),
+                                crs=4326), # World Geodetic System 1984
                               by_element = TRUE) %>% set_units(km)
 ebird$geo_dist <- as.numeric(ebird$geo_dist)
 

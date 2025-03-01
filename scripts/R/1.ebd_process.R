@@ -26,7 +26,8 @@ ebird = fread(config$ebird_basic_path,
                         'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
                         'PROTOCOL TYPE','DURATION MINUTES',
                         'EFFORT DISTANCE KM','ALL SPECIES REPORTED',
-                        'LOCALITY', 'LOCALITY TYPE'))
+                        'LOCALITY', 'LOCALITY TYPE'),
+              quote = "")
 colnames(ebird) <- gsub('\\.', '_', tolower(make.names(colnames(ebird))))
 
 # Clean names
@@ -82,16 +83,16 @@ saveRDS(user_home, config$user_home_real_path)
 user <- distinct(ebird, user_id, lon, lat) %>%
   group_by(user_id) %>%
   mutate(lon_home = mean(lon, na.rm = TRUE),
-         lat_home = mean(lat, na.rm = TRUE))
+        lat_home = mean(lat, na.rm = TRUE))
 
 # straight-line distance from center to each site
 user$distance <- st_distance(st_as_sf(user,
                                       coords = c('lon_home', 'lat_home'),
                                       crs = 4326), # World Geodetic System 1984
-                             st_as_sf(user,
+                            st_as_sf(user,
                                       coords = c('lon', 'lat'),
                                       crs = 4326), # World Geodetic System 1984
-                             by_element = TRUE)
+                            by_element = TRUE)
 user$distance <- as.numeric(user$distance) / 1000 # in km
 
 # Remove outlier trips
@@ -121,8 +122,8 @@ user$c_code_2011_home <- st_join(st_as_sf(user,
 # For off-coast homes, assign id of nearest district
 user_na <- filter(user, is.na(c_code_2011_home))  # 1,104 users out of 49,206
 user_na$c_code_2011_home <- st_join(st_as_sf(user_na,
-                                             coords = c('lon_home', 'lat_home'),
-                                             crs = 4326), # World Geodetic System 1984
+                                            coords = c('lon_home', 'lat_home'),
+                                            crs = 4326), # World Geodetic System 1984
                                     dist,
                                     join = st_nearest_feature)$c_code_2011
 # note: remaining NA's are in northern Kashmir, which have no census code
