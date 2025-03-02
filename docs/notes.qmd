@@ -4,7 +4,7 @@ subtitle: "Running Notes"
 author: 
     - Raahil Madhok
     - Matt Braaksma
-    - Ryan Mcway
+    - Ryan McWay
     - Jovin Lasway
 toc: true
 format: 
@@ -24,13 +24,78 @@ jupyter: python3
 
 ## Project Description
 
-This project...
+This project aims to produce the first measure of willingness to pay (WTP) for biodiversity. 
+This provides a monetary measure to value biodiversity which can be applied to a wide variety of applications in environmental economics and natural captial accounting. 
+The data relies on E-bird observations of diverse bird species observations. 
+The sample is limited to local, long-time users who are residents (not tourists) in India.
+The methodology to calculate WTP relies on a revealed preference throughh the random utility model (RUM). 
+The RUM determines the value of seeking out diverse species of birds by comparing the value of alternative counterfactual bird siting locations and the cost to go to these counterfactuals. 
+Monetary value is determined through the RUM by estimating the travel cost of the reveal preference compared to counterfactual locations. 
 
 ## Notes
 
+For notes, we present the most recent first so that notes are choronologically most recent. 
+
+
 ::: {.callout-note  collapse="true"}
 # 02/28/25
-- note
-- note
-- todo
+# Meeting: 2/28/2025
+
+## Action Items: 
+
+- Ryan: Get the correct e-bird file from Matt
+- Ryan: Merge code files into scripts folder. (DONE)
+- Ryan: Initate a document for literature review with template example (DONE)
+- We need to specalize and define tasks. Volunteer over email. Tasks: Lit review, sample selection, characterize the sample, theory person
+- And set up a recurring meeting time. Need a poll. Try for next two weeks from now.
+- Jovin: Provide your github username so Ryan can make you a collaborator on the github repo. 
+
+## Funding: 
+
+- No longer pursue IonE funding
+
+## Coding: 
+
+- Matt was able to replicate everything 
+	- Created a YAML to process file names
+	- No longer needs new file paths
+- Ryan stuck on loading data
+- Need to all use the same exact file download for e-bird
+- script 1: processes e-bird data, determines user homes, and calculates home for those who don't report it. 
+- script 2: Creates the hotspot observations. Measures distance from home to hotspot.
+- script 3: Most important. 12,000 hotspots so too many counterfactuals. This script reduces the counterfactual set by clustering hotspots nearby (likley parks) and only consider hotspots within a distance of home. 
+- The final data set is a panel of person (user) ID by trip ID appended to all counterfactual trips for this user. 
+- When we actually estimate this, we will need to plan for a no-trip counterfactual. 
+- One of the main things we need to do is make the computation easier for us. Otherwise it becomes too computationally intensive. 
+- Keep all the scripts in scripts folder. 
+
+## Data: 
+- We will need to bring in site attribute data 
+- So data on landscape measurements. 
+- Matt says that not all intermediate files are being save
+- Specifically, the master file is not saving
+- Need to identify our sample population
+	- Need a careful (defensiable) data-driven criteria for sample 
+	- Needs to be regular, local users (not temporary or tourists)
+	- Determine this based on usage frequency and mobility patterns
+	- Consider overlaying protected areas polygons on top of the observations/hotspots
+	- Buffers may create a censoring problem. So we would just test this against larger and larger buffers
+- Need to find ways to characteristize the users (demographics) without having any information about them. 
+	- Important for welfare calculations. 
+	- Try to match with DHS data 
+	- Or overlap home location with SHRUG data set
+	- Econometrically, take attribtues about where they live against the average for the country, how do high and low WTP birders fall within the distribution
+	- Potentially use this as weights for welfare calculations. 
+
+## Methods:
+- If we get a random shock to bird population, then we can think about the causal effect of increasing biodiversity
+
+## Paper/Writing: 
+- For the ML cluster, will want to read up later to find out if there is a better way or more common practice in economics. 
+- Create a lit review. Three groups: 
+    1. estimates of WTP in developing countries generally using the discrete choice travel cost method (Ted Miguel water quality paper). 
+    2. WTP for environmental quality papers and what design they are using to estimate (e.g., contingent valuation, stated preferences -- something from ecology)
+    3. Review of any updated versions of the mixed logit model -- new adapations of the model from class
+- For this: question, data used, design, and finding (dollar estimates would be great).
+- Create a document in the docs folder
 :::
