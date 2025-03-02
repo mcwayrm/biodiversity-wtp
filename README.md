@@ -47,16 +47,18 @@ This setup ensures flexibility across different environments while maintaining a
 This describes the scripts in the repository. To perform the analysis, run the following scripts in order. 
 
 - `0.load_config.R`: This script sets up the configuration of the file paths and allows for flexible loading of the data for each user. Modifications to the personal users preferences can be made in `config.yml`. 
-- `1.ebd_process.R`: This script cleans the e-bird data set and creates the data set of homes for the users, trips by the users, and attributes about the users. 
-- `2.distance_to_hotspot.R`: This script determines the distance of birders from observed hotspots to create the counterfactual options for travel and their potential travel cost. 
-- `3.make_choice_sets.R`: This script performs the mixed logit analysis of comparing the selected destination over possible desitinations. 
+- `1.ebd_process.R`: This script cleans the e-bird data set, creates the data set of actual user homes for those who reported it, and imputed home locations for those who didn't. 
+- `2.distance_to_hotspot.R`: This script determines the distance of birders' homes from observed hotspots to create the data set of chosen sites. 
+- `3.make_choice_sets.R`: This script constructs the counterfactual choice sets for each observed eBird trip. 
+- `choice_set_travel`: This function identifies birding hotspots within a specified radius
+- `hotspot_clustering`: This function clusters birding hotspots together into ``recreation areas'' to improve computational efficiency
 
 # Data
 
 This describes the data needed to run the code. For each data set, we describe it and explain how it is used in the analysis. 
 
-- `data/rds/hotspots.rds`: 
-- `data/shp/district-2011`: This is the administrative boundaries for India from 2011 provided by GADM.
+- `data/rds/hotspots.rds`: This provides coordinates for all birding hotspots in India 
+- `data/shp/district-2011`: This is the administrative boundaries for India from the 2011 Population Census.
 - `../ebd_IN_smp_relJan-2025.zip`: This is the e-bird data set of bird observations by users for the India sample. 
 
 # Dependencies
@@ -77,7 +79,7 @@ For R:
 - `tidyverse`: Tools for cleaning data.
 - `data.table`: Efficient management of tabular data for data cleaning. 
 - `lubridate`: Handles date formating. 
-- `units`: 
+- `units`: converts units (m, km, etc.) when computing distances in euclidean space 
 
 # Questions
 
