@@ -16,6 +16,13 @@ number-sections: false
 jupyter: python3
 ---
 
+This is annnotated bibliography where you note the: 
+- paper title + journal
+- research question
+- research design (e.g. stated preference)
+- data/sample size
+- result (i.e. WTP estimate).
+
 ## WTP in developing countries using travel cost method
 
 estimates of WTP in developing countries generally using the discrete choice travel cost method (Ted Miguel water quality paper). 
