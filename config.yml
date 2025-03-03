@@ -24,7 +24,7 @@ default:
 
   choice_sets_dir: [".", "data", "intermediate", "choice_sets"]
 
-  functions_dir: [".", "functions"]
+  functions_dir: [".", "scripts", "R", "functions"]
   choice_set_travel_path: !expr do.call(file.path, c(as.list(functions_dir), "choice_set_travel.R"))
   hotspot_clustering_path: !expr do.call(file.path, c(as.list(functions_dir), "hotspot_clustering.R"))
 

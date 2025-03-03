@@ -4,7 +4,7 @@
 ### SET-UP
 # Directories
 rm(list = ls())
-source("0.load_config.R")
+source("scripts/R/0.load_config.R")
 
 # Load Packages
 packages <- c('sf', 'tidyverse', 'data.table', 'lubridate')
