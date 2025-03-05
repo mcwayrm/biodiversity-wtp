@@ -10,6 +10,9 @@
 # a consistent framework for data organization.
 
 default:
+  # Required packages
+  packages: ['sf', 'tidyverse', 'data.table', 'lubridate', 'units', 'pbapply', 'cluster', 'factoextra']
+
   # Directories: Define paths for various data and function files
   district_dir: [".", "data", "shp", "district-2011"]
   district_path: !expr do.call(file.path, c(as.list(district_dir), "district-2011.shp"))
@@ -23,6 +26,8 @@ default:
   ebird_trip_hotspots_path: !expr do.call(file.path, c(as.list(hotspots_dir), "ebird_trip_hotspots.rds"))
 
   choice_sets_dir: [".", "data", "intermediate", "choice_sets"]
+
+  clean_data_dir: [".", "data", "clean"]
 
   functions_dir: [".", "scripts", "R", "functions"]
   choice_set_travel_path: !expr do.call(file.path, c(as.list(functions_dir), "choice_set_travel.R"))

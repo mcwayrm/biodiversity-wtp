@@ -2,13 +2,8 @@
 # PURPOSE: Clean ebird data
 
 ### SET-UP
-# Directories
-rm(list = ls())
+# Load config
 source("scripts/R/0.load_config.R")
-
-# Load Packages
-packages <- c('sf', 'tidyverse', 'data.table', 'lubridate')
-pacman::p_load(packages, character.only = TRUE, install = FALSE)
 
 # Load District Map
 dist <- st_read(config$district_path) %>%

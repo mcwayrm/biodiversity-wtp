@@ -2,13 +2,9 @@
 # PURPOSE: Distance to Observed hotspots
 
 ### SET-UP
-# Directories
-rm(list = ls())
-source("0.load_config.R")
+# Load config
+source("scripts/R/0.load_config.R")
 
-# Load Packages
-packages <- c('sf', 'tidyverse', 'units')
-pacman::p_load(packages, character.only = TRUE, install = FALSE)
 #require(gmapsdistance)
 
 #-----------------------------------------
