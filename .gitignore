@@ -4,3 +4,4 @@
 .Rhistory
 /functions/.Rhistory
 *.DS_Store
+cache/*
