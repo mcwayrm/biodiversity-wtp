@@ -2,108 +2,52 @@
 # PURPOSE: Select Choice Set
 # AUTHOR: Raahil Madhok
 
-# Load Packages
-require(units)
-source('/Users/rmadhok/Dropbox/biodiversity-wtp/scripts/R/functions/hotspot_clustering.R')
-
-choice_set <- function(df,
-                       module = 'cluster', 
-                       radius = 20, 
-                       clust_size = 10){
+choice_set <- function(choice_df, trip_df, module = 'cluster', radius = 20, clust_size = 10) {
+  # Define output file path
+  file_path <- ifelse(module == 'cluster',
+                      paste0('./data/intermediate/choice_sets/choice_set_', radius, 'km_clust_', clust_size, 'km.rds'),
+                      paste0('./data/intermediate/choice_sets/choice_set_', radius, 'km.rds'))
   
-  # Function: choice_set
-  ## Inputs: 
-  ### df: a data frame - hotspots
-  ### module: - set to 'cluster' for recreation areas
-  ###         - set to 'all' for hotspots  
-  ### radius: choice set buffer around home
-  ### clust_size: recreation area size (km)
-  
-  ## Outputs:
-  ## df: dataframe of alternative sites w/n `radius` around home
-  
-  #-----------------------------------
-  # GENERATE CLEANED HOTSPOT LIST
-  #------------------------------------
-  
-  # All Hotspots (no recreation areas)
-  if(module == 'all'){
-    
-    print('Processing hotspots...')
-    
-    # hotspots
-    hs <- rec_clust(df, 
-                    module = module) %>%
-      mutate(lat2 = lat, lon2 = lon)
+  # Check if the file already exists
+  if (file.exists(file_path)) {
+    writeLines(paste("Loading existing choice set from:", file_path))
+    return(readRDS(file_path))
   }
   
-  # Lump into Recreation Areas
-  if(module == 'cluster') {
+  # Generate cleaned hotspot list
+  writeLines(paste("Processing choice set with module:", module))
+  hs <- rec_clust(choice_df, module = module, clust_size = ifelse(module == 'cluster', clust_size, NA)) %>%
+    mutate(lat2 = lat, lon2 = lon)
     
-    print(paste('Computing recreation areas of size: ', clust_size, ' km...', sep=''))
-    
-    # hotspots
-    hs <- rec_clust(df, 
-                    module = module, 
-                    clust_size = clust_size) %>%
-      mutate(lat2 = lat, lon2 = lon)
-  }
-  
-  #----------------------------------------------------------
-  # Extract Choice Set Around Users' Homes
-  #----------------------------------------------------------
-  
-  if(module == 'cluster'){
-    
-    print(paste('Extracting recreation areas (', clust_size, 'km) within ', radius, 'km from home', sep=''))
-  
-    } else{
-    
-      print(paste('Extracting choice set within ', radius, 'km from home', sep=''))
-  }
-  
-  # User List
-  ebird <- readRDS('./data/rds/ebird_trip_hotspots.rds') # observed hotspot trips
-  ebird <- filter(ebird, geo_dist <= radius) # observed trips  w/n radius 
-  user <- distinct(ebird, user_id, .keep_all=T) %>% # User list 
+  # Filter observed trips within radius
+  writeLines(paste("Extracting choice set within", radius, "km from home..."))
+  trip_filtered <- trip_df %>%
+    filter(geo_dist <= radius) %>%
+    distinct(user_id, .keep_all = TRUE) %>%
     select(user_id, lon_home, lat_home) %>%
-    mutate(lat_home2=lat_home, lon_home2=lon_home)
+    mutate(lat_home2 = lat_home, lon_home2 = lon_home)
   
   # Buffer around home
-  home_buf <- st_buffer(st_as_sf(user, 
-                                 coords = c('lon_home2', 'lat_home2'),
-                                 crs = 4326), radius/100)
+  home_buf <- st_as_sf(trip_filtered, coords = c('lon_home2', 'lat_home2'), crs = 4326) %>%
+    st_buffer(set_units(radius, km))
   
-  # Get hotspots w/n raduis
-  choice <- st_join(home_buf, st_as_sf(hs, 
-                                       coords = c('lon2', 'lat2'), 
-                                       crs=4326), 
-                    join=st_intersects)
-  choice <- filter(choice, !is.na(lat)) # drop users with no hotspots near home
-  choice <- st_drop_geometry(choice)
+  # Get hotspots within radius
+  choice <- st_join(home_buf, st_as_sf(hs, coords = c('lon2', 'lat2'), crs = 4326), join = st_intersects) %>%
+    filter(!is.na(lat)) %>%
+    st_drop_geometry()
   
-  # Distance from home to alternatives
-  print('Computing distance from home to counterfactual sites...')
-  choice$geo_dist <- st_distance(st_as_sf(choice, 
-                                          coords = c('lon_home', 'lat_home'),
-                                          crs=4326), 
-                                 st_as_sf(choice, 
-                                          coords = c('lon', 'lat'),
-                                          crs=4326), 
-                                 by_element = T) %>% set_units(km)
-  choice$geo_dist <- as.numeric(choice$geo_dist)
+  # Compute distance from home to alternatives
+  writeLines("Computing distance from home to counterfactual sites...")
+  choice$geo_dist <- st_distance(
+    st_as_sf(choice, coords = c('lon_home', 'lat_home'), crs = 4326),
+    st_as_sf(choice, coords = c('lon', 'lat'), crs = 4326),
+    by_element = TRUE
+  ) %>% set_units(km) %>% as.numeric()
   
-  # Save intermediate
-  if(module == 'cluster'){
-    
-    saveRDS(choice, paste('./data/intermediate/choice_sets/choice_set_', radius, 'km_clust_', clust_size, 'km.rds', sep=''))
-  
-    } else{
-      
-    saveRDS(choice, paste('./data/intermediate/choice_sets/choice_set_', radius, 'km.rds', sep=''))
-    }
+  # Save results
+  saveRDS(choice, file_path)
+  writeLines(paste("Choice set saved to:", file_path))
   
   return(choice)
-  
 }
 

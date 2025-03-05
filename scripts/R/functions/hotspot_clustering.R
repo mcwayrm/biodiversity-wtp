@@ -1,9 +1,6 @@
 # PURPOSE: Create clusters from hotspots
 # AUTHOR: Raahil Madhok
 
-# Load Packages
-require(cluster)    # clustering algorithms
-require(factoextra)
 
 rec_clust <- function(df, 
                       module = 'all',
@@ -41,7 +38,7 @@ rec_clust <- function(df,
   #------------------------------------------------------
   
   # Distance Matrix (5 mins)
-  print('computing distance matrix between hotspots...')
+  writeLines('Computing distance matrix between hotspots...')
   distm <- st_distance(st_as_sf(df, coords = c('lon', 'lat'), crs=4326))
   
   # Construct heirachical dendogram
@@ -79,7 +76,7 @@ rec_clust <- function(df,
     df <- filter(df, !is.na(c_code_2011))
     
     # Save intermediate data
-    writeRDS(df, paste('./data/intermediate/hotspots/hotspots_clust_', clust_size, 'km.rds', sep=''))
+    saveRDS(df, paste('./data/intermediate/hotspots/hotspots_clust_', clust_size, 'km.rds', sep=''))
    
     return(df)
   
