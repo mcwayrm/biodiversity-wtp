@@ -43,12 +43,12 @@ For notes, we present the most recent first so that notes are choronologically m
 
 ## Action Items: 
 
-- Ryan: Get the correct e-bird file from Matt
+- Ryan: Get the correct e-bird file from Matt (Requested)
 - Ryan: Merge code files into scripts folder. (DONE)
 - Ryan: Initate a document for literature review with template example (DONE)
-- We need to specalize and define tasks. Volunteer over email. Tasks: Lit review, sample selection, characterize the sample, theory person
-- And set up a recurring meeting time. Need a poll. Try for next two weeks from now.
-- Jovin: Provide your github username so Ryan can make you a collaborator on the github repo. 
+- We need to specalize and define tasks. Volunteer over email. Tasks: Lit review, sample selection, characterize the sample, theory person (DONE)
+- And set up a recurring meeting time. Need a poll. Try for next two weeks from now. (DONE)
+- Jovin: Provide your github username so Ryan can make you a collaborator on the github repo.  (DONE)
 
 ## Funding: 
 
