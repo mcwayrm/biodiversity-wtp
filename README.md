@@ -128,12 +128,7 @@ This is a section to ask questions and assign team members to respond to them. B
     - Answer: Well, you simply follow this example. You ask a question and direct it towards an individual or generally and provide details about the specific files, tasks, or code that is of concern. Adding details assists us in the future and helps us document ongoing concerns and potential problems. 
 
 - Put you questions here...
-- @rmadhok I am getting stuck with opening the data for e-birds. So I am looking for how to compress the information in memory. Here is the error I get from `/1.ebd_process.R`: 
-
-> Error in fread(config$ebird_basic_path, select = c("LATITUDE", "LONGITUDE",  : 
-  Opened 21.74GB (23338050377 bytes) file ok but could not memory map it. This is a 64bit process. There is probably not enough contiguous virtual memory available.
-
-- @m-braaksma I am trying to document necessary software. Do you need anything to run a YAML file? Like do we need to download YAML software or Docker to run this component? 
+- @rmadhok in `scripts/R/1.ebd_process.R`, on line 72, does it make sense to do an intersection spatial join instead of a within spatial join? So the points are within the polygon... perhaps this doesn't matter. The command in concern is `st_intersects`. 
 - @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
 - @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
 
@@ -141,4 +136,5 @@ This is a section to ask questions and assign team members to respond to them. B
 
 This is a section to provide directed tasks to others, or as reminders for one's self. 
 
-- Create a preamble script to handle the clear and loading of scripts. Make this a bit simplier and just call for each new script (similar to the config script)
+- `./scripts/R/1.ebd_process.R` line 129: Create a table of mapping off-coast homes into nearby districts. What is the average distance away?
+- For numbers where we know they should be a certain length, add assertions to stop run if not equal to that number (e.g.. throw an error)

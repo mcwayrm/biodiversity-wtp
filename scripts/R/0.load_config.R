@@ -16,7 +16,7 @@ os_type <- .Platform$OS.type  # "windows" or "unix"
 username <- if (os_type == "windows") Sys.getenv("USERNAME") else Sys.getenv("USER")
 
 # Load the correct config
-config_list <- yaml::read_yaml("config.yml", readLines.warn=FALSE, eval.expr=FALSE)
+config_list <- yaml::read_yaml("config.yml", readLines.warn = FALSE, eval.expr = FALSE)
 config_name <- if (username %in% names(config_list)) username else "default"
 config <- config::get(config = config_name)
 writeLines(paste("OS:", os_type, "| User:", username, "| Using config:", config_name))

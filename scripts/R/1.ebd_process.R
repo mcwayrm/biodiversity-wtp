@@ -1,5 +1,13 @@
 # PROJECT: eBird Valuation
 # PURPOSE: Clean ebird data
+####################################
+# Sections:
+# 1. Pre-process the raw e-bird data into a usable format
+# 2. Determine what is home for the users
+# 3. Filter trips to only those that are actual bird watching sessions
+# 4. Identify Districts from e-bird trips
+# 5. Save clean e-bird data
+####################################
 
 ### SET-UP
 # Load config
@@ -45,7 +53,7 @@ ebird$month <- month(ebird$date)
 ebird$yearmonth <- format(ebird$date, "%Y-%m")
 
 #-----------------------------------------------------
-# Homes Coordinates
+# 2. Homes Coordinates
 #-----------------------------------------------------
 # Note: compute home based on *all* trips
 
@@ -59,7 +67,7 @@ user_home <- ebird %>%
   summarize(lon_home_real = mean(lon, na.rm = TRUE),
             lat_home_real = mean(lat, na.rm = TRUE))
 
-# district where user lives
+# Assign users to a district they live in using spatial intersection with district polygons
 user_home$c_code_2011_home_real <- st_join(st_as_sf(user_home,
                                                     coords = c('lon_home_real', 'lat_home_real'),
                                                     crs = 4326), # World Geodetic System 1984
@@ -80,7 +88,7 @@ user <- distinct(ebird, user_id, lon, lat) %>%
   mutate(lon_home = mean(lon, na.rm = TRUE),
         lat_home = mean(lat, na.rm = TRUE))
 
-# straight-line distance from center to each site
+# Straight-line distance from center to each site (linear-arc distance)
 user$distance <- st_distance(st_as_sf(user,
                                       coords = c('lon_home', 'lat_home'),
                                       crs = 4326), # World Geodetic System 1984
@@ -91,7 +99,7 @@ user$distance <- st_distance(st_as_sf(user,
 user$distance <- as.numeric(user$distance) / 1000 # in km
 
 # Remove outlier trips
-# note: we can come up with a better way
+  # note: we can come up with a better way
 user <- user %>%
   group_by(user_id) %>%
   filter(distance <= quantile(distance, 0.75) + 1.5 * IQR(distance))
@@ -104,8 +112,7 @@ user <- user %>%
 
 # Overlay home districts
 # -------------------------------------
-# Note: If gravit. center is off coast
-# home is the centroid of nearest dist
+# Note: If gravity center is off coast home is the centroid of nearest dist
 #--------------------------------------
 user$c_code_2011_home <- st_join(st_as_sf(user,
                                           coords = c('lon_home', 'lat_home'),
@@ -123,12 +130,20 @@ user_na$c_code_2011_home <- st_join(st_as_sf(user_na,
                                     join = st_nearest_feature)$c_code_2011
 # note: remaining NA's are in northern Kashmir, which have no census code
 
+# TODO: Create a table of mapping off-coast homes into nearby districts.
+
+# TODO: What is the average distance away?
+temp <- st_distance(x = st_as_sf(user_na,
+                                coords = c('lon_home', 'lat_home'),
+                                crs = 4326), # World Geodetic System 1984)
+                    y = dist)
+
 # District centroids
 centroids <- as.data.frame(st_coordinates(st_centroid(dist$geometry))) %>%
   rename(lon_home = X, lat_home = Y)
 centroids$c_code_2011_home <- dist$c_code_2011
 user_na <- left_join(user_na[, c('user_id', 'c_code_2011_home')],
-                    centroids, 
+                    centroids,
                     by = 'c_code_2011_home')
 
 # Bind to main user list
@@ -139,17 +154,16 @@ rm(list = c('centroids', 'user_na'))
 saveRDS(user, config$user_home_impute_path)
 
 #-----------------------------------------------------
-# Filter Trips
+# 3. Filter Trips
 #-----------------------------------------------------
-# Note: identify recreational birdwatching sessions
-# as opposed to incidental app-recording
+# Note: identify recreational birdwatching sessions as opposed to incidental app-recording
 
 # Filter from eBird manual
 ebird <- ebird %>%
   filter(
-    complete == 1,
-    duration <= 5 * 60,
-    #number_observers <= 10
+    complete == 1, # Completed trip
+    duration <= 5 * 60, # Duration is in minutes. So selecting all observations less than 5 hours (didn't leave the app open)
+    #number_observers <= 10 # Is the thought here that there should not be large parties? Large parties indicate tourists?
   )
 
 # Select Protocol (n=2,991,609 trips)
@@ -157,7 +171,7 @@ protocol <- c('Stationary', 'Traveling')
 ebird <- filter(ebird, protocol_type %in% protocol)
 
 #-----------------------------------------------------
-# Identify Districts of Trip (2011 census boundary)
+# 4. Identify Districts of Trip (2011 census boundary)
 #-----------------------------------------------------
 
 # Add district code (10 mins)
@@ -171,7 +185,7 @@ ebird$c_code_2011 <- st_join(st_as_sf(ebird,
 ebird <- filter(ebird, !is.na(c_code_2011)) # n=27,605 trips out of bounds
 
 #-----------------------------------------------------
-# Final processing steps
+# 5. Final processing steps
 #-----------------------------------------------------
 
 # Set distance = 0 for stationary trips
