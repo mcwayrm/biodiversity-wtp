@@ -24,7 +24,7 @@ dist <- st_read(config$district_path) %>%
 
 # load ebird (20 mins)
 # note: data are at the user-trip-species-time level
-ebird = fread(config$ebird_basic_path,
+ebird <- fread(config$ebird_basic_path,
               select = c('LATITUDE', 'LONGITUDE','OBSERVATION DATE',
                         'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
                         'PROTOCOL TYPE','DURATION MINUTES',

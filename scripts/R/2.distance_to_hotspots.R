@@ -1,5 +1,9 @@
 # PROJECT: RUM Model
 # PURPOSE: Distance to Observed hotspots
+####################################
+# Sections:
+# 1. 
+####################################
 
 ### SET-UP
 # Load config
