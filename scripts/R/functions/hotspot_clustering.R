@@ -1,6 +1,14 @@
 # PURPOSE: Create clusters from hotspots
 # AUTHOR: Raahil Madhok
+####################################
+# Description:
+# This performs a ML method (hierarchical clustering) to group hotspots into clusters. 
+# This classification of hotspots into group given a generated decision tree. 
+# The groups limit the options for counterfactuals.
+# Clustering is determined by physical distance (k nearest neighbors)
+####################################
 
+# TODO: This script still needs cleaning to match the congfig.yml file 
 
 rec_clust <- function(df, 
                       module = 'all',

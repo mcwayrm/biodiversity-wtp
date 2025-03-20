@@ -132,6 +132,7 @@ This is a section to ask questions and assign team members to respond to them. B
 - @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
 - @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
 - @mcwayrm Issue with `scripts/R/2.distance_to_hotspots.R` line 27: My data does not appear to have locality_type, locality in the data set.
+- @rmadhok Can we get some documentation on the hotspot data? How is it made? Where is it made? 
 
 # Tasks
 

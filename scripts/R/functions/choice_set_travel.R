@@ -1,6 +1,14 @@
 # PROJECT: RUM Model
 # PURPOSE: Select Choice Set
 # AUTHOR: Raahil Madhok
+####################################
+# Description:
+# We start with a list of choices sets from hotspots. This is what they chose between. 
+# Trips is the actual choice. We compare the trip to the potential hotspot choices (filtered)
+# Only consider hotspots close to you and for the counterfacutal alternative that are in the same cluster.
+# Selection is ACROSS clusters. So, Trip is within a cluster and we consider the counterfactuals of going to other clusters within a radius of `home`.
+# This results in a data set of counterfacutals and actual trips to be used in the mixed logit. 
+####################################
 
 choice_set <- function(choice_df, trip_df, module = 'cluster', radius = 20, clust_size = 10) {
   # Define output file path
@@ -14,9 +22,9 @@ choice_set <- function(choice_df, trip_df, module = 'cluster', radius = 20, clus
     return(readRDS(file_path))
   }
   
-  # Generate cleaned hotspot list
+  # Generate cleaned hotspot list (grouping the hotspots into clusters)
   writeLines(paste("Processing choice set with module:", module))
-  hs <- rec_clust(choice_df, module = module, clust_size = ifelse(module == 'cluster', clust_size, NA)) %>%
+  hs <- rec_clust(choice_df, module = module, clust_size = ifelse(module == 'cluster', clust_size, NA)) %>% # Command comes from hotspot_clustering.R
     mutate(lat2 = lat, lon2 = lon)
     
   # Filter observed trips within radius
@@ -50,4 +58,3 @@ choice_set <- function(choice_df, trip_df, module = 'cluster', radius = 20, clus
   
   return(choice)
 }
-

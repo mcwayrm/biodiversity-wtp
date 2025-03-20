@@ -1,24 +1,37 @@
 # PROJECT: RUM Model
 # PURPOSE: Select Choice Set for each user
+####################################
+# Sections:
+# 1. Set Parameters
+# 2. Construct Counterfactual Choice Set
+# 3. Append Counterfactuals
+# 4. Save Results
+####################################
+
 
 ### SET-UP
 # Load config
 source("scripts/R/0.load_config.R")
 
+# ----------------------------------------------------
+# 1. Set Parameters
+# ----------------------------------------------------
+
 # Parameter settings
 module <- 'cluster'       # set as 'cluster' or 'all'
-samp <- 0.001              # random sample of users (scale 0-1)
-radius <- 50              # buffer radius around home (100, 50, or 20)
+samp <- 0.001              # random sample of users (scale 0-1) -- Random sample 0.1% of users (test case)
+radius <- 50              # buffer radius -- kilometers -- around home (100, 50, or 20)
 clust_size <- 10          # recreation area size (10km or 5km)
 writeLines(paste("Generating choice set data with parameters:",
                  "\n\tModule:", module,
                  "\n\tSample Proportion:", samp,
                  "\n\tRadius:", radius, "km",
-                 "\n\tCluster Size:", clust_size, "km"))
+                 "\n\tCluster Size:", clust_size, "km")) # Print statement after commands so we know what is happening
 
 # ----------------------------------------------------
-# CONSTRUCT COUTERFACTUAL CHOICE SET
+# 2. CONSTRUCT COUTERFACTUAL CHOICE SET
 # ----------------------------------------------------
+
 # Read and filter observed trips
 writeLines(paste("Loading trip data from:", config$ebird_trip_hotspots_path))
 trips <- readRDS(config$ebird_trip_hotspots_path) %>%
@@ -31,17 +44,17 @@ users <- trips %>%
   sample_frac(samp)
 
 # Subset trips to sampled users
-sample <- inner_join(trips, users, by = 'user_id')
+sample <- inner_join(trips, users, by = 'user_id') # This subsets trips for the random sample
 
 # Read and format hotspots
 writeLines(paste("Loading hotspot data from:", config$hotspots_path))
-cols <- c('loc_id', 'country', 'state', 'county', 'lat', 'lon', 'name', 'time', 'v9')
+cols <- c('loc_id', 'country', 'state', 'county', 'lat', 'lon', 'name', 'time', 'v9') # TODO: What is v9?
 hotspots <- readRDS(config$hotspots_path) %>%
   setNames(cols) %>%  # Assign column names
   select(lat, lon, name)  # Keep necessary columns
 
 # Construct Choice Sets
-cset <- choice_set(
+cset <- choice_set( # function comes from choice_set_travel.R
   choice_df = hotspots,
   trip_df = trips,
   module = module,
@@ -66,10 +79,11 @@ if (module == 'cluster') {
 }
 
 # ----------------------------------------------------
-# APPEND COUNTERFACTUALS
+# 3. APPEND COUNTERFACTUALS
 # ----------------------------------------------------
+
 # Function to stack choice sets per trip
-stack_cset <- function(i) {
+stack_cset <- function(i) { # TODO: Should this be it's own script? Actually we should have all the functions in one scripts
   
   # Extract user ID
   user <- sample$user_id[sample$trip_id == i]
@@ -118,6 +132,11 @@ stack_cset <- function(i) {
 triplist <- sample$trip_id
 writeLines("Creating choice set stack")
 master_list <- pblapply(triplist, stack_cset)
+
+
+# ----------------------------------------------------
+# 4. Save Counterfactual Data Set
+# ----------------------------------------------------
 
 # Convert list to data frame
 master <- as.data.frame(rbindlist(master_list, fill = TRUE))

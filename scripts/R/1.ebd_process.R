@@ -133,10 +133,10 @@ user_na$c_code_2011_home <- st_join(st_as_sf(user_na,
 # TODO: Create a table of mapping off-coast homes into nearby districts.
 
 # TODO: What is the average distance away?
-temp <- st_distance(x = st_as_sf(user_na,
-                                coords = c('lon_home', 'lat_home'),
-                                crs = 4326), # World Geodetic System 1984)
-                    y = dist)
+# temp <- st_distance(x = st_as_sf(user_na,
+#                                 coords = c('lon_home', 'lat_home'),
+#                                 crs = 4326), # World Geodetic System 1984)
+#                     y = dist)
 
 # District centroids
 centroids <- as.data.frame(st_coordinates(st_centroid(dist$geometry))) %>%
