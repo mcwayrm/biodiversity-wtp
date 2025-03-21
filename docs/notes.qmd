@@ -36,6 +36,50 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are choronologically most recent. 
 
+::: {.callout-note  collapse="true"}
+# 3/21/2025
+# Meeting: 3/21/2025
+
+## Action Items: 
+
+- Everyone confirms that we can run the first 3 basic scripts
+- Starting the annotated bibliography with 10 most important papers: 
+    - WTP for envrionmental quality 
+    - WTP in developing countries using travel cost
+    - Review of mixed logit methodology
+- Next week we need to talk about sample selection in depth next week 
+
+
+# Division of Tasks: 
+- Review mixed logit method
+- (Matt) Review of WTP in developing countries using travel cost methods
+- (Ryan) Review of WTP methods for environmental quality
+- (Ryan) Method to estimate welfare effects (some exogenous shock)
+- (Raahil + Jovin + Matt) Determining the sample population criteria -- important early step
+- (Raahil) Gathering data for population demographics (SHRUG, DHS, etc.)
+
+
+- Ways to annoate bibliography: 
+    - paper title + journal,  research question, research design (e.g. stated preference), data/sample size, result (i.e. WTP estimate)
+- We need to think about how we contribute. 
+- We need to think about sample selection. 
+    - Criteria based on usage, overlap with protected areas, etc. 
+    - How do we remove tourists? 
+    - Who is the average person? Estimates will be sensitive
+- Need to gridded map of ebird observations
+
+# Next scripts
+4. Merge attributes of the counterfactual sites. Need to collect site level data and/or individual level data 
+    - Site attributes: biodiversity, accessibility, ruggedness, congestion, temperature, rainfall, regional developmemnt
+    - For first run, just do biodiversity. 
+    - Biodiversity comes from either diversity of birds or other attributes of ecosystem diversity
+    - Expected biodiversity is why you go. So we can use historical measures of biodiversity
+5. Run the mixed logit to estimate the WTP values
+6. Welfare analysis of WTP values
+
+:::
+
+
 
 ::: {.callout-note  collapse="true"}
 # 02/28/25
@@ -43,7 +87,7 @@ For notes, we present the most recent first so that notes are choronologically m
 
 ## Action Items: 
 
-- Ryan: Get the correct e-bird file from Matt (Requested)
+- Ryan: Get the correct e-bird file from Matt (DONE)
 - Ryan: Merge code files into scripts folder. (DONE)
 - Ryan: Initate a document for literature review with template example (DONE)
 - We need to specalize and define tasks. Volunteer over email. Tasks: Lit review, sample selection, characterize the sample, theory person (DONE)
