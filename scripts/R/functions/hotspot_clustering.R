@@ -23,8 +23,7 @@ rec_clust <- function(df,
   ## df: dataframe of hotspots with rec area ID's
   
   # Load district map
-  india_dist <- st_read('./data/shp/district-2011/district-2011.shp')
-  
+  india_dist <- st_read(file.path("data", "shp", "district-2011", "district-2011.shp"))  
   
   # add district code to hostpots
   df$c_code_2011 <- st_join(st_as_sf(df, coords=c('lon', 'lat'), crs=4326), 
@@ -60,7 +59,7 @@ rec_clust <- function(df,
     
     # Save intermediate
     df <- select(df, -hsid)
-    saveRDS(df, paste('./data/intermediate/hotspots/hotspots_all_', clust_size, 'km.rds', sep=''))
+    saveRDS(df, file.path("data", "intermediate", "hotspots", paste0("hotspots_all_", clust_size, "km.rds")))
     
     return(df)
   
@@ -84,7 +83,7 @@ rec_clust <- function(df,
     df <- filter(df, !is.na(c_code_2011))
     
     # Save intermediate data
-    saveRDS(df, paste('./data/intermediate/hotspots/hotspots_clust_', clust_size, 'km.rds', sep=''))
+    saveRDS(df, file.path("data", "intermediate", "hotspots", paste0("hotspots_clust_", clust_size, "km.rds")))
    
     return(df)
   

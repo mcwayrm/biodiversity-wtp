@@ -13,8 +13,10 @@
 choice_set <- function(choice_df, trip_df, module = 'cluster', radius = 20, clust_size = 10) {
   # Define output file path
   file_path <- ifelse(module == 'cluster',
-                      paste0('./data/intermediate/choice_sets/choice_set_', radius, 'km_clust_', clust_size, 'km.rds'),
-                      paste0('./data/intermediate/choice_sets/choice_set_', radius, 'km.rds'))
+                      file.path("data", "intermediate", "choice_sets", 
+                                paste0("choice_set_", radius, "km_clust_", clust_size, "km.rds")),
+                      file.path("data", "intermediate", "choice_sets", 
+                                paste0("choice_set_", radius, "km.rds")))
   
   # Check if the file already exists
   if (file.exists(file_path)) {

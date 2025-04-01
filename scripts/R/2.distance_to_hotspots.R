@@ -9,7 +9,8 @@
 
 ### SET-UP
 # Load config
-source("scripts/R/0.load_config.R")
+config_path <- file.path("scripts", "R", "0.load_config.R")
+source(config_path)
 
 #require(gmapsdistance)
 
