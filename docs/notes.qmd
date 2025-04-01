@@ -20,6 +20,9 @@ format:
         papersize: letter
 number-sections: false
 jupyter: python3
+# NOTE: Quarto preview will only render the html file
+#       To render both html and pdf file run in terminal: 
+#       quarto render docs/notes.qmd
 ---
 
 ## Project Description
@@ -37,8 +40,27 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are choronologically most recent. 
 
 ::: {.callout-note  collapse="true"}
+# 3/31/2025
+> Raahil, Matt, Jovin
+
+## Sample Selection Discussion
+- We want to ensure that the sample of ebird observers is representative
+    - Remove tourists
+    - Remove infrequent users
+- Potential strategies 
+    - Limit to users that log at least a certain number of times per month
+    - Exclude users that post outside of protected areas
+    - Exclude users that include tourism tags in text variable(e.g. "ecolodge")
+
+## Tasks
+- Matt/Jovin: descriptive analysis on data to determine distributions of frequent users
+    - Complete by 4/18
+
+:::
+
+::: {.callout-note  collapse="true"}
 # 3/21/2025
-# Meeting: 3/21/2025
+> Raahil, Matt, Ryan, Jovin
 
 ## Action Items: 
 
@@ -83,7 +105,7 @@ For notes, we present the most recent first so that notes are choronologically m
 
 ::: {.callout-note  collapse="true"}
 # 02/28/25
-# Meeting: 2/28/2025
+> Raahil, Matt, Ryan
 
 ## Action Items: 
 
