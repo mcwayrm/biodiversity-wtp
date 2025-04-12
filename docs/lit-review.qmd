@@ -1,0 +1,30 @@
+---
+title: "Literature Review"
+toc: true
+format: 
+    html:
+        theme: sandstone
+        html-math-method: katex
+        embed-resources: true
+        code-fold: true
+        code-tools: true
+        code-overflow: wrap
+    pdf:  
+        documentclass: article
+        papersize: letter
+number-sections: false
+jupyter: python3
+---
+
+## WTP in developing countries using travel cost method
+
+estimates of WTP in developing countries generally using the discrete choice travel cost method (Ted Miguel water quality paper). 
+
+
+## WTP for environmental quality 
+
+WTP for environmental quality papers and what design they are using to estimate (e.g., contingent valuation, stated preferences -- something from ecology)
+
+## Review of mixed logit model methodology 
+
+Review of any updated versions of the mixed logit model -- new adapations of the model from class

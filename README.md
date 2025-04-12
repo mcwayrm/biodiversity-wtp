@@ -47,19 +47,53 @@ This setup ensures flexibility across different environments while maintaining a
 This describes the scripts in the repository. To perform the analysis, run the following scripts in order. 
 
 - `0.load_config.R`: This script sets up the configuration of the file paths and allows for flexible loading of the data for each user. Modifications to the personal users preferences can be made in `config.yml`. 
-- `1.ebd_process.R`: This script cleans the e-bird data set, creates the data set of actual user homes for those who reported it, and imputed home locations for those who didn't. 
-- `2.distance_to_hotspot.R`: This script determines the distance of birders' homes from observed hotspots to create the data set of chosen sites. 
-- `3.make_choice_sets.R`: This script constructs the counterfactual choice sets for each observed eBird trip. 
-- `choice_set_travel`: This function identifies birding hotspots within a specified radius
-- `hotspot_clustering`: This function clusters birding hotspots together into ``recreation areas'' to improve computational efficiency
+- `1.ebd_process.R`: This script cleans the e-bird data set and creates the data set of homes for the users, trips by the users, and attributes about the users. 
+- `2.distance_to_hotspot.R`: This script determines the distance of birders from observed hotspots to create the counterfactual options for travel and their potential travel cost. 
+- `3.make_choice_sets.R`: This script performs the mixed logit analysis of comparing the selected destination over possible desitinations. This uses the random utility model (RUM).
 
 # Data
 
 This describes the data needed to run the code. For each data set, we describe it and explain how it is used in the analysis. 
 
-- `data/rds/hotspots.rds`: This provides coordinates for all birding hotspots in India 
-- `data/shp/district-2011`: This is the administrative boundaries for India from the 2011 Population Census.
+## Inputs
+
+These are the input data (raw files) prior to processing: 
+
+- `data/rds/hotspots.rds`: 
+- `data/shp/district-2011`: This is the administrative boundaries for India from 2011 provided by GADM.
 - `../ebd_IN_smp_relJan-2025.zip`: This is the e-bird data set of bird observations by users for the India sample. 
+
+## Intermediates
+
+These are the intermediate files generated through the scripts but not the main files for analysis: 
+
+Generated in 1.ebd_process.R
+- User's Real Home Coordinates (`config$user_home_real_path`)
+    - This file contains the home coordinates of users who explicitly recorded observations at their home (e.g., "my home," "my backyard").
+    - It includes user_id, lon_home_real, lat_home_real, and c_code_2011_home_real (district code).
+- User's Imputed Home Coordinates (`config$user_home_impute_path`)
+    - This file estimates home locations for users who did not explicitly record home observations based on the center of all recorded trips.
+    - This file includes user_id, lon_home, lat_home, and c_code_2011_home
+- Cleaned eBird Trip Data (config$ebird_trip_clean_path)
+    - This dataset contains cleaned and filtered eBird trip records.
+    - Key steps include assigning trips to census districts (`c_code_2011`), removing out-of-bounds trips, setting distance to 0 for stationary trips, and merging in imputed home coordinates.
+    - The final dataset includes key trip details like user_id, trip_id, date, duration, distance, protocol_type, and district codes.
+
+Generated in 2.distance_to_hotspots.R
+- Processed Hotspot Trips (`config$ebird_trip_hotspots_path`)
+    - This dataset includes only trips to eBird hotspots (locality_type == 'H').
+    - The final dataset includes key trip details like user_id, trip_id, date, duration, distance, geo_dist (home-to-hotspot distance), and c_code_2011 (district code).
+
+Generated in 3.make_choice_set.R
+- Processed Choice Set (`config$choice_sets_dir/master_cs{radius}km_clust_{clust_size}km.rds`)
+    - This dataset includes both observed eBird trips and counterfactual (unobserved) choices within a specified radius around the user's home.
+    - The final dataset includes key trip details like user_id, trip_id, date, choice (observed vs. counterfactual), c_code_2011_home (home district), and assigned choice set information.
+
+# Final
+
+These are the final data sets generated for the main analysis: 
+
+- 
 
 # Dependencies
 
@@ -79,7 +113,12 @@ For R:
 - `tidyverse`: Tools for cleaning data.
 - `data.table`: Efficient management of tabular data for data cleaning. 
 - `lubridate`: Handles date formating. 
-- `units`: converts units (m, km, etc.) when computing distances in euclidean space 
+- `units`: 
+
+## Functions: 
+
+- `/functions/choice_set_travel.R`: This function...
+- `/functions/hotspot_clustering.R`: This function...
 
 # Questions
 
@@ -89,5 +128,18 @@ This is a section to ask questions and assign team members to respond to them. B
     - Answer: Well, you simply follow this example. You ask a question and direct it towards an individual or generally and provide details about the specific files, tasks, or code that is of concern. Adding details assists us in the future and helps us document ongoing concerns and potential problems. 
 
 - Put you questions here...
+- @rmadhok I am getting stuck with opening the data for e-birds. So I am looking for how to compress the information in memory. Here is the error I get from `/1.ebd_process.R`: 
+
+> Error in fread(config$ebird_basic_path, select = c("LATITUDE", "LONGITUDE",  : 
+  Opened 21.74GB (23338050377 bytes) file ok but could not memory map it. This is a 64bit process. There is probably not enough contiguous virtual memory available.
+
 - @m-braaksma I am trying to document necessary software. Do you need anything to run a YAML file? Like do we need to download YAML software or Docker to run this component? 
-- @m-braaksma If I am running `/0.load_config.R` on line 16 `config_list <- yaml::read_yaml("config.yml", readLines.warn=FALSE, eval.expr=FALSE)`, I can only do this from VS Code. I need to define my directory if I call if from R Studio... perhaps we can fix this. This might also be because I am running it from an external hard-drive. So it is on my D: drive not my C: drive which has a username...
+- @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
+- @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
+
+# Tasks
+
+This is a section to provide directed tasks to others, or as reminders for one's self. 
+
+- Create a preamble script to handle the clear and loading of scripts. Make this a bit simplier and just call for each new script (similar to the config script)
+>>>>>>> 2db82d5a90584c70a671f9f1b62a7e9614bf3e7a
