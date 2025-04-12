@@ -1,9 +1,14 @@
 # PURPOSE: Create clusters from hotspots
 # AUTHOR: Raahil Madhok
+####################################
+# Description:
+# This performs a ML method (hierarchical clustering) to group hotspots into clusters. 
+# This classification of hotspots into group given a generated decision tree. 
+# The groups limit the options for counterfactuals.
+# Clustering is determined by physical distance (k nearest neighbors)
+####################################
 
-# Load Packages
-require(cluster)    # clustering algorithms
-require(factoextra)
+# TODO: This script still needs cleaning to match the congfig.yml file 
 
 rec_clust <- function(df, 
                       module = 'all',
@@ -18,8 +23,7 @@ rec_clust <- function(df,
   ## df: dataframe of hotspots with rec area ID's
   
   # Load district map
-  india_dist <- st_read('./data/shp/district-2011/district-2011.shp')
-  
+  india_dist <- st_read(file.path("data", "shp", "district-2011", "district-2011.shp"))  
   
   # add district code to hostpots
   df$c_code_2011 <- st_join(st_as_sf(df, coords=c('lon', 'lat'), crs=4326), 
@@ -41,7 +45,7 @@ rec_clust <- function(df,
   #------------------------------------------------------
   
   # Distance Matrix (5 mins)
-  print('computing distance matrix between hotspots...')
+  writeLines('Computing distance matrix between hotspots...')
   distm <- st_distance(st_as_sf(df, coords = c('lon', 'lat'), crs=4326))
   
   # Construct heirachical dendogram
@@ -55,7 +59,7 @@ rec_clust <- function(df,
     
     # Save intermediate
     df <- select(df, -hsid)
-    saveRDS(df, paste('./data/intermediate/hotspots/hotspots_all_', clust_size, 'km.rds', sep=''))
+    saveRDS(df, file.path("data", "intermediate", "hotspots", paste0("hotspots_all_", clust_size, "km.rds")))
     
     return(df)
   
@@ -79,7 +83,7 @@ rec_clust <- function(df,
     df <- filter(df, !is.na(c_code_2011))
     
     # Save intermediate data
-    writeRDS(df, paste('./data/intermediate/hotspots/hotspots_clust_', clust_size, 'km.rds', sep=''))
+    saveRDS(df, file.path("data", "intermediate", "hotspots", paste0("hotspots_clust_", clust_size, "km.rds")))
    
     return(df)
   

@@ -20,6 +20,9 @@ format:
         papersize: letter
 number-sections: false
 jupyter: python3
+# NOTE: Quarto preview will only render the html file
+#       To render both html and pdf file run in terminal: 
+#       quarto render docs/notes.qmd
 ---
 
 ## Project Description
@@ -36,19 +39,82 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are choronologically most recent. 
 
+::: {.callout-note  collapse="true"}
+# 3/31/2025
+> Raahil, Matt, Jovin
+
+## Sample Selection Discussion
+- We want to ensure that the sample of ebird observers is representative
+    - Remove tourists
+    - Remove infrequent users
+- Potential strategies 
+    - Limit to users that log at least a certain number of times per month
+    - Exclude users that post outside of protected areas
+    - Exclude users that include tourism tags in text variable(e.g. "ecolodge")
+
+## Tasks
+- Matt/Jovin: descriptive analysis on data to determine distributions of frequent users
+    - Complete by 4/18
+
+:::
 
 ::: {.callout-note  collapse="true"}
-# 02/28/25
-# Meeting: 2/28/2025
+# 3/21/2025
+> Raahil, Matt, Ryan, Jovin
 
 ## Action Items: 
 
-- Ryan: Get the correct e-bird file from Matt
+- Everyone confirms that we can run the first 3 basic scripts
+- Starting the annotated bibliography with 10 most important papers: 
+    - WTP for envrionmental quality 
+    - WTP in developing countries using travel cost
+    - Review of mixed logit methodology
+- Next week we need to talk about sample selection in depth next week 
+
+
+# Division of Tasks: 
+- Review mixed logit method
+- (Matt) Review of WTP in developing countries using travel cost methods
+- (Ryan) Review of WTP methods for environmental quality
+- (Ryan) Method to estimate welfare effects (some exogenous shock)
+- (Raahil + Jovin + Matt) Determining the sample population criteria -- important early step
+- (Raahil) Gathering data for population demographics (SHRUG, DHS, etc.)
+
+
+- Ways to annoate bibliography: 
+    - paper title + journal,  research question, research design (e.g. stated preference), data/sample size, result (i.e. WTP estimate)
+- We need to think about how we contribute. 
+- We need to think about sample selection. 
+    - Criteria based on usage, overlap with protected areas, etc. 
+    - How do we remove tourists? 
+    - Who is the average person? Estimates will be sensitive
+- Need to gridded map of ebird observations
+
+# Next scripts
+4. Merge attributes of the counterfactual sites. Need to collect site level data and/or individual level data 
+    - Site attributes: biodiversity, accessibility, ruggedness, congestion, temperature, rainfall, regional developmemnt
+    - For first run, just do biodiversity. 
+    - Biodiversity comes from either diversity of birds or other attributes of ecosystem diversity
+    - Expected biodiversity is why you go. So we can use historical measures of biodiversity
+5. Run the mixed logit to estimate the WTP values
+6. Welfare analysis of WTP values
+
+:::
+
+
+
+::: {.callout-note  collapse="true"}
+# 02/28/25
+> Raahil, Matt, Ryan
+
+## Action Items: 
+
+- Ryan: Get the correct e-bird file from Matt (DONE)
 - Ryan: Merge code files into scripts folder. (DONE)
 - Ryan: Initate a document for literature review with template example (DONE)
-- We need to specalize and define tasks. Volunteer over email. Tasks: Lit review, sample selection, characterize the sample, theory person
-- And set up a recurring meeting time. Need a poll. Try for next two weeks from now.
-- Jovin: Provide your github username so Ryan can make you a collaborator on the github repo. 
+- We need to specalize and define tasks. Volunteer over email. Tasks: Lit review, sample selection, characterize the sample, theory person (DONE)
+- And set up a recurring meeting time. Need a poll. Try for next two weeks from now. (DONE)
+- Jovin: Provide your github username so Ryan can make you a collaborator on the github repo.  (DONE)
 
 ## Funding: 
 

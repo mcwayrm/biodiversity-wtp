@@ -8,15 +8,18 @@
 # verifies their existence, and creates any missing directories to ensure 
 # a consistent file structure for data processing.
 
+# Clear objects
+rm(list = ls())
+
 # Detect OS and set username
 os_type <- .Platform$OS.type  # "windows" or "unix"
 username <- if (os_type == "windows") Sys.getenv("USERNAME") else Sys.getenv("USER")
 
 # Load the correct config
-config_list <- yaml::read_yaml("config.yml", readLines.warn=FALSE, eval.expr=FALSE)
+config_list <- yaml::read_yaml("config.yml", readLines.warn = FALSE, eval.expr = FALSE)
 config_name <- if (username %in% names(config_list)) username else "default"
 config <- config::get(config = config_name)
-print(paste("OS:", os_type, "| User:", username, "| Using config:", config_name))
+writeLines(paste("OS:", os_type, "| User:", username, "| Using config:", config_name))
 
 # Function to extract all 'dir' variables except 'input_data_dir'
 extract_dirs <- function(cfg) {
@@ -42,3 +45,10 @@ for (dir in dir_list) {
     message("Created directory: ", dir_path)
   }
 }
+
+# Source functions
+source(config$choice_set_travel_path)
+source(config$hotspot_clustering_path)
+
+# Load packages
+pacman::p_load(config$packages, character.only = TRUE, install = FALSE)

@@ -1,18 +1,21 @@
 # PROJECT: RUM Model
 # PURPOSE: Distance to Observed hotspots
+####################################
+# Sections:
+# 1. Select observed hotspots
+# 2. Euclidean Distance To Destination
+# 3. Driving Distance To Destination
+####################################
 
 ### SET-UP
-# Directories
-rm(list = ls())
-source("0.load_config.R")
+# Load config
+config_path <- file.path("scripts", "R", "0.load_config.R")
+source(config_path)
 
-# Load Packages
-packages <- c('sf', 'tidyverse', 'units')
-pacman::p_load(packages, character.only = TRUE, install = FALSE)
 #require(gmapsdistance)
 
 #-----------------------------------------
-# Select observed hotspots
+# 1. Select observed hotspots
 #-----------------------------------------
 # We identify the straight-line distance
 # from home to every hotspot visited
@@ -24,6 +27,10 @@ ebird <- readRDS(config$ebird_trip_clean_path)
 ebird <- ebird %>%
         filter(locality_type == 'H') %>%
         select(-c(locality_type, locality))
+
+#-----------------------------------------
+# 2. Euclidean Distance To Destination
+#-----------------------------------------
 
 # Straight-line dist from home to hotspot
 ebird$geo_dist <- st_distance(st_as_sf(ebird, 
@@ -39,7 +46,7 @@ ebird$geo_dist <- as.numeric(ebird$geo_dist)
 saveRDS(ebird, config$ebird_trip_hotspots_path)
 
 #--------------------------------------
-# Driving Distance To Destination
+# 3. Driving Distance To Destination
 #--------------------------------------
 # NOTE: Reason we don't do this is because it is expensive. Need to pay to run the google maps API.
 
