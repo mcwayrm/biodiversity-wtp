@@ -11,7 +11,7 @@
 
 default:
   # Required packages
-  packages: ['sf', 'tidyverse', 'data.table', 'lubridate', 'units', 'pbapply', 'cluster', 'factoextra']
+  packages: ['sf', 'config', 'pacman', 'tidyverse', 'data.table', 'lubridate', 'units', 'pbapply', 'cluster', 'factoextra']
 
   # Directories: Define paths for various data and function files
   district_dir: [".", "data", "shp", "district-2011"]
