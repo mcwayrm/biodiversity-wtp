@@ -17,10 +17,10 @@ source(config_path)
 # Load District Map
 dist <- st_read(config$district_path) %>%
   dplyr::select(c_code_11) %>% rename(c_code_2011 = c_code_11)
-
+  # CHECK: Obs = 641 
 
 #-----------------------------------------------------
-# 1. Pre-Process
+# 1. Pre-Processs
 #-----------------------------------------------------
 
 # load ebird (20 mins)
@@ -32,6 +32,7 @@ ebird <- fread(config$ebird_basic_path,
                         'EFFORT DISTANCE KM','ALL SPECIES REPORTED',
                         'LOCALITY', 'LOCALITY TYPE'),
               quote = "")
+              # CHECK: Obs = 58,563,093
 colnames(ebird) <- gsub('\\.', '_', tolower(make.names(colnames(ebird))))
 
 # Clean names
