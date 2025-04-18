@@ -18,8 +18,11 @@ jupyter: python3
 
 
 This is annnotated bibliography where you note the: 
+
+Example: 
+
 1. 
-- "Title" Authors, Journal
+- "Title" Authors, (Year) Journal
 - [Link]()
 - Context: 
 - RQ
@@ -27,6 +30,16 @@ This is annnotated bibliography where you note the:
 - Sample Size
 - Estimator
 - Result (WTP estimate)
+
+
+
+## General Background 
+
+An important critique in the literature of using e-bird data to estimate economic value comes from [Lamb 2013](https://www.sciencedirect.com/science/article/abs/pii/S0921800913000785). Lamb says that a common figure estimated is $30 per bird, but that this is likely well overstated. So there already exists a common zombie number about the value of birds to birders from e-bird data. 
+I also note that there are around 2,375 willingness to pay studies in "Ecological Economics" alone. These are all almost focused on protecting species and ecosystem values. So we place our work within this context. Here is where you can search ["willingness to pay"](https://www.sciencedirect.com/search?qs=willingness%20to%20pay&pub=Ecological%20Economics&cid=271867).
+Additionally, there are some critiques against the monetary valuation of biodiversity within economics as stated by [Nunes and Van den Bergh, 2001](https://www.sciencedirect.com/science/article/abs/pii/S0921800901002336/). The main argument is "the empirical literature fails to apply economic valuation to the entire range of biodiversity benefits. Therefore, available economic valuation estimates should generally be regarded as providing a very incomplete perspective on, and at best lower bounds, to the unknown value of biodiversity changes."
+
+
 
 ## WTP in developing countries using travel cost method
 ::: {.callout-note  collapse="true"}
@@ -79,16 +92,31 @@ Estimates of WTP in developing countries generally using the discrete choice tra
 
 
 
-## WTP for environmental quality 
+## WTP for species diversity 
 
-WTP for environmental quality papers and what design they are using to estimate (e.g., contingent valuation, stated preferences -- something from ecology)
-
-I group the willingness to pay for environmental quality into articles by the environmental good or service being priced. 
-
-
-Biodiversity:
+Rather than look broadly at a variety of environmental quality improvments, I examine more speicifically the existence value, species habitat value, and protection value of endangered species, biodiversity, and species diversity. These are closer to the actual measure of WTP that we are estimating as we are not concerned with the ecosystem service value of bird, but rather the asethitic value of bird diversity for bird watchers. This makes the value we are estimating through WTP closer to eco-tourismm or species existence value, not a ecological service that improves environmental quality for bird watchers.
 
 1. 
+- "The Non-market Value of Birding Sites and the Marginal Value of Additional Species: Biodiversity in a Random Utility Model of Site Choice by eBird Members" Kolstoe and Cameron, (2017) Ecological Economics
+- [Link](https://www.sciencedirect.com/science/article/pii/S0921800916309405?casa_token=b4jHdj54aGkAAAAA:xuDBEGyrWMWf2Zap5410-GZiEKKRbhJFJ_9wIOLVXz8VTdjXwNa9jvUrgEg-Ti4J0TTgrLgg)
+- Context: Pacific Northwest USA
+- Estimating value of e-bird trips using ACS median income to approximate income. 
+- Use travel cost method for e-bird users 
+- 2,340 hotspots in the data set. 
+- Estimate a conditional random utility model
+- MWTP of about $3 per trip
+
+2. 
+- "Biodiversity Benefits of Birdwatching Using Citizen Science Data and Individualized Recreational Demand Models" Jayalath, Lloyd-Smith and Becker, (2023) Environmental and Resource Economics
+- [Link](https://link.springer.com/article/10.1007/s10640-023-00788-0)
+- Context: Alberta, Canada
+- Estimate MWTP for e-birders
+- Random utility model  with an 'individualized choice model'
+- 35,656 trips by 290 people in 1,227 hotspots
+- Estimator
+- MWTP of of $0.68 per additional bird species per trip.
+
+3. 
 - "Valuing the Diversity of Biodiversity" Christie et al. (2006) Ecological Economics
 - [Link](https://www.sciencedirect.com/science/article/pii/S0921800905003149?casa_token=Aciky-xubx0AAAAA:W_m9B4X7yq0-VzIeBWp8gjQw3s5wetmE6HO5pln7vu0mljmXPXHe02stdYjZ0HUsfsHDca-Q)
 - Context: Cambridgeshire and Northumberland, UK
@@ -99,8 +127,8 @@ Biodiversity:
 - WTP via choice experiment: "Here, although a move from continued decline to stopping decline and ‘ensuring recovery’ substantially increases well-being (£115.15), a move to ‘slowing down decline’ is negatively valued (− £46.68)"
 - WTP via congintent valuation: "mean WTP is higher for Cambridgeshire respondents (£58.87) than for those from Northumberland (£42.47)"
 
-2. 
-- "Economic benefits of rare and endangered species: summary and meta-analysis" Loomis and White, Ecological Economics
+4. 
+- "Economic benefits of rare and endangered species: summary and meta-analysis" Loomis and White, (1996) Ecological Economics
 - [Link](https://www.sciencedirect.com/science/article/abs/pii/0921800996000298)
 - Estimate WTP for 18 different species
 - Contingent valuation with household surveys.
@@ -109,6 +137,86 @@ Biodiversity:
 - WTP ranges from $6 for fish to $95 for northern spotted owls. Higher value for rarer animals.
 
 
+5. 
+- "Willingness to pay for biodiversity conservation in Dachigam National Park, India" Baht and Sofi, (2021) Journal of Nature Conservation
+- [Link](https://www.sciencedirect.com/science/article/abs/pii/S1617138121000698)
+- Context: Dachigam National Park, India
+- WTP for protected species in a park. 
+- Simple logistical model from contingent valuation survey
+- 279 respondents
+- Rs 245.57 ($ 3.32) per year
+
+6. 
+- "Microcredit and willingness to pay for environmental quality: Evidence from a randomized-controlled trial of finance for sanitation in rural Cambodia" Yishay et al., (2017) Journal of Env. Economics and Management
+- [Link](https://www.sciencedirect.com/science/article/pii/S0095069616304405)
+- Context: Cambodia
+- What is WTP for clean latrines
+- Exploit an RCT for exogenous income shock through microcredit 
+- 1,500 households
+- OLS using a BDM price offer
+- WTP of $40 for latrines
+
+7. 
+- "Valuing the non-market benefits of wild goose conservation: a comparison of interview and group based approaches" Macmillian et al., (2002) Ecological Economics
+- [Link](https://www.sciencedirect.com/science/article/abs/pii/S0921800902001829)
+- Context: Scotland
+- WTP to protect geese
+- Market stall design (version of mock trail or jury)
+- 52
+- OLS estimator
+- WTP of $4.49 per goose
+
+8. 
+- "Assessing the value of species: a case study on the willingness to pay for species protection in Chile" Cerda and Losada, (2013) Environmental Monitoring and Assessment
+- [Link](https://link.springer.com/article/10.1007/s10661-013-3346-5)
+- Context: Chile's Campana National Park
+- What is WTP for species protection in a national park?
+- Choice Experiment
+- 149 individual interviews with park visitors
+- Random Utility Model with multinominal logit to estimate implicit price $IP(n) = -(\frac{\beta_n}{\beta})$
+- Maximum WTP $8.63 to 2.4 depending on the species.
+
+9. 
+- "Are There Income Effects on Global Willingness to Pay for Biodiversity Conservation? " Jacobsen and Henley, (2009) Environmental Resource Economics
+- [Link](https://link.springer.com/article/10.1007/s10640-008-9226-8)
+- Context: Global
+- Relationship of income to WTP for existence value of habitats
+- Meta analysis of 145 WTP studies from 46 contingent valuation studies in six continents
+- Estimate the income elasticity of WTP as $\varepsilon_w = \frac{\partial (ln \text{WTP bid function})}{\partial (ln \text{Income})}$. Bid function comes from Hokby and Soderqvist, 2003.
+- Income elasticity of WTP biodiversity is +0.38 with an average WTP of $66.77 in 2006 dollars.
+
+10. 
+- "An economic analysis of willingness to pay (WTP) for conserving the biodiversity" Surendran and Sekar, (2010) Int. Journal of Social Economics
+- [Link](https://www.emerald.com/insight/content/doi/10.1108/03068291011060661/full/html?casa_token=4rzq_56oqKEAAAAA:E5zmJFECihphO8v9QXloyTvaB7CiGUgGqv8bJD1y17ZH55Sq2U7i5uC2xpfCXAsWoOoe1fDcXMwYyuHyI2zijZvhycGX4yI5QLyfsWY8SVrInr29vA)
+- Context: Anamalai Tiger Reserve (ATR)
+- WTP for native Indians for recretaional value of a nature reserve (eco-tourism)
+- 60 'local stakeholders'
+- semi-log linear model to estimate consumer surplus given assumed travel cost
+- WTP an average amount of Rs 202 (US$4.03), Rs 449 (US$9.55) and Rs 656 (US$14.00)/annum
+
+
+11. 
+- "Tourists' Willingness to Pay for Restoration of Traditional Agro-forest Ecosystems Providing Biodiversity: Evidence from India" Sardana, (2019) Ecological Economics
+- [Link](https://www.sciencedirect.com/science/article/pii/S0921800917309849?casa_token=M_a4u9baREcAAAAA:QhbzRV_eAKp0pKxD10KsW4CXnpkCutNvVE-QMBWQBzX36frw02N72j-T4qHUKBB_l8eiTZoM)
+- Context: Kodagu district of Karnataka in India
+- Estimate WTP for agro-forest ecosystems biodiversity
+- Contingent valuation survey
+- 1,029 visitors in 2016
+- Random utility model with 'exogenous variables $z$': $WTP = \alpha z_j / \beta$ 
+- WTP per visitor of 187 INR
+
+
+
 ## Review of mixed logit model methodology 
 
 Review of any updated versions of the mixed logit model -- new adapations of the model from class
+
+1. 
+- "Title" Authors, (Year) Journal
+- [Link]()
+- Context: 
+- RQ
+- Design 
+- Sample Size
+- Estimator
+- Result (WTP estimate)
