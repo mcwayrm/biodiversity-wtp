@@ -16,12 +16,17 @@ number-sections: false
 jupyter: python3
 ---
 
+
 This is annnotated bibliography where you note the: 
-- paper title + journal
-- research question
-- research design (e.g. stated preference)
-- data/sample size
-- result (i.e. WTP estimate).
+1. 
+- "Title" Authors, Journal
+- [Link]()
+- Context: 
+- RQ
+- Design 
+- Sample Size
+- Estimator
+- Result (WTP estimate)
 
 ## WTP in developing countries using travel cost method
 
@@ -31,6 +36,32 @@ estimates of WTP in developing countries generally using the discrete choice tra
 ## WTP for environmental quality 
 
 WTP for environmental quality papers and what design they are using to estimate (e.g., contingent valuation, stated preferences -- something from ecology)
+
+I group the willingness to pay for environmental quality into articles by the environmental good or service being priced. 
+
+
+Biodiversity:
+
+1. 
+- "Valuing the Diversity of Biodiversity" Christie et al. (2006) Ecological Economics
+- [Link](https://www.sciencedirect.com/science/article/pii/S0921800905003149?casa_token=Aciky-xubx0AAAAA:W_m9B4X7yq0-VzIeBWp8gjQw3s5wetmE6HO5pln7vu0mljmXPXHe02stdYjZ0HUsfsHDca-Q)
+- Context: Cambridgeshire and Northumberland, UK
+- Estimate the value of biodiversity under conservation scenarios comparing two different methods.
+- Implement a both (1) a choice experiment for tax increases under different conservation policies and (2) a contigent valuation stated preference survey 
+- 741 respondents to both settings
+- Estimate implicit prices as $IP = \frac{\beta_{attribute}}{\beta_{tax-increase}}$ using a conditional logit model following Louviere et al. 2000
+- WTP via choice experiment: "Here, although a move from continued decline to stopping decline and ‘ensuring recovery’ substantially increases well-being (£115.15), a move to ‘slowing down decline’ is negatively valued (− £46.68)"
+- WTP via congintent valuation: "mean WTP is higher for Cambridgeshire respondents (£58.87) than for those from Northumberland (£42.47)"
+
+2. 
+- "Economic benefits of rare and endangered species: summary and meta-analysis" Loomis and White, Ecological Economics
+- [Link](https://www.sciencedirect.com/science/article/abs/pii/0921800996000298)
+- Estimate WTP for 18 different species
+- Contingent valuation with household surveys.
+- Meta-analysis of 20 CV studies for specific species. 
+- OLS Estimator
+- WTP ranges from $6 for fish to $95 for northern spotted owls. Higher value for rarer animals.
+
 
 ## Review of mixed logit model methodology 
 
