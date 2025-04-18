@@ -133,7 +133,7 @@ This is a section to ask questions and assign team members to respond to them. B
 - @mcwayrm Issue with `scripts/R/2.distance_to_hotspots.R` line 27: My data does not appear to have locality_type, locality in the data set.
 - @rmadhok Can we get some documentation on the hotspot data? How is it made? Where is it made? 
     - Recieved it from e-bird. Don't think we can download it anymore. 
-
+- In `scripts/R/1.ebd_process.R` line 105, are we doing the correct oultier desstection? 
 # Tasks
 
 This is a section to provide directed tasks to others, or as reminders for one's self. 

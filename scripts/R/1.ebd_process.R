@@ -32,7 +32,7 @@ ebird <- fread(config$ebird_basic_path,
                         'EFFORT DISTANCE KM','ALL SPECIES REPORTED',
                         'LOCALITY', 'LOCALITY TYPE'),
               quote = "")
-              # CHECK: Obs = 58,563,093
+  stopifnot(nrow(ebird) == 58563093) # CHECK: Obs = 58,563,093 trips
 colnames(ebird) <- gsub('\\.', '_', tolower(make.names(colnames(ebird))))
 
 # Clean names
@@ -45,8 +45,9 @@ ebird <- ebird %>%
         distance = effort_distance_km,
         complete = all_species_reported)
 
-# collapse to user-trip-time level (n = 3,463,250 trips)
+# collapse to user-trip-time level
 ebird <- distinct(ebird, trip_id, .keep_all = TRUE)
+  stopifnot(nrow(ebird) == 3463250) # CHECK: Obs = 3,463,250 trips
 
 # Dates
 ebird$date <- ymd(ebird$observation_date)
@@ -68,7 +69,7 @@ user_home <- ebird %>%
   group_by(user_id) %>%
   summarize(lon_home_real = mean(lon, na.rm = TRUE),
             lat_home_real = mean(lat, na.rm = TRUE))
-
+  stopifnot(nrow(user_home) == 393) # CHECK: Obs = 393 users homes
 # Assign users to a district they live in using spatial intersection with district polygons
 user_home$c_code_2011_home_real <- st_join(st_as_sf(user_home,
                                                     coords = c('lon_home_real', 'lat_home_real'),
@@ -89,7 +90,7 @@ user <- distinct(ebird, user_id, lon, lat) %>%
   group_by(user_id) %>%
   mutate(lon_home = mean(lon, na.rm = TRUE),
         lat_home = mean(lat, na.rm = TRUE))
-
+  stopifnot(nrow(user) == 1317233) # CHECK: Obs = 1,317,233 trips
 # Straight-line distance from center to each site (linear-arc distance)
 user$distance <- st_distance(st_as_sf(user,
                                       coords = c('lon_home', 'lat_home'),
@@ -101,16 +102,19 @@ user$distance <- st_distance(st_as_sf(user,
 user$distance <- as.numeric(user$distance) / 1000 # in km
 
 # Remove outlier trips
-  # note: we can come up with a better way
+  # TODO: Is the best method for outlier detection?
 user <- user %>%
   group_by(user_id) %>%
   filter(distance <= quantile(distance, 0.75) + 1.5 * IQR(distance))
+  stopifnot(nrow(user) == 1214152) # CHECK: Obs = 1,214,152 trips
+# Note: 103,081 trips removed (7.8%)
 
 # Recompute home
 user <- user %>%
   group_by(user_id) %>%
   summarize(lon_home = mean(lon, na.rm = TRUE),
             lat_home = mean(lat, na.rm = TRUE))
+  stopifnot(nrow(user) == 49206) # CHECK: Obs = 49,206 homes
 
 # Overlay home districts
 # -------------------------------------
@@ -124,21 +128,16 @@ user$c_code_2011_home <- st_join(st_as_sf(user,
 
 # Handle homes in the ocean
 # For off-coast homes, assign id of nearest district
-user_na <- filter(user, is.na(c_code_2011_home))  # 1,104 users out of 49,206
+user_na <- filter(user, is.na(c_code_2011_home))  
+  stopifnot(nrow(user_na) == 1104) # CHECK: 1,104 users out of 49,206
+# Note: 2.2% of users have homes off-coast
 user_na$c_code_2011_home <- st_join(st_as_sf(user_na,
                                             coords = c('lon_home', 'lat_home'),
                                             crs = 4326), # World Geodetic System 1984
                                     dist,
                                     join = st_nearest_feature)$c_code_2011
-# note: remaining NA's are in northern Kashmir, which have no census code
-
-# TODO: Create a table of mapping off-coast homes into nearby districts.
-
-# TODO: What is the average distance away?
-# temp <- st_distance(x = st_as_sf(user_na,
-#                                 coords = c('lon_home', 'lat_home'),
-#                                 crs = 4326), # World Geodetic System 1984)
-#                     y = dist)
+  sum(is.na(user_na)) # CHECK: How many NAs remain == 47
+  # Note: remaining NA's are in northern Kashmir, which have no census code
 
 # District centroids
 centroids <- as.data.frame(st_coordinates(st_centroid(dist$geometry))) %>%
@@ -147,6 +146,14 @@ centroids$c_code_2011_home <- dist$c_code_2011
 user_na <- left_join(user_na[, c('user_id', 'c_code_2011_home')],
                     centroids,
                     by = 'c_code_2011_home')
+
+# TODO: Create a table of mapping off-coast homes into nearby districts.
+
+# TODO: What is the average distance away?
+# temp <- st_distance(x = st_as_sf(user_na,
+#                                 coords = c('lon_home', 'lat_home'),
+#                                 crs = 4326), # World Geodetic System 1984)
+#                     y = dist)
 
 # Bind to main user list
 user <- rbind(filter(user, !is.na(c_code_2011_home)), user_na)
@@ -167,10 +174,13 @@ ebird <- ebird %>%
     duration <= 5 * 60, # Duration is in minutes. So selecting all observations less than 5 hours (didn't leave the app open)
     #number_observers <= 10 # Is the thought here that there should not be large parties? Large parties indicate tourists?
   )
+  stopifnot(nrow(ebird) == 3008200) # CHECK: Obs = 3,008,200 trips
 
 # Select Protocol (n=2,991,609 trips)
 protocol <- c('Stationary', 'Traveling')
 ebird <- filter(ebird, protocol_type %in% protocol)
+  stopifnot(nrow(ebird) == 2991609) # CHECK: Obs = 2,991,609 trips
+  # Note: 1,659 trips removed (0.05%)
 
 #-----------------------------------------------------
 # 4. Identify Districts of Trip (2011 census boundary)
@@ -184,7 +194,9 @@ ebird$c_code_2011 <- st_join(st_as_sf(ebird,
                             join = st_intersects)$c_code_2011
 
 # Remove out-of-bounds trips
-ebird <- filter(ebird, !is.na(c_code_2011)) # n=27,605 trips out of bounds
+ebird <- filter(ebird, !is.na(c_code_2011))
+  stopifnot(nrow(ebird) == 2964004) # CHECK: Obs = 2,964,004 trips
+  # Note: 7,605 trips removed (0.25%)
 
 #-----------------------------------------------------
 # 5. Final processing steps
