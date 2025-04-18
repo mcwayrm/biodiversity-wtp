@@ -113,10 +113,9 @@ Rather than look broadly at a variety of environmental quality improvments, I ex
 - Estimate MWTP for e-birders
 - Random utility model  with an 'individualized choice model'
 - 35,656 trips by 290 people in 1,227 hotspots
-- Estimator
 - MWTP of of $0.68 per additional bird species per trip.
 
-3. 
+1. 
 - "Valuing the Diversity of Biodiversity" Christie et al. (2006) Ecological Economics
 - [Link](https://www.sciencedirect.com/science/article/pii/S0921800905003149?casa_token=Aciky-xubx0AAAAA:W_m9B4X7yq0-VzIeBWp8gjQw3s5wetmE6HO5pln7vu0mljmXPXHe02stdYjZ0HUsfsHDca-Q)
 - Context: Cambridgeshire and Northumberland, UK
@@ -127,7 +126,7 @@ Rather than look broadly at a variety of environmental quality improvments, I ex
 - WTP via choice experiment: "Here, although a move from continued decline to stopping decline and ‘ensuring recovery’ substantially increases well-being (£115.15), a move to ‘slowing down decline’ is negatively valued (− £46.68)"
 - WTP via congintent valuation: "mean WTP is higher for Cambridgeshire respondents (£58.87) than for those from Northumberland (£42.47)"
 
-4. 
+1. 
 - "Economic benefits of rare and endangered species: summary and meta-analysis" Loomis and White, (1996) Ecological Economics
 - [Link](https://www.sciencedirect.com/science/article/abs/pii/0921800996000298)
 - Estimate WTP for 18 different species

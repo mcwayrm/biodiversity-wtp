@@ -46,15 +46,51 @@ For notes, we present the most recent first so that notes are choronologically m
 
 ## Sample Selection Updates
 - different biodiversity levels by incorporating interaction terms in locals and tourists. WTP for nature tourism vs WTP for nature recreation or biodiverstiy
-  - If we estimate both, then we can compare both measures. We can also place it within the larger literature of many WTP for both subsets of ecosystem services and the population using those services. 
+    - If we estimate both, then we can compare both measures. We can also place it within the larger literature of many WTP for both subsets of ecosystem services and the population using those services. 
+    - Broadly compare conservation, nature recreation, tourism, or biodiversity 
+    - We need to frame this as a development paper as the lambda in the Envirodevonomics paper
+- Frequency of observations are consistent over time and potentially visits near protected areas. 
+    - Need to capture seasonanlity (time fixed effects)
+    - Need to consider some aspect of congestion (can calculate that as a site attribute)
+    - If you go two months a year you are less likely to be a tourist
 
 ## Literature Review Updates
+- We can uses species richness as an explanatory variable in the model. But could add other biodiversity measures beyond bird diversity. 
+- Need to think about how to frame this in the developing context instead of the environment context
+- Very few WTP for environmental quality in development economics space 
+- Would be great if our WTP measure could be placed within a welfare model so we can make counterfactual statements
+    - Need to have homogenous agents to aggregate for welfare gains >> e-bird users are not representative of population
+    - Could overcome this by population demographic weights to make e-bird users representative
+    - But welfare statements are a big improvement over the other e-bird papers
+- Could explore the WTP measure of space and time. So we go beyond the cross-sectional estimates in the literature 
+    - If we have 1st and 2nd moment, then we can assign individuals an individual WTP. 
 
+## Grant Proposal
+- Jovin will provide an update. 
 
-
+## Initial Results by Raahil 
+- We are getting coverage of the country 
+- Some overlap of population density and users >> likely representative
+- Most hotspots and users are in the south (consistent with e-birder users)
+- Hotspots data could be weighted by visits
+- Should plot protected areas overlapping hotspots
+- Demographic t-test shows e-bird users are richer on average. But we can use this to back out our inverse weight for the welfare calculations
+    - E-bird users are selecting into this where there are richer places (so can afford this hobby)
 
 ## Tasks
-- 
+- How do we distinguish ourselves from the Pacific Northwest paper Kolestet 2017
+- First pass of the sample: users who use this at least 2 months out of the year
+- Make two new scripts: 
+    - Merging in site attributes (Can merge in satilette data -- radius around the centriod and take the mean -- and district data about the site attribtues -- merge on district ID)
+        - Protected area (binary or distance) -- fuzzy borders leads to spillovers
+        - Tree cover -- higher willingess to pay for forest
+        - Rainfall (monthly) - seasonality
+        - Temperature (monthly) - seasonality
+        - Distance to the coast -- species gradient to the coast
+        - Species richness from the previous week (expectation) -- and any other measures of biodiversity
+    - Estimating the RUM via the mixed multinominal logit
+- Email tag for grant proposals
+- Make a script into a single PDF
 
 :::
 
