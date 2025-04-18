@@ -2,6 +2,7 @@
 /data/api-key-ebird-raahil.txt
 /data/intermediate/*
 /data/clean/*
+data/shp/wdpa/
 .Rhistory
 /functions/.Rhistory
 *.DS_Store

@@ -29,8 +29,54 @@ This is annnotated bibliography where you note the:
 - Result (WTP estimate)
 
 ## WTP in developing countries using travel cost method
+::: {.callout-note  collapse="true"}
+# Sources
+Estimates of WTP in developing countries generally using the discrete choice travel cost method (Ted Miguel water quality paper). 
 
-estimates of WTP in developing countries generally using the discrete choice travel cost method (Ted Miguel water quality paper). 
+--- 
+
+#### Spring Cleaning: Rural Water Impacts, Valuation, and Property Rights Institutions  
+*[Quarterly Journal of Economics (2011)](https://www.jstor.org/stable/23015666)*  
+
+- **Research Question**: What are the health and economic impacts of protecting community water sources in rural Kenya, and how much are households willing to pay for improved water quality?  
+- **Research Design**: Randomized controlled trial; revealed preference via travel cost method  
+- **Data/Sample Size**: Sample consisted of 184 springs and 1,354 househlds in Kenya in 2007.
+- **Result**: Estimated mean annual valuation for spring protection is $2.96 per household. Under some stronger assumptions this translates to an upper bound of $0.89 on households' mean willingness to pay to avert one child diarrhea episode, and $769 on the mean value of averting one statistical child death.
+
+---
+
+#### Estimating the Private Benefits of Vaccination Against Cholera in Beira, Mozambique: A Travel Cost Approach
+*[Journal of Development Economics (2010)](https://doi.org/10.1016/j.jdeveco.2009.06.007)*
+
+
+- **Research Question**: How much do individuals value cholera vaccination in Mozambique, as inferred through their willingness to travel and wait in line for a free vaccine?  
+- **Research Design**: Revealed preference via travel cost method (analyzing vaccine clinic attendance)  
+- **Data/Sample Size**: Detailed survey data collected ex post during the summer of 2005 from a sample of over 1300 households.
+- **Result**: Average WTP for vaccination was $0.85.
+
+
+---
+
+#### Tourism and Wetland Conservation: Application of Travel Cost and Willingness to Pay an Entry Fee at Ghodaghodi Lake Complex, Nepal 
+*[International Journal of Sustainable Development & World Ecology (2016)](https://doi.org/10.1016/j.jdeveco.2009.06.007)*
+
+- **Research Question**: What is the recreational value of Ghodaghodi Lake in Nepal, and can an entry fee support wetland conservation?  
+- **Research Design**: Zonal Travel Cost Method  
+- **Data/Sample Size**: Survey of 128 visitors in 2007
+- **Result**: The average travel cost calculated was NPR 540 (US $7.71) per visitor per visit.
+
+---
+
+#### A Simple Stated Preference Tool for Estimating the Value of Travel Time in Rural Africa  
+*[Journal of Benefit-Cost Analysis (2016)](https://doi.org/10.1017/bca.2016.13)*
+
+- **Research Question**: How can we empirically estimate the value of travel time in rural African settings for use in policy and infrastructure planning?  
+- **Research Design**: Stated preference, repeated discrete choice experiment  
+- **Data/Sample Size**: 325 rural households in Meru County, Kenya in 2013
+- **Result**: An average value of travel time of 18 Ksh/hr, and generally support the 50% rule. Also indicate statistically-significant heterogeneity in VTTs, though the heterogeneity is not well correlated with observables.
+
+:::
+
 
 
 ## WTP for environmental quality 
