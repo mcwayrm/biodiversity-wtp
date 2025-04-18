@@ -23,10 +23,12 @@ source(config_path)
 # Read ebird trips
 ebird <- readRDS(config$ebird_trip_clean_path)
 
-# Select trips to hotspots (n = 1,347,758 hotspot trips; n =30,327 users)
+# Select trips to hotspots
 ebird <- ebird %>%
         filter(locality_type == 'H') %>%
         select(-c(locality_type, locality))
+  stopifnot(nrow(ebird) == 1347758) # CHECK: Obs = 1,347,758 hot spot trips
+  stopifnot(length(unique(ebird$user_id)) == 30327) # CHECK: Users = 30,327 users
 
 #-----------------------------------------
 # 2. Euclidean Distance To Destination
@@ -35,10 +37,10 @@ ebird <- ebird %>%
 # Straight-line dist from home to hotspot
 ebird$geo_dist <- st_distance(st_as_sf(ebird, 
                                 coords = c('lon_home', 'lat_home'),
-                                crs=4326), # World Geodetic System 1984
+                                crs = 4326), # World Geodetic System 1984
                               st_as_sf(ebird, 
                                 coords = c('lon', 'lat'),
-                                crs=4326), # World Geodetic System 1984
+                                crs = 4326), # World Geodetic System 1984
                               by_element = TRUE) %>% set_units(km)
 ebird$geo_dist <- as.numeric(ebird$geo_dist)
 

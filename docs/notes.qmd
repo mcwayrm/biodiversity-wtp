@@ -39,6 +39,25 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are choronologically most recent. 
 
+
+::: {.callout-note  collapse="true"}
+# 4/18/2025
+> Raahil, Matt, Jovin, Ryan
+
+## Sample Selection Updates
+- different biodiversity levels by incorporating interaction terms in locals and tourists. WTP for nature tourism vs WTP for nature recreation or biodiverstiy
+  - If we estimate both, then we can compare both measures. We can also place it within the larger literature of many WTP for both subsets of ecosystem services and the population using those services. 
+
+## Literature Review Updates
+
+
+
+
+## Tasks
+- 
+
+:::
+
 ::: {.callout-note  collapse="true"}
 # 3/31/2025
 > Raahil, Matt, Jovin

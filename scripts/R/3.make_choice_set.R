@@ -20,14 +20,15 @@ source(config_path)
 
 # Parameter settings
 module <- 'cluster'       # set as 'cluster' or 'all'
-samp <- 0.001              # random sample of users (scale 0-1) -- Random sample 0.1% of users (test case)
+samp <- 0.001             # random sample of users (scale 0-1) -- Random sample 0.1% of users (test case)
 radius <- 50              # buffer radius -- kilometers -- around home (100, 50, or 20)
 clust_size <- 10          # recreation area size (10km or 5km)
+# CHECK: Print parameters to check what we are about to run.
 writeLines(paste("Generating choice set data with parameters:",
-                 "\n\tModule:", module,
-                 "\n\tSample Proportion:", samp,
-                 "\n\tRadius:", radius, "km",
-                 "\n\tCluster Size:", clust_size, "km")) # Print statement after commands so we know what is happening
+                "\n\tModule:", module,
+                "\n\tSample Proportion:", samp,
+                "\n\tRadius:", radius, "km",
+                "\n\tCluster Size:", clust_size, "km"))
 
 # ----------------------------------------------------
 # 2. CONSTRUCT COUTERFACTUAL CHOICE SET
@@ -37,6 +38,7 @@ writeLines(paste("Generating choice set data with parameters:",
 writeLines(paste("Loading trip data from:", config$ebird_trip_hotspots_path))
 trips <- readRDS(config$ebird_trip_hotspots_path) %>%
   filter(geo_dist <= radius) # Subset trips within radius
+  stopifnot(nrow(trips) == 492485) # CHECK: Subset of Obs = 492,485
 
 # Random sample of users
 set.seed(12345)
@@ -50,9 +52,11 @@ sample <- inner_join(trips, users, by = 'user_id') # This subsets trips for the 
 # Read and format hotspots
 writeLines(paste("Loading hotspot data from:", config$hotspots_path))
 cols <- c('loc_id', 'country', 'state', 'county', 'lat', 'lon', 'name', 'time', 'v9') # TODO: What is v9?
+  # TODO: This is not reading in correctly. 
 hotspots <- readRDS(config$hotspots_path) %>%
   setNames(cols) %>%  # Assign column names
   select(lat, lon, name)  # Keep necessary columns
+  stopifnot(nrow(hotspots) == 12622) # CHECK: Obs = 12,622 hotspots
 
 # Construct Choice Sets
 cset <- choice_set( # function comes from choice_set_travel.R

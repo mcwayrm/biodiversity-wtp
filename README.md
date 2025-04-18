@@ -134,6 +134,10 @@ This is a section to ask questions and assign team members to respond to them. B
 - @rmadhok Can we get some documentation on the hotspot data? How is it made? Where is it made? 
     - Recieved it from e-bird. Don't think we can download it anymore. 
 - In `scripts/R/1.ebd_process.R` line 105, are we doing the correct oultier desstection? 
+- In `scripts/R/3.make_choice_set.R` line 56 the columns are not reading in correctly. 
+- 
+
+
 # Tasks
 
 This is a section to provide directed tasks to others, or as reminders for one's self. 
