@@ -39,6 +39,68 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are choronologically most recent. 
 
+::: {.callout-note  collapse="true"}
+# 4/25/2025
+> Matt, Ryan
+
+## Tasks: 
+- Matt: Download data and share
+- Ryan: Start writing pseudocode in the new scripts. 
+- Both: Play with ClimateR 
+
+## Site Attributes
+- Limitation: 
+    - It takes time to build GIS data. So a lot of the attributes are not updated for 2024/25
+    - ClimateR
+- Division of the attributes to collect
+    - Protected area (binary or distance) -- fuzzy borders leads to spillovers
+        - Matt
+        - WDPA (https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA)
+    - Tree cover -- higher willingess to pay for forest
+        - Matt
+        - https://data.fs.usda.gov/geodata/rastergateway/treecanopycover/
+        - https://data.globalforestwatch.org/
+        - https://glad.umd.edu/dataset/global-2010-tree-cover-30-m
+        - Worse comes to worse we use the ESA data
+        - Or we could use NDVI data as a proxy.
+    - Rainfall (monthly) - seasonality
+        - Ryan
+        - https://ftp.cpc.ncep.noaa.gov/GIS/GRADS_GIS/GeoTIFF/GLB_DLY_PREC/
+        - CHRIPS SPI data
+        - https://mikejohnson51.github.io/climateR/index.html
+    - Temperature (monthly) - seasonality
+        - Ryan
+        - GISS Surface Temperature Analysis (GISTEMP v3)
+        - Surface air temperature (no ocean data), 250km smoothing (9 MB)
+        - Might need the land mask
+        - https://data.giss.nasa.gov/gistemp/
+    - Distance to the coast -- species gradient to the coast
+        - Ryan
+        - Dissolve the districts data. 
+        - Make a polyline and measure distance to the nearest line
+    - Species richness from the previous week (expectation) -- and any other measures of biodiversity
+        - Both Matt and Ryan
+        - Weitzmen index using ebird data to generate diversity score
+        - https://scholar.harvard.edu/files/weitzman/files/on_diversity.pdf
+        - Validate with inaturalist data on birds for india
+        - Could test a couple of different indices
+- How we are sharing the site attribute data
+    - Matt will have the GDrive link. 
+- Updating the config files 
+    - Once we have data download
+- Start script to merge site attributes to sites
+    - What to do about 4.demographics. Seems like that should be site attributes. 
+    - Noteably, some of the data will need to become panel. 
+        - Rainfall
+        - Temperature
+        - Protected Areas
+        - Tree cover
+        - species richness (we need to dig some that has a time dimension)
+    - Static: 
+        - Distance to coast
+
+:::
+
 
 ::: {.callout-note  collapse="true"}
 # 4/18/2025
