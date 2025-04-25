@@ -1,5 +1,5 @@
 # PROJECT: RUM Model
-# PURPOSE: Select Choice Set for each user
+# PURPOSE: Select Choice Set for each user (counterfactuals)
 ####################################
 # Sections:
 # 1. Set Parameters
