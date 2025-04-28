@@ -74,8 +74,8 @@ rec_clust <- function(df,
     
     # District in centroid of recreation area
     df$c_code_2011 <- st_join(st_as_sf(df, 
-                                       coords=c('lon', 'lat'), 
-                                       crs=4326), 
+                                      coords=c('lon', 'lat'), 
+                                      crs=4326), 
                               india_dist, 
                               join = st_intersects)$c_code_11
     
@@ -84,7 +84,7 @@ rec_clust <- function(df,
     
     # Save intermediate data
     saveRDS(df, file.path("data", "intermediate", "hotspots", paste0("hotspots_clust_", clust_size, "km.rds")))
-   
+    
     return(df)
   
     }
