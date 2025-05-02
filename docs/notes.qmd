@@ -40,19 +40,46 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 ::: {.callout-note collapse="true"}
-# 5/1/2025
+# 5/2/2025
 
 > Raahil, Matt
 
 ## Agenda
 1. Site attributes data progress
+    - In progress
 2. Individual attributes data progress
 3. Coding sample selection progress
+    - Done, flexible to time period and years (e.g. quarterly for at least 8 years)
 
-## Tasks
-1. Making the master dataset
-2. Calculating travel cost
-3. Code for WTP estimation
+## Site Attributes
+
+- Still gathering geospatial data
+    - [MODIS VCF forest cover](https://lpdaac.usgs.gov/products/mod44bv061/)
+    - [ERA5-Land 2m temperature data](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=download)
+    - [ERA5-Land total precipitation]()
+- Run zonal statistics on buffer around hotspots
+- If data becomes to large to easily share, we can start using Globus and MSI's tier 2 data storage
+
+## Next tasks
+
+1. Merge site and individual attributes to make master dataset
+2. Calculate travel cost
+    - Start with linear distance for now
+    - Calculate cost
+        - Refer to Lloyd-Smith and Cameron/Kolstoe
+        - Travel cost = 2 (round trip) x distance x 1/3 x wage (from GDP)
+3. Species Richness
+    - Decide on method: 
+        - Weitzman index
+        - iNaturalist
+        - Simpson index 
+        - Shannon index
+4. Looking ahead
+    - Look at code for estimating mixed logit with big data
+        - [mixl](https://github.com/joemolloy/fast-mixed-mnl)
+    - How to properly weight the WTP for aggregation
+    <!-- - [Weighting the Evidence: A Rank-Dependent Model of Outdoor Recreation](https://doi-org.ezp1.lib.umn.edu/10.1086/732185) -->
+    - Research how to include fixed effects in utility functions (alternative specific constant)
 
 :::
 
