@@ -55,8 +55,8 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 - Still gathering geospatial data
     - [MODIS VCF forest cover](https://lpdaac.usgs.gov/products/mod44bv061/)
-    - [ERA5-Land 2m temperature data](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=download)
-    - [ERA5-Land total precipitation]()
+    - [Copernicus ERA5-Land](https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=download)
+        - [ecmwfr](https://bluegreen-labs.github.io/ecmwfr/), R API interface
 - Run zonal statistics on buffer around hotspots
 - If data becomes to large to easily share, we can start using Globus and MSI's tier 2 data storage
 
