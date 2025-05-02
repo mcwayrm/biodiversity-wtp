@@ -203,27 +203,38 @@ ebird <- filter(ebird, !is.na(c_code_2011))
 # 5. Sample Selection: Restrict to users with at least 1 trip every 6 months 
 #-----------------------------------------------------
 
-# Step 1: Extract unique user-months
+# 1. Define parameters
+interval_months <- 3    # 2 for bi-monthly, 3 for quarterly, 6 for semi-annual
+min_years_active <- 8
+
+# 2. Compute time periods: month 1–3 = period 1, 4–6 = period 2, etc.
 monthly_activity <- ebird %>%
-  mutate(month = month(date)) %>%
-  distinct(user_id, year, month)
-
-# Step 2: Filter users active in both Jan–June and July–Dec
-active_users <- monthly_activity %>%
-  group_by(user_id, year) %>%
-  summarize(
-    has_jan_june = any(month %in% 1:6),
-    has_july_dec = any(month %in% 7:12),
-    .groups = "drop"
+  mutate(
+    year = year(date),
+    month = month(date),
+    period = ceiling(month / interval_months)
   ) %>%
-  filter(has_jan_june & has_july_dec) %>%
-  count(user_id, name = "n_years") %>%
-  filter(n_years >= 8)  # Every six months for at least 8/10 years
+  distinct(user_id, year, period)
 
-# Step 3: Subset the main data
+# 3. Filter users who are active in every period within a year
+# Total number of periods in a year
+n_periods <- ceiling(12 / interval_months)
+
+# Count how many unique periods each user was active in per year
+active_per_year <- monthly_activity %>%
+  group_by(user_id, year) %>%
+  summarize(n_periods_active = n_distinct(period), .groups = "drop") %>%
+  filter(n_periods_active == n_periods)
+
+# 4. Keep users with at least N qualifying years
+active_users <- active_per_year %>%
+  count(user_id, name = "n_years") %>%
+  filter(n_years >= min_years_active)
+
+# 5. Subset the main data
 ebird <- ebird %>%
   semi_join(active_users, by = "user_id")
-  stopifnot(nrow(ebird) == 1009717) # CHECK: Obs = 1,009,717 trips
+  
 
 #-----------------------------------------------------
 # 6. Final processing steps
