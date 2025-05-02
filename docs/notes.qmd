@@ -76,7 +76,8 @@ For notes, we present the most recent first so that notes are chronologically mo
         - Shannon index
 4. Looking ahead
     - Look at code for estimating mixed logit with big data
-        - [mixl](https://github.com/joemolloy/fast-mixed-mnl)
+        - [mixl](https://github.com/joemolloy/fast-mixed-mnl), C++ based R package
+        - [xlogit](https://xlogit.readthedocs.io/en/latest/index.html), GPU-Accelerated Python Package
     - How to properly weight the WTP for aggregation
     <!-- - [Weighting the Evidence: A Rank-Dependent Model of Outdoor Recreation](https://doi-org.ezp1.lib.umn.edu/10.1086/732185) -->
     - Research how to include fixed effects in utility functions (alternative specific constant)
