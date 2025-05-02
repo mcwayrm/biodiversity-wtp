@@ -198,8 +198,35 @@ ebird <- filter(ebird, !is.na(c_code_2011))
   stopifnot(nrow(ebird) == 2964004) # CHECK: Obs = 2,964,004 trips
   # Note: 7,605 trips removed (0.25%)
 
+
 #-----------------------------------------------------
-# 5. Final processing steps
+# 5. Sample Selection: Restrict to users with at least 1 trip every 6 months 
+#-----------------------------------------------------
+
+# Step 1: Extract unique user-months
+monthly_activity <- ebird %>%
+  mutate(month = month(date)) %>%
+  distinct(user_id, year, month)
+
+# Step 2: Filter users active in both Jan–June and July–Dec
+active_users <- monthly_activity %>%
+  group_by(user_id, year) %>%
+  summarize(
+    has_jan_june = any(month %in% 1:6),
+    has_july_dec = any(month %in% 7:12),
+    .groups = "drop"
+  ) %>%
+  filter(has_jan_june & has_july_dec) %>%
+  count(user_id, name = "n_years") %>%
+  filter(n_years >= 8)  # Every six months for at least 8/10 years
+
+# Step 3: Subset the main data
+ebird <- ebird %>%
+  semi_join(active_users, by = "user_id")
+  stopifnot(nrow(ebird) == 1009717) # CHECK: Obs = 1,009,717 trips
+
+#-----------------------------------------------------
+# 6. Final processing steps
 #-----------------------------------------------------
 
 # Set distance = 0 for stationary trips
