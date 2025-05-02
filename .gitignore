@@ -7,3 +7,4 @@ data/shp/wdpa/
 /functions/.Rhistory
 *.DS_Store
 cache/*
+.vscode/
