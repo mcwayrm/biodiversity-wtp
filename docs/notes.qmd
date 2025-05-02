@@ -37,7 +37,24 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 ## Notes
 
-For notes, we present the most recent first so that notes are choronologically most recent. 
+For notes, we present the most recent first so that notes are chronologically most recent. 
+
+::: {.callout-note collapse="true"}
+# 5/1/2025
+
+> Raahil, Matt
+
+### Agenda
+1. Site attributes data progress
+2. Individual attributes data progress
+3. Coding sample selection progress
+
+## Tasks
+1. Making the master dataset
+2. Calculating travel cost
+3. Code for WTP estimation
+
+:::
 
 ::: {.callout-note  collapse="true"}
 # 4/25/2025
