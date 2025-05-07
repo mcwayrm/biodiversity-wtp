@@ -3,6 +3,7 @@
 /data/intermediate/*
 /data/clean/*
 data/shp/wdpa/
+data/raster/era5*
 .Rhistory
 /functions/.Rhistory
 *.DS_Store
