@@ -4,6 +4,7 @@
 /data/clean/*
 data/shp/wdpa/
 data/raster/era5*
+data/raster/modis*
 .Rhistory
 /functions/.Rhistory
 *.DS_Store
