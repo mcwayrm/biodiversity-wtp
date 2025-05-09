@@ -8,6 +8,7 @@
 # 4. Tree cover
 # 5. Protected area
 # 6. Species richness
+# 7. Save updated hotspots with attributes
 ####################################
 
 
@@ -16,26 +17,41 @@
 config_path <- file.path("scripts", "R", "0.load_config.R")
 source(config_path)
 
-library(terra) # For rasters and zonal stats
-
+# Bring in hotspot data (e.g., the sites we want to add attributes to)
 cols <- c('loc_id', 'country', 'state', 'county', 'lat', 'lon', 'name', 'time', 'v9')
 hotspots <- readRDS(config$hotspots_path) %>%
-  setNames(cols) %>%  # Assign column names
-  select(lat, lon, name)  # Keep necessary columns
-  stopifnot(nrow(hotspots) == 12622) # CHECK: Obs = 12,622 hotspots
+    setNames(cols) %>%  # Assign column names
+    select(lat, lon, name)  # Keep necessary columns
+    stopifnot(nrow(hotspots) == 12622) # CHECK: Obs = 12,622 hotspots
 
 # Straight-line dist from home to hotspot
 hotspots$buffer <- st_buffer(st_as_sf(hotspots, 
                                 coords = c('lon', 'lat'),
                                 crs = 4326), 
-                            dist = 10000)
+                            dist = 10000) # 10km buffer around each hotspot
 plot(hotspots$buffer)
 
 # ----------------------------------------------------
 # 1. Attribute Distance to coast
 # ----------------------------------------------------
 
+# Load District Map
+dist <- st_read(config$district_path)
 
+# Create a polyline from borders of the district boundaries
+india_border <- st_cast(st_union(dist), "MULTILINESTRING")
+
+# Proof I did this correctly.
+plot(st_geometry(india_border), col = "lightblue", main = "India as a Country Polygon")
+plot(st_geometry(dist), add = TRUE, col = "gray")
+
+# Ensure CRS match
+hotspots_sf <- st_as_sf(hotspots, coords = c('lon', 'lat'), crs = 4326)
+india_border <- st_transform(india_border, st_crs(hotspots_sf))
+
+# Measure nearest distance of hotspot centroid to polyline
+hotspots_dist <- st_distance(hotspots_sf, india_border) # This is in meters
+    stopifnot(length(hotspots_dist) == 12622) # CHECK: Obs = 12,622 hotspots distances
 
 # ----------------------------------------------------
 # 2. Attribute Rainfall
@@ -48,22 +64,22 @@ raster_files <- sort(raster_files)
 # Loop through raster files and extract zonal stats
 precip_stats <- list()
 for (f in raster_files) {
-  r <- rast(f)
-  # Extract mean value within each buffer
-  stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
-  date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
-  precip_stats[[paste0("precip_", date_label)]] <- stats[[2]]
+    r <- rast(f)
+    # Extract mean value within each buffer
+    stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
+    date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
+    precip_stats[[paste0("precip_", date_label)]] <- stats[[2]]
 }
 
 # Combine with original hotspots
 hotspots <- bind_cols(hotspots, as.data.frame(precip_stats))
 hotspots_precip <- hotspots %>%
-  pivot_longer(
-    cols = starts_with("precip_"),
-    names_to = "date",
-    names_prefix = "precip_",
-    values_to = "precip"
-  )
+    pivot_longer(
+        cols = starts_with("precip_"),
+        names_to = "date",
+        names_prefix = "precip_",
+        values_to = "precip"
+    )
 
 # ----------------------------------------------------
 # 3. Attribute Temperature
@@ -76,22 +92,22 @@ raster_files <- sort(raster_files)
 # Loop through raster files and extract zonal stats
 temp_stats <- list()
 for (f in raster_files) {
-  r <- rast(f)
-  # Extract mean value within each buffer
-  stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
-  date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
-  temp_stats[[paste0("temp_", date_label)]] <- stats[[2]]
+    r <- rast(f)
+    # Extract mean value within each buffer
+    stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
+    date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
+    temp_stats[[paste0("temp_", date_label)]] <- stats[[2]]
 }
 
 # Combine with original hotspots
 hotspots <- bind_cols(hotspots, as.data.frame(temp_stats))
 hotspots_temp <- hotspots %>%
-  pivot_longer(
-    cols = starts_with("temp_"),
-    names_to = "date",
-    names_prefix = "temp_",
-    values_to = "temp"
-  )
+    pivot_longer(
+        cols = starts_with("temp_"),
+        names_to = "date",s
+        names_prefix = "temp_",
+        values_to = "temp"
+    )
 
 # ----------------------------------------------------
 # 4. Attribute Tree cover
@@ -102,8 +118,19 @@ hotspots_temp <- hotspots %>%
 # 5. Attribute Protected area
 # ----------------------------------------------------
 
+# WDPA
 
 # ----------------------------------------------------
 # 6. Attribute Species richness
+# ----------------------------------------------------
+
+Decide on method: 
+        - Weitzman index
+        - iNaturalist
+        - Simpson index 
+        - Shannon index
+
+# ----------------------------------------------------
+# 7. Save updated hotspots with attributes
 # ----------------------------------------------------
 
