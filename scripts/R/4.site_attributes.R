@@ -90,6 +90,7 @@ hotspots_temp <- hotspots %>%
 # ----------------------------------------------------
 
 # TODO: Modis data
+    # RYAN: Zonal stats and copy/paste from above 
 
 # ----------------------------------------------------
 # 4. Attribute Species richness
@@ -98,11 +99,14 @@ hotspots_temp <- hotspots %>%
 # Note the data is not time varying
 # NOTE: This is data imputation when e-bird lagged species richness is missing
 
-Decide on method: 
-        - Weitzman index
-        - iNaturalist
-        - Simpson index 
-        - Shannon index
+# Start with Simpson and Shannon indices
+    # Simple and agonistic about structure 
+# Next we do Weitzman index 
+    # Pull data bird genology 
+    # RYAN: Find data set 
+
+# Still need to make the species richness data (panel data) using lagged e-bird data 
+
 
 # ----------------------------------------------------
 # 5. Save updated hotspots with attributes

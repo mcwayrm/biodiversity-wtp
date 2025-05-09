@@ -81,10 +81,12 @@ For notes, we present the most recent first so that notes are chronologically mo
     - How to properly weight the WTP for aggregation
     <!-- - [Weighting the Evidence: A Rank-Dependent Model of Outdoor Recreation](https://doi-org.ezp1.lib.umn.edu/10.1086/732185) -->
     - Research how to include fixed effects in utility functions (alternative specific constant)
+        - User fixed effects 
+        - hotspot fixed effects
 
 :::
 
-::: {.callout-note  collapse="true"}
+::: {.callout-note  collapsse="true"}
 # 4/25/2025
 > Matt, Ryan
 
