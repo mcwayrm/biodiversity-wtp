@@ -20,3 +20,14 @@ source(config_path)
     # Education
     # Gender
     # Age
+
+
+# ----------------------------------------------------
+# 2. Travel Cost estimates
+# ----------------------------------------------------
+
+Calculate travel cost
+    - Start with linear distance for now
+    - Calculate cost
+        - Refer to Lloyd-Smith and Cameron/Kolstoe
+        - Travel cost = 2 (round trip) x distance x 1/3 x wage (from GDP)
