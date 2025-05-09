@@ -2,13 +2,11 @@
 # PURPOSE: Construct data on site attributes (pull factors)
 ####################################
 # Sections:
-# 1. Distance to coast
-# 2. Rainfall
-# 3. Temperature
-# 4. Tree cover
-# 5. Protected area
-# 6. Species richness
-# 7. Save updated hotspots with attributes
+# 1. Rainfall
+# 2. Temperature
+# 3. Tree cover
+# 4. Species richness
+# 5. Save updated hotspots with attributes
 ####################################
 
 
@@ -32,29 +30,7 @@ hotspots$buffer <- st_buffer(st_as_sf(hotspots,
 plot(hotspots$buffer)
 
 # ----------------------------------------------------
-# 1. Attribute Distance to coast
-# ----------------------------------------------------
-
-# Load District Map
-dist <- st_read(config$district_path)
-
-# Create a polyline from borders of the district boundaries
-india_border <- st_cast(st_union(dist), "MULTILINESTRING")
-
-# Proof I did this correctly.
-plot(st_geometry(india_border), col = "lightblue", main = "India as a Country Polygon")
-plot(st_geometry(dist), add = TRUE, col = "gray")
-
-# Ensure CRS match
-hotspots_sf <- st_as_sf(hotspots, coords = c('lon', 'lat'), crs = 4326)
-india_border <- st_transform(india_border, st_crs(hotspots_sf))
-
-# Measure nearest distance of hotspot centroid to polyline
-hotspots_dist <- st_distance(hotspots_sf, india_border) # This is in meters
-    stopifnot(length(hotspots_dist) == 12622) # CHECK: Obs = 12,622 hotspots distances
-
-# ----------------------------------------------------
-# 2. Attribute Rainfall
+# 1. Attribute Rainfall
 # ----------------------------------------------------
 # Get list of raster files
 dir_path <- file.path("data", "raster", "era5_total_precipitation")
@@ -82,7 +58,7 @@ hotspots_precip <- hotspots %>%
     )
 
 # ----------------------------------------------------
-# 3. Attribute Temperature
+# 2. Attribute Temperature
 # ----------------------------------------------------
 # Get list of raster files
 dir_path <- file.path("data", "raster", "era5_2m_temperature")
@@ -110,19 +86,17 @@ hotspots_temp <- hotspots %>%
     )
 
 # ----------------------------------------------------
-# 4. Attribute Tree cover
+# 3. Tree cover
 # ----------------------------------------------------
 
+# TODO: Modis data
 
 # ----------------------------------------------------
-# 5. Attribute Protected area
+# 4. Attribute Species richness
 # ----------------------------------------------------
 
-# WDPA
-
-# ----------------------------------------------------
-# 6. Attribute Species richness
-# ----------------------------------------------------
+# Note the data is not time varying
+# NOTE: This is data imputation when e-bird lagged species richness is missing
 
 Decide on method: 
         - Weitzman index
@@ -131,6 +105,6 @@ Decide on method:
         - Shannon index
 
 # ----------------------------------------------------
-# 7. Save updated hotspots with attributes
+# 5. Save updated hotspots with attributes
 # ----------------------------------------------------
 
