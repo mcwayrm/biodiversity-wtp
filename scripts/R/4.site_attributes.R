@@ -133,3 +133,13 @@ hotspots_trees <- hotspots %>%s
 # 5. Save updated hotspots with attributes
 # ----------------------------------------------------
 
+# Update hotspots with attributes
+hotspots <- hotspots %>%
+    left_join(hotspots_precip, by = c("lat", "lon", "name")) %>%
+    left_join(hotspots_temp, by = c("lat", "lon", "name")) %>%
+    left_join(hotspots_trees, by = c("lat", "lon", "name"))
+
+# Save updated hotspots
+saveRDS(hotspots, file = config$hotspots_path)
+
+
