@@ -141,5 +141,3 @@ hotspots <- hotspots %>%
 
 # Save updated hotspots
 saveRDS(hotspots, file = config$hotspots_path)
-
-
