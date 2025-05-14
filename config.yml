@@ -17,22 +17,25 @@ default:
   district_dir: [".", "data", "shp", "district-2011"]
   district_path: !expr do.call(file.path, c(as.list(district_dir), "district-2011.shp"))
 
+  # E-bird data
   ebird_dir: [".", "data", "intermediate", "ebird"]
   ebird_trip_clean_path: !expr do.call(file.path, c(as.list(ebird_dir), "ebird_trip_clean.rds"))
+  # E-bird Users homes
   user_home_impute_path: !expr do.call(file.path, c(as.list(ebird_dir), "user_home_impute.rds"))
   user_home_real_path: !expr do.call(file.path, c(as.list(ebird_dir), "user_home_real.rds"))
-
+  # E-bird hotspots
   hotspots_dir: [".", "data", "intermediate", "hotspots"]
   ebird_trip_hotspots_path: !expr do.call(file.path, c(as.list(hotspots_dir), "ebird_trip_hotspots.rds"))
-
+  # Counterfactual choice set 
   choice_sets_dir: [".", "data", "intermediate", "choice_sets"]
-
+  # Directory for clean data
   clean_data_dir: [".", "data", "clean"]
 
+  # Functions directory
   functions_dir: [".", "scripts", "R", "functions"]
   choice_set_travel_path: !expr do.call(file.path, c(as.list(functions_dir), "choice_set_travel.R"))
   hotspot_clustering_path: !expr do.call(file.path, c(as.list(functions_dir), "hotspot_clustering.R"))
-
+  # RDS files directory
   rds_dir: [".", "data", "rds"]
   hotspots_path: !expr do.call(file.path, c(as.list(rds_dir), "hotspots.rds"))
 
@@ -61,6 +64,7 @@ mbraaksma:
   input_data_dir: ["..", "..", "base_data", "biodiversity-wtp", "ebd_IN_201501_202412_relDec-2024"]
   ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
+  # TODO: Matt add in site attribute specific calls
 
 rmadhok:
   input_data_dir: '/Volumes/Backup Plus 1/research/data/ebird_wtp/ebird'
@@ -68,6 +72,17 @@ rmadhok:
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
 
 ryanm:
-  input_data_dir: ["..", "base-data", "ebd_IN_201501_202412_relDec-2024"]
-  ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
+  # Directory path
+  input_data_dir: ["..", "base-data"]
+  # E-bird data
+  ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024/ebd_IN_201501_202412_relDec-2024.txt"
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
+  # Site attribute: Precipitation
+  precip_basic_filename: "era5_2m_precipitation"
+  precip_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), precip_basic_filename))
+  # Site attribute: Temperature
+  temp_basic_filename: "era5_2m_temperature"
+  temp_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), temp_basic_filename))
+  # Site attribute: Tree cover
+  trees_basic_filename: "modis"
+  trees_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), trees_basic_filename))

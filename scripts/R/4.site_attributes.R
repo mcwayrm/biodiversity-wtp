@@ -23,9 +23,9 @@ hotspots <- readRDS(config$hotspots_path) %>%
     stopifnot(nrow(hotspots) == 12622) # CHECK: Obs = 12,622 hotspots
 
 # Straight-line dist from home to hotspot
-hotspots$buffer <- st_buffer(st_as_sf(hotspots, 
+hotspots$buffer <- st_buffer(st_as_sf(hotspots,
                                 coords = c('lon', 'lat'),
-                                crs = 4326), 
+                                crs = 4326),
                             dist = 10000) # 10km buffer around each hotspot
 plot(hotspots$buffer)
 
@@ -33,7 +33,7 @@ plot(hotspots$buffer)
 # 1. Attribute Rainfall
 # ----------------------------------------------------
 # Get list of raster files
-dir_path <- file.path("data", "raster", "era5_total_precipitation")
+dir_path <- file.path(config$precip_basic_path)
 raster_files <- list.files(dir_path, pattern = "\\.tif$", full.names = TRUE)
 raster_files <- sort(raster_files)
 
@@ -61,7 +61,7 @@ hotspots_precip <- hotspots %>%
 # 2. Attribute Temperature
 # ----------------------------------------------------
 # Get list of raster files
-dir_path <- file.path("data", "raster", "era5_2m_temperature")
+dir_path <- file.path(config$temp_basic_path)
 raster_files <- list.files(dir_path, pattern = "\\.tif$", full.names = TRUE)
 raster_files <- sort(raster_files)
 
@@ -80,7 +80,7 @@ hotspots <- bind_cols(hotspots, as.data.frame(temp_stats))
 hotspots_temp <- hotspots %>%
     pivot_longer(
         cols = starts_with("temp_"),
-        names_to = "date",s
+        names_to = "date",
         names_prefix = "temp_",
         values_to = "temp"
     )
@@ -88,9 +88,30 @@ hotspots_temp <- hotspots %>%
 # ----------------------------------------------------
 # 3. Tree cover
 # ----------------------------------------------------
+# Get list of raster files
+dir_path <- file.path(config$trees_basic_path)
+raster_files <- list.files(dir_path, pattern = "\\.tif$", full.names = TRUE)
+raster_files <- sort(raster_files)
 
-# TODO: Modis data
-    # RYAN: Zonal stats and copy/paste from above 
+# Loop through raster files and extract zonal stats
+temp_stats <- list()
+for (f in raster_files) {
+    r <- rast(f)
+    # Extract mean value within each buffer
+    stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
+    date_label <- sub(".*doy(\\d{4}).*$", "\\1", basename(f))
+    temp_stats[[paste0("trees_", date_label)]] <- stats[[2]]
+}
+
+# Combine with original hotspots
+hotspots <- bind_cols(hotspots, as.data.frame(temp_stats))
+hotspots_trees <- hotspots %>%s
+    pivot_longer(
+        cols = starts_with("trees_"),
+        names_to = "date",
+        names_prefix = "trees_",
+        values_to = "trees"
+    )
 
 # ----------------------------------------------------
 # 4. Attribute Species richness
