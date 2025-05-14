@@ -39,6 +39,7 @@ raster_files <- sort(raster_files)
 
 # Loop through raster files and extract zonal stats
 precip_stats <- list()
+start_time <- Sys.time() # Start timer
 for (f in raster_files) {
     r <- rast(f)
     # Extract mean value within each buffer
@@ -46,6 +47,9 @@ for (f in raster_files) {
     date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
     precip_stats[[paste0("precip_", date_label)]] <- stats[[2]]
 }
+end_time <- Sys.time() # End timer
+cat("Rainfall Zonal Stats (Mins): ", round(difftime(end_time, start_time, units = "secs"), 2)/60, "\n")
+
 
 # Combine with original hotspots
 hotspots <- bind_cols(hotspots, as.data.frame(precip_stats))
@@ -67,6 +71,7 @@ raster_files <- sort(raster_files)
 
 # Loop through raster files and extract zonal stats
 temp_stats <- list()
+start_time <- Sys.time() # Start timer
 for (f in raster_files) {
     r <- rast(f)
     # Extract mean value within each buffer
@@ -74,6 +79,8 @@ for (f in raster_files) {
     date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
     temp_stats[[paste0("temp_", date_label)]] <- stats[[2]]
 }
+end_time <- Sys.time() # End timer
+cat("Temperature Zonal Stats (Mins): ", round(difftime(end_time, start_time, units = "secs"), 2)/60, "\n")
 
 # Combine with original hotspots
 hotspots <- bind_cols(hotspots, as.data.frame(temp_stats))
@@ -94,17 +101,20 @@ raster_files <- list.files(dir_path, pattern = "\\.tif$", full.names = TRUE)
 raster_files <- sort(raster_files)
 
 # Loop through raster files and extract zonal stats
-temp_stats <- list()
+tree_stats <- list()
+start_time <- Sys.time() # Start timer
 for (f in raster_files) {
     r <- rast(f)
     # Extract mean value within each buffer
     stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
     date_label <- sub(".*doy(\\d{4}).*$", "\\1", basename(f))
-    temp_stats[[paste0("trees_", date_label)]] <- stats[[2]]
+    tree_stats[[paste0("trees_", date_label)]] <- stats[[2]]
 }
+end_time <- Sys.time() # End timer
+cat("Tree Cover Zonal Stats (Mins): ", round(difftime(end_time, start_time, units = "secs"), 2)/60, "\n")
 
 # Combine with original hotspots
-hotspots <- bind_cols(hotspots, as.data.frame(temp_stats))
+hotspots <- bind_cols(hotspots, as.data.frame(tree_stats))
 hotspots_trees <- hotspots %>%s
     pivot_longer(
         cols = starts_with("trees_"),
