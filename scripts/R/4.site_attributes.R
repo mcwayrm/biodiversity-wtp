@@ -97,7 +97,8 @@ hotspots_temp <- hotspots %>%
 # ----------------------------------------------------
 # Get list of raster files
 dir_path <- file.path(config$trees_basic_path)
-raster_files <- list.files(dir_path, pattern = "\\.tif$", full.names = TRUE)
+raster_files <- list.files(dir_path, pattern = "Percent_Tree_Cover.*\\.tif$", full.names = TRUE)
+raster_files <- raster_files[!grepl("SD", raster_files)]
 raster_files <- sort(raster_files)
 
 # Loop through raster files and extract zonal stats
@@ -115,7 +116,7 @@ cat("Tree Cover Zonal Stats (Mins): ", round(difftime(end_time, start_time, unit
 
 # Combine with original hotspots
 hotspots <- bind_cols(hotspots, as.data.frame(tree_stats))
-hotspots_trees <- hotspots %>%s
+hotspots_trees <- hotspots %>%
     pivot_longer(
         cols = starts_with("trees_"),
         names_to = "date",
@@ -143,11 +144,8 @@ hotspots_trees <- hotspots %>%s
 # 5. Save updated hotspots with attributes
 # ----------------------------------------------------
 
-# Update hotspots with attributes
-hotspots <- hotspots %>%
-    left_join(hotspots_precip, by = c("lat", "lon", "name")) %>%
-    left_join(hotspots_temp, by = c("lat", "lon", "name")) %>%
-    left_join(hotspots_trees, by = c("lat", "lon", "name"))
+# CHECK: Obs = 12,622 hotspots
+stopifnot(nrow(hotspots) == 12622) # CHECK: Obs = 12,622 hotspots
 
 # Save updated hotspots
 saveRDS(hotspots, file = config$hotspots_path)
