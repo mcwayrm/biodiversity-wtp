@@ -40,6 +40,23 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 ::: {.callout-note collapse="true"}
+# 5/16/2025
+
+> Rya, Matt
+
+## Coding Notes
+- Ryan is taking lead on estimating travel cost. 
+- We need a seperate hotspots shapefile for running zonal stats 
+- We need unique hotspot site IDs and hotspot cluster IDs
+- Explor alternatives to making hotspot clusters 
+- Name for the master data
+- Need to add attributes to hotspot clusters (script 4)
+- Mapping of hotspot cluster ID to hotspot IDs
+
+
+:::
+
+::: {.callout-note collapse="true"}
 # 5/2/2025
 
 > Raahil, Matt

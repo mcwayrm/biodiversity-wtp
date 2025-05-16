@@ -15,6 +15,11 @@
 # 1. First step
 # ----------------------------------------------------
 
+
+# Start with master trip and counterfactual data set with travel cost
+# Then merge in Individual attrbutes on user_id
+# Merge in hotspot attributes on hotspot_id
+
 library(mlogit)
 # Follow these steps: https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.jstatsoft.org/article/view/v095i11/1388&ved=2ahUKEwj60uffqpaNAxUa6ckDHaHtCAsQFnoECBsQAw&usg=AOvVaw055ngBG8txy0ukA10Hi-We
 
