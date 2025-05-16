@@ -65,6 +65,16 @@ mbraaksma:
   ebird_basic_filename: "ebd_IN_201501_202412_relDec-2024.txt"
   ebird_basic_path: !expr do.call(file.path, c(as.list(input_data_dir), ebird_basic_filename))
   # TODO: Matt add in site attribute specific calls
+  # Site attribute: Precipitation
+  raster_path: [".", "data", "raster"]
+  precip_basic_filename: "era5_total_precipitation"
+  precip_basic_path: !expr do.call(file.path, c(as.list(raster_path), precip_basic_filename))
+  # Site attribute: Temperature
+  temp_basic_filename: "era5_2m_temperature"
+  temp_basic_path: !expr do.call(file.path, c(as.list(raster_path), temp_basic_filename))
+  # Site attribute: Tree cover
+  trees_basic_filename: "modis_vcf"
+  trees_basic_path: !expr do.call(file.path, c(as.list(raster_path), trees_basic_filename))
 
 rmadhok:
   input_data_dir: '/Volumes/Backup Plus 1/research/data/ebird_wtp/ebird'
