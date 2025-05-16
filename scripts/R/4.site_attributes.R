@@ -19,10 +19,12 @@ source(config_path)
 cols <- c('loc_id', 'country', 'state', 'county', 'lat', 'lon', 'name', 'time', 'v9')
 hotspots <- readRDS(config$hotspots_path) %>%
     setNames(cols) %>%  # Assign column names
-    select(lat, lon, name)  # Keep necessary columns
-    stopifnot(nrow(hotspots) == 12622) # CHECK: Obs = 12,622 hotspots
+    select(lat, lon, name) %>% # Keep necessary columns
+    distinct(lat, lon, .keep_all = TRUE) # Keep only unique lat/lon observations
+    stopifnot(nrow(hotspots) == 12561) # CHECK: Obs = 12,561 hotspots
 
 # Straight-line dist from home to hotspot
+cat("Generating Hotspot Buffers...\n")
 hotspots$buffer <- st_buffer(st_as_sf(hotspots,
                                 coords = c('lon', 'lat'),
                                 crs = 4326),
@@ -39,94 +41,138 @@ raster_files <- sort(raster_files)
 
 # Loop through raster files and extract zonal stats
 precip_stats <- list()
-start_time <- Sys.time() # Start timer
+start_time <- Sys.time()
+cat("Running Zonal Stats for Rainfall...\n")
 for (f in raster_files) {
     r <- rast(f)
-    # Extract mean value within each buffer
+    date_label <- sub(".*_(\\d{4})_(\\d{2})\\.tif$", "\\1-\\2", basename(f))
+    # Extract mean for each buffer
     stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
-    date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
-    precip_stats[[paste0("precip_", date_label)]] <- stats[[2]]
+    
+    # Combine with hotspot lat/lon (row numbers correspond)
+    stats_df <- hotspots %>%
+        select(lat, lon) %>%
+        mutate(
+            year_month = date_label,
+            precip = stats[[2]]
+        )
+    precip_stats[[date_label]] <- stats_df
 }
-end_time <- Sys.time() # End timer
+hotspots_precip <- bind_rows(precip_stats)
+
+end_time <- Sys.time()
 cat("Rainfall Zonal Stats (Mins): ", round(difftime(end_time, start_time, units = "secs"), 2)/60, "\n")
-
-
-# Combine with original hotspots
-hotspots <- bind_cols(hotspots, as.data.frame(precip_stats))
-hotspots_precip <- hotspots %>%
-    pivot_longer(
-        cols = starts_with("precip_"),
-        names_to = "date",
-        names_prefix = "precip_",
-        values_to = "precip"
-    )
 
 # ----------------------------------------------------
 # 2. Attribute Temperature
 # ----------------------------------------------------
-# Get list of raster files
 dir_path <- file.path(config$temp_basic_path)
 raster_files <- list.files(dir_path, pattern = "\\.tif$", full.names = TRUE)
 raster_files <- sort(raster_files)
 
-# Loop through raster files and extract zonal stats
 temp_stats <- list()
-start_time <- Sys.time() # Start timer
+start_time <- Sys.time()
+cat("Running Zonal Stats for Temperature\n")
 for (f in raster_files) {
-    r <- rast(f)
-    # Extract mean value within each buffer
-    stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
-    date_label <- sub(".*_(\\d{4}_\\d{2})\\.tif$", "\\1", basename(f))
-    temp_stats[[paste0("temp_", date_label)]] <- stats[[2]]
-}
-end_time <- Sys.time() # End timer
-cat("Temperature Zonal Stats (Mins): ", round(difftime(end_time, start_time, units = "secs"), 2)/60, "\n")
+  r <- rast(f)
+  stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
+  date_label <- sub(".*_(\\d{4})_(\\d{2})\\.tif$", "\\1-\\2", basename(f))
 
-# Combine with original hotspots
-hotspots <- bind_cols(hotspots, as.data.frame(temp_stats))
-hotspots_temp <- hotspots %>%
-    pivot_longer(
-        cols = starts_with("temp_"),
-        names_to = "date",
-        names_prefix = "temp_",
-        values_to = "temp"
+  df <- hotspots %>%
+    select(lat, lon) %>%
+    mutate(
+      year_month = date_label,
+      temp = stats[[2]]
     )
 
+  temp_stats[[date_label]] <- df
+}
+
+hotspots_temp <- bind_rows(temp_stats)
+cat("Temperature Zonal Stats (Mins): ", round(difftime(Sys.time(), start_time, units = "secs"), 2)/60, "\n")
+
+
 # ----------------------------------------------------
-# 3. Tree cover
+# 3. Attribute Tree Cover
 # ----------------------------------------------------
-# Get list of raster files
 dir_path <- file.path(config$trees_basic_path)
 raster_files <- list.files(dir_path, pattern = "Percent_Tree_Cover.*\\.tif$", full.names = TRUE)
 raster_files <- raster_files[!grepl("SD", raster_files)]
 raster_files <- sort(raster_files)
 
-# Loop through raster files and extract zonal stats
 tree_stats <- list()
-start_time <- Sys.time() # Start timer
+start_time <- Sys.time()
+cat("Running Zonal Stats for Tree Cover\n")
 for (f in raster_files) {
-    r <- rast(f)
-    # Extract mean value within each buffer
-    stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
-    date_label <- sub(".*doy(\\d{4}).*$", "\\1", basename(f))
-    tree_stats[[paste0("trees_", date_label)]] <- stats[[2]]
-}
-end_time <- Sys.time() # End timer
-cat("Tree Cover Zonal Stats (Mins): ", round(difftime(end_time, start_time, units = "secs"), 2)/60, "\n")
+  r <- rast(f)
+  stats <- terra::extract(r, vect(hotspots$buffer), fun = mean, na.rm = TRUE)
+  date_label <- sub(".*doy(\\d{4}).*$", "\\1-\\2", basename(f))
 
-# Combine with original hotspots
-hotspots <- bind_cols(hotspots, as.data.frame(tree_stats))
-hotspots_trees <- hotspots %>%
-    pivot_longer(
-        cols = starts_with("trees_"),
-        names_to = "date",
-        names_prefix = "trees_",
-        values_to = "trees"
+  df <- hotspots %>%
+    select(lat, lon) %>%
+    mutate(
+      year_month = date_label,
+      trees = stats[[2]]
     )
+
+  tree_stats[[date_label]] <- df
+}
+
+trees_df <- bind_rows(tree_stats)
+# Create full monthly grid for all years in trees_df
+months <- sprintf("%02d", 1:12)
+hotspots_trees <- trees_df %>%
+  mutate(year = substr(year_month, 1, 4)) %>%  # extract year from 'YYYY-MM' or 'YYYY'
+  crossing(month = months) %>%          # create all month combinations
+  mutate(year_month = paste0(year, "-", month)) %>%
+  select(lat, lon, year_month, trees)
+
+cat("Tree Cover Zonal Stats (Mins): ", round(difftime(Sys.time(), start_time, units = "secs"), 2)/60, "\n")
+
 
 # ----------------------------------------------------
 # 4. Attribute Species richness
 # ----------------------------------------------------
+cat("Generating Species Richness Indices...\n")
+
+ebird <- fread(config$ebird_basic_path,
+               select = c('LATITUDE', 'LONGITUDE','OBSERVATION DATE',
+                          'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
+                          'PROTOCOL TYPE','DURATION MINUTES',
+                          'EFFORT DISTANCE KM','ALL SPECIES REPORTED',
+                          'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY'),
+               quote = "")
+colnames(ebird) <- gsub('\\.', '_', tolower(make.names(colnames(ebird))))
+
+# Filter for species-level records at hotspots
+species <- ebird %>%
+  filter(locality_type == 'H', category == "species") %>%
+  select(lat = latitude, lon = longitude, observation_date, common_name) %>%
+  mutate(year_month = format(as.Date(observation_date), "%Y-%m")) %>%
+  count(lat, lon, year_month, common_name, name = "n")
+
+# Wide format: one column per species
+species_wide <- species %>%
+  pivot_wider(
+    names_from = common_name,
+    values_from = n,
+    values_fill = 0
+  )
+
+# Extract species columns as matrix
+species_matrix <- species_wide %>%
+  select(-lat, -lon, -year_month) %>%
+  as.matrix()
+
+# Calculate diversity metrics
+hotspots_species <- species_wide %>%
+  mutate(
+    richness = rowSums(species_matrix > 0),
+    shannon = vegan::diversity(species_matrix, index = "shannon"),
+    simpson = vegan::diversity(species_matrix, index = "simpson")
+  ) %>%
+  select(lat, lon, year_month, richness, shannon, simpson)
+
 
 # Note the data is not time varying
 # NOTE: This is data imputation when e-bird lagged species richness is missing
@@ -141,11 +187,24 @@ hotspots_trees <- hotspots %>%
 
 
 # ----------------------------------------------------
-# 5. Save updated hotspots with attributes
+# 5. Merge all attributes
 # ----------------------------------------------------
 
-# CHECK: Obs = 12,622 hotspots
-stopifnot(nrow(hotspots) == 12622) # CHECK: Obs = 12,622 hotspots
+site_attributes <- hotspots_precip %>%
+  left_join(hotspots_temp, by = c("lat", "lon", "year_month")) %>%
+  left_join(hotspots_trees, by = c("lat", "lon", "year_month")) %>%
+  left_join(hotspots_species, by = c("lat", "lon", "year_month"))
+
+
+# ----------------------------------------------------
+# 6. Save updated hotspots with attributes
+# ----------------------------------------------------
 
 # Save updated hotspots
-saveRDS(hotspots, file = config$hotspots_path)
+saveRDS(hotspots, file = file.path("data", "intermediate", "hotspots", "hotspots_attributes.rds"))
+cat("Site Attributes saved.\n")
+
+# TODO: better handling of missing values
+skim(site_attributes)
+# temp, precip, trees likely missing due to buffers being outside of raster extent (off coast)
+# species richness needs to be imputed with species range data 
