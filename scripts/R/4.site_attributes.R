@@ -136,12 +136,12 @@ cat("Tree Cover Zonal Stats (Mins): ", round(difftime(Sys.time(), start_time, un
 cat("Generating Species Richness Indices...\n")
 
 ebird <- fread(config$ebird_basic_path,
-               select = c('LATITUDE', 'LONGITUDE','OBSERVATION DATE',
-                          'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
-                          'PROTOCOL TYPE','DURATION MINUTES',
-                          'EFFORT DISTANCE KM','ALL SPECIES REPORTED',
-                          'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY'),
-               quote = "")
+              select = c('LATITUDE', 'LONGITUDE','OBSERVATION DATE',
+                        'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
+                        'PROTOCOL TYPE','DURATION MINUTES',
+                        'EFFORT DISTANCE KM','ALL SPECIES REPORTED',
+                        'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY'),
+              quote = "")
 colnames(ebird) <- gsub('\\.', '_', tolower(make.names(colnames(ebird))))
 
 # Filter for species-level records at hotspots
