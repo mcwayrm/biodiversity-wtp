@@ -42,7 +42,82 @@ For notes, we present the most recent first so that notes are chronologically mo
 ::: {.callout-note collapse="true"}
 # 5/16/2025
 
-> Rya, Matt
+> Ryan, Matt, Jovin, Raahil
+
+# TODO: 
+- Seperate meetings for Matt/Jovin (coding) and Ryan/Raahil (conception) for our specializations
+
+## Agenda
+
+1. Finalize the site attribute data and create the master dataset
+- Matt and Ryan -- complete by next meeting (May 16)
+- We have monthly temperature and rainfall
+- We have annual tree cover data
+- These are as zonal statistics (average for 10KM radius of hotspot)
+    - In E-bird, we have the average distance walked around hotspot
+    - Or do we avoid this work because temp, rain, and tree cover does not vary much at such a small spatial scale.
+    - Temp, rainfall, and tree are at higher resolutions. So as long as the radius is less than the input data this will not vary. 
+- We need to think more about mapping of hotspots and hotspot clusters. 
+- Need to add a fourth site attribute: congestion
+    - How frequently other users are using this site? 
+    - Aggregate number of user trips for each hotspot but will need to do this as a lag (week before)
+    - So this is expected congestion. 
+- We need to transform this into a panel of counterfactual sets appended to the observed trips. 
+    - Not balanced across counterfactual trips and time 
+
+
+2. Calculate travel costs -- see notes for guidance; this will be added to the site attribute script
+- For GDP per capita data, use gridded data from here and extract the value closest to each users' home. Then use the formula from Kolstoe/cameron or lloyd-smith to calculate travel costs. 
+- Jovin -- complete by next meeting (May 16)
+- Collected 2014-2024 GDP per capita data
+- Laptop trouble estimating, working with MPC.
+- Could run the travel cost with a small random sample to make this managable for Jovin's laptop capacity.
+- Can re-run the pipeline so we are running for only frequent users (1.6M instead of the 3M)
+
+3. Species richness 
+- Matt and Ryan -- bring three ideas for next meeting (May 16)
+- Close to being done (Matt taking the lead)
+- Taking raw e-bird data and getting monthly counts
+- Need to translate from hotspots to hotspot clusters
+- Species ranges (for missing) shapefiles are crashing the code.
+- All of this is to get a species at a hotspot so we can turn this into a richness index 
+    - Will want this merged as richness for same month/week from previous year
+    - In the app, you can see in real-time species count from their favorite places. 
+    - So likely quite responsive. Last week is best
+    - Can also do monthly to replicate results from month last year from Kolsto paper method. 
+- We aim to use the simpson and shanon index from `vegan` package
+
+4. Individual Attributes
+- With individual fixed effects, we partial out any time-invariant
+- From the e-bird data:
+    - How frequently you went in the past year
+    - Average distance traveled in the past year 
+    - Is there any measure of learning over time? Value of recreation is not static
+        - Experience index
+        - Cumulative experience (simple counter of trips up unti that point)
+        - Could weight this by how much you walk, and taxonomy of bird level data (raw text file of trip-species level)
+        - Could collapse species count to trip level. 
+
+## Project Management
+
+- Meetings need to be in person. 
+- Jovin update meeting calendar 
+- Start assigning tasks instead of asking for volunteers
+- Need to come up with a specialization of tasks. 
+- Coding and Data: Matt (lead), Jovin, Ryan (assist)
+- Conceptualize: Ryan (lead), and Raahil
+    - How our model departs from workhouse. 
+    - Literature review for our novelty
+- Some tasks: 
+    - Google maps driving time
+    - inaturalist species richness mapping
+
+:::
+
+::: {.callout-note collapse="true"}
+# 5/15/2025
+
+> Ryan, Matt
 
 ## Coding Notes
 - Ryan is taking lead on estimating travel cost. 

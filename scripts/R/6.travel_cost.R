@@ -42,6 +42,7 @@ trips <- readRDS(config$ebird_trip_hotspots_path)
 
 # GDP annual data 
     # bring in gdp data
+    https://cran.r-project.org/web/packages/WDI/readme/README.html
     # gdp merge in trips and counterfactuals on year
 
 
@@ -50,7 +51,10 @@ trips <- readRDS(config$ebird_trip_hotspots_path)
 # Then merge in GDP by year for each trip
 # Then do the calculation. 
 #     Lloyd-Smith and Cameron/Kolstoe
-#             - Travel cost = 2 (round trip) x distance x 1/3 x wage (from GDP)
+#     - Travel cost = 2 (round trip) x distance x 1/3 x wage (from GDP)
+# Basic Idea: 
+    # - Distance from home to hotspot. Multiply by 2. Multiply by gas price per km.
+    # - Then multiply by wage and multiply by opportunity cost of time using time.
 
 
 # Save a master trip and counterfactual data set with travel cost
