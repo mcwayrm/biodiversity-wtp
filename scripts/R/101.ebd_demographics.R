@@ -19,7 +19,10 @@ setwd(LOCAL)
 
 # Load data
 india_dist <- st_read('./data/shp/district-2011/district-2011.shp') # districts
-home <- readRDS('./data/intermediate/ebird/user_home_impute.rds') # homrd
+india <- st_read('./data/shp/district-2011/nation-2011.shp')
+home <- readRDS('./data/intermediate/ebird/user_home_impute.rds') # imputed homes
+
+#------- ebird Home density---------
 
 # Set up grid
 grid <- raster(india_dist)
@@ -41,6 +44,7 @@ df$cuts <- cut(df$layer, breaks=c(0, 1, 20, 40, 60, 80, 100, 1027),
 
 ggplot() + 
   ggtitle("B") +
+  geom_sf(data=india, alpha = 0.1, size = 0.3) + 
   geom_tile(data=df, mapping = aes(x = x, y = y, fill = cuts)) + 
   coord_sf(datum = NA) +
   scale_fill_viridis_d(name='User Homes',
@@ -48,7 +52,7 @@ ggplot() +
                        guide=guide_legend(title.position='top')) +
   theme_minimal() +
   theme(text = element_text(family = 'latex'),
-        plot.title = element_text(size = 20, face = "bold"),
+        plot.title = element_text(size = 30, face = "bold"),
         axis.line = element_blank(), 
         axis.text = element_blank(),
         axis.ticks = element_blank(), 
@@ -56,18 +60,18 @@ ggplot() +
         panel.background = element_blank(),
         legend.position='bottom',
         legend.key.width=unit(1.3,'cm'),
-        legend.text=element_text(size=15),
-        legend.title=element_text(size=20)) 
+        legend.text=element_text(size=30),
+        legend.title=element_text(size=30)) 
 setwd(LOCAL)
-ggsave('./output/fig/ebird_home_density.png')
+ggsave('./output/fig/ebird_home_density.png', width = 10, height = 8, dpi = 150, units = "in")
 
-# Read India population density (source: WorldPop)
+#------ India population density
+
+# Read (source: WorldPop)
 r <- raster('./data/raster/ind_pd_2015_1km.tiff')
 r <- crop(r, extent(india_dist))
 r <- mask(r, india_dist)
-
-# resample population raster to home grid resolution
-r_ag <- raster::aggregate(r, fact = res(home_grid)[1]/res(r)[1], fun=sum) # population per 20km cell
+r_ag <- raster::aggregate(r, fact = 20, fun=sum) # population per 20km cell
 
 # Plot
 df <- as.data.frame(r_ag, xy = T) %>%
@@ -79,14 +83,15 @@ df$cuts <- cut(df$ind_pd_2015_1km, breaks=c(0, 1000, 200000, 400000, 600000, 800
 
 ggplot() + 
   ggtitle("A") +
-  geom_tile(data=filter(df, !is.na(cuts)), mapping = aes(x = x, y = y, fill = cuts)) + 
+  geom_sf(data=india, alpha = 0.1, size = 0.3) +
+  geom_tile(data=df, mapping = aes(x = x, y = y, fill = cuts)) + 
   coord_sf(datum = NA) +
   scale_fill_viridis_d(name='2015 Population Density (Thousands)',
                        direction=-1,
                        guide=guide_legend(title.position='top')) +
   theme_minimal() +
   theme(text = element_text(family = 'latex'),
-        plot.title = element_text(size = 20, face = "bold"),
+        plot.title = element_text(size = 30, face = "bold"),
         axis.line = element_blank(), 
         axis.text = element_blank(),
         axis.ticks = element_blank(), 
@@ -94,10 +99,10 @@ ggplot() +
         panel.background = element_blank(),
         legend.position = 'bottom',
         legend.key.width=unit(1.3,'cm'),
-        legend.text=element_text(size=15),
-        legend.title=element_text(size=20))
+        legend.text=element_text(size=30),
+        legend.title=element_text(size=30))
 setwd(LOCAL)
-ggsave('./output/fig/pop_density_2015.png')
+ggsave('./output/fig/pop_density_2015.png', width = 10, height = 8, dpi = 150, units = "in")
 
 #-------------------------------------------------------------
 # % of Population in cities
@@ -324,14 +329,13 @@ clean <- function(df) {
 # Prep tables
 dflist <- list(df_all = df_all, df_u = df_u, df_r = df_r)
 df_clean <- lapply(dflist, clean)
-df_clean <- lapply(df_clean, function(x) x %>% dplyr::select(Variable, Difference))
-
-# Merge tables
-table <- df_clean %>% 
-  reduce(full_join, by='Variable')
-names(table) <- c('Variable', 'All', 'Urban', 'Rural')
+df_clean <- lapply(df_clean, function(x) x %>% dplyr::select(-pvalue))
 
 # Write out
-stargazer(table, summary=F, rownames=F,float=F, column.sep.width = '1.8cm',
+stargazer(df_clean$df_all, 
+          summary=F, 
+          rownames=F,
+          float=F, 
+          column.sep.width = '1cm',
           out='./output/table/ebird_dhs_ttest.tex')
 
