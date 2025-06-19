@@ -53,12 +53,12 @@ rec_clust <- function(df,
   
   # Cut hc tree at specified distance (in meters)
   # Assigns hotspot cluster id to each hotspot
-  df$hsid <- cutree(hc, h=clust_size*1000)
+  df$cluster_id <- cutree(hc, h=clust_size*1000)
   
   if(module == 'all') {
     
     # Save intermediate
-    df <- select(df, -hsid)
+    df <- select(df)
     saveRDS(df, file.path("data", "intermediate", "hotspots", paste0("hotspots_all_", clust_size, "km.rds")))
     
     return(df)
@@ -69,7 +69,7 @@ rec_clust <- function(df,
     
     # Cluster centroids
     df <- df %>%
-      group_by(hsid) %>%
+      group_by(cluster_id) %>%
       summarize(lat = mean(lat), lon = mean(lon))
     
     # District in centroid of recreation area

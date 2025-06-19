@@ -10,11 +10,11 @@
 # This results in a data set of counterfacutals and actual trips to be used in the mixed logit. 
 ####################################
 
-choice_set <- function(choice_df, trip_df, module = 'cluster', radius = 20, clust_size = 10) {
+choice_set <- function(choice_df, trip_df, module = 'cluster', radius = 20, clust_size = 10, sample=1) {
   # Define output file path
   file_path <- ifelse(module == 'cluster',
                       file.path("data", "intermediate", "choice_sets", 
-                                paste0("choice_set_", radius, "km_clust_", clust_size, "km.rds")),
+                                paste0("choice_set_", radius, "km_clust", clust_size, "km_sample", sample, ".rds")),
                       file.path("data", "intermediate", "choice_sets", 
                                 paste0("choice_set_", radius, "km.rds")))
   
