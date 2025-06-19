@@ -39,6 +39,58 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
+
+
+::: {.callout-note collapse="true"}
+# 6/2/2025
+
+> Ryan, Matt, Jovin, Raahil
+
+# TODO: 
+- **Matt**: Finish species richness site attribute (cluster-time level)
+- **Matt**: Finish computing congestion site attribute
+- **Matt**: Check why sample size so big. Check number of elements in the choice set for validation.
+- **Matt/Ryan**: Compute species richness in radius *around home* (varying at same time unit as other species richness attribute)
+- **Jovin**: Fix travel cost. I suggest checking it over with Matt/Ryan
+- **Raahil/Ryan**: Work through paper framing
+
+## Agenda
+
+1. Species Richness 
+- Maps for imputation can't have the shannon index. Because we don't have abundance counts
+- But we can do an index for the e-bird data hotspots
+- Estimates of bird life and expected species richness 
+- Monthly values or seasonal values 
+
+
+2. Other Site Attributes 
+- Have one site data set for temp, rain, and tree cover
+- This is at the hotspot cluster level 
+
+3. Congestion 
+- Ready to go code, just not run yet
+- \# of users at hotspot cluster monthly
+
+4. Travel Cost
+- Jovin has choice set and code that estmates this for a first attempt 
+- Matched to GDP data to impute wages 
+- Estimate Euclidean distance between households and hotspot clusters 
+- Final data for RUM should be choice set dimensions (for our checks)
+
+5. Measure of Experience at the Individual Level 
+- Counts of trips (counter)
+- Count for \# of different hotspots (counter)
+- So ratio tells us if you have  preference for location ("Habit Formation"). 
+    - Low ratio is little location preference
+    - High ratio is high location preference
+
+6. Conceptual
+- Birds vs. non-bird still valued as travel cost. So both are still measures of nature recreation. 
+- Monetizing value >> Add in contribute to GEP or ecosystem service value literature. 
+- Novelty: Why is WTP lower in Developing Countries? Welfare for environmental quality in envirodevonomics framework (Env-Dev framing)
+
+:::
+
 ::: {.callout-note collapse="true"}
 # 5/16/2025
 
