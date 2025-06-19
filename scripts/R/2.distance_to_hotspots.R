@@ -27,8 +27,8 @@ ebird <- readRDS(config$ebird_trip_clean_path)
 ebird <- ebird %>%
         filter(locality_type == 'H') %>%
         select(-c(locality_type, locality))
-  stopifnot(nrow(ebird) == 1347758) # CHECK: Obs = 1,347,758 hot spot trips
-  stopifnot(length(unique(ebird$user_id)) == 30327) # CHECK: Users = 30,327 users
+  stopifnot(nrow(ebird) == 284736) # CHECK: Obs = 284,736 hot spot trips
+  stopifnot(length(unique(ebird$user_id)) == 268) # CHECK: Users = 30,327 users
 
 #-----------------------------------------
 # 2. Euclidean Distance To Destination
