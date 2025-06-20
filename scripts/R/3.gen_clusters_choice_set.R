@@ -336,11 +336,55 @@ master_data <- rbindlist(choice_stacks, fill = TRUE) %>%
 # 5. CLEAN AND SAVE RESULTS
 # ----------------------------------------------------
 
-# Add choice indicator and clean columns
+# Add choice indicator and preserve coordinate variables
 master_clean <- master_data %>%
   mutate(choice = ifelse(is.na(trip_id), 0, 1)) %>%
-  select(-starts_with('lat'), -starts_with('lon'), -duration, -distance, -complete) %>%
+  # Rename coordinates for clarity
+  rename(
+    lat_cluster = lat,
+    lon_cluster = lon
+  ) %>%
+  # Remove unwanted columns but keep coordinates
+  select(-duration, -distance, -complete) %>%
   fill(trip_id, date, year, month, yearmonth, c_code_2011_home, .direction = "down")
+
+# Calculate distance using vectorized operations (much faster)
+writeLines("Calculating distances between home and cluster locations...")
+
+# Convert coordinates to numeric and filter valid rows
+valid_coords <- master_clean %>%
+  filter(!is.na(lat_home) & !is.na(lon_home) & !is.na(lat_cluster) & !is.na(lon_cluster)) %>%
+  mutate(
+    lat_home = as.numeric(lat_home),
+    lon_home = as.numeric(lon_home),
+    lat_cluster = as.numeric(lat_cluster),
+    lon_cluster = as.numeric(lon_cluster)
+  )
+
+if (nrow(valid_coords) > 0) {
+  # Create sf objects for vectorized distance calculation
+  home_points <- st_as_sf(valid_coords, coords = c('lon_home', 'lat_home'), crs = 4326) %>%
+    st_transform(32643)
+  cluster_points <- st_as_sf(valid_coords, coords = c('lon_cluster', 'lat_cluster'), crs = 4326) %>%
+    st_transform(32643)
+  
+  # Calculate distances vectorized
+  distances_m <- st_distance(home_points, cluster_points, by_element = TRUE)
+  valid_coords$geo_dist_cluster <- as.numeric(distances_m) / 1000  # Convert to km
+  
+  # Join back to main dataset
+  master_clean <- master_clean %>%
+    mutate(row_id = row_number()) %>%
+    left_join(
+      valid_coords %>% 
+        mutate(row_id = row_number()) %>%
+        select(row_id, geo_dist_cluster),
+      by = "row_id"
+    ) %>%
+    select(-row_id)
+} else {
+  master_clean$geo_dist_cluster <- NA_real_
+}
 
 # Save final dataset
 output_filename <- paste0("master_cs", RADIUS_KM, "km_clust", CLUSTER_SIZE_KM, 
