@@ -40,6 +40,51 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 
+::: {.callout-note collapse="true"}
+# 8/1/2025
+
+> Ryan, Matt, Raahil
+
+# TODO: 
+- **Matt**: Re-estimating WTP using new sample of users (expanded)
+- **Matt**: Adding a Visual: Attempting to run the simple regression of biodiversity and hotspot visitations
+- **Jovin**: Complete the IV design by finding accompanying data. Maps of migration patterns. Papers to cite for this phenomenon.
+- **Raahil/Ryan**: Write up the model in LaTeX
+
+## Agenda
+
+1. Figures describing variation 
+    - Ryan presented some post estimation figures we tabled for later
+    - Matt presented some maps showing variation over space
+    - Raahil suggested we produce a margins plots. We run an endogenous TWFE model of species richness on number of visitors. Then we plot the marginal effects at different levels of biodiversity. 
+2. First estimates of WTP using super users 
+    - Matt is able to run the conditional logit model. Not able to run the mixed logit model
+    - Our $\alpha$ for price has the wrong sign. This makes biodiversity WTP a negative value
+    - We think that the sample may be too restrictive resulting in weird results 
+    - Additionally, Matt is working through some data issues in the counterfactual data set that is dropping 1.1% of site attributes
+    - And there is colinearity amongst site attributes when running the conditional logit, so they are currently dropped in the model run. 
+3. Modeling updates using IV method
+    - Ryan has a clear idea of how to model the IV into our mixed logit model 
+    - The key is to rely on Jacob Bradt's model using control functions. 
+    - We estimate the first stage linear regression. Residualize. And use the residuals in our discrete choice method (mixed logit). 
+    - We will need to bootstrap the 2nd stage in our to recover standard errors. 
+4. Bird Migration Instruments
+    - (i) Migration patterns: From the literature I've compiled so far:
+        - Peak arrivals: August - November
+        - Peak departures: February - April
+        - Low migration periods: May - July, and December - January
+    - The Inbound migration: Birds arrive in India primarily from the northern breeding grounds, especially in Mongolia, Kazakhstan, and Siberia, during the August-November window to overwinter in wetlands and coastal areas.
+    - The Outbound migration: Birds depart February-April, returning to their breeding sites for nesting.
+    - (ii) Drivers of bird migration and IV framework: Ecology literature indicates that migration along the Central Asian Flyway is mainly driven by (i) Ecological reasons, india's wetlands, lakes, and agricultural landscapes provide abundant food and shelter during winter, (ii) Climatic reasons: Wrmer winter conditions compared to the northern latitudes reduce suruval stress (iii) Stopover importance: Key sites such as Chilika, Keoladeo, Pong Dam, etc serve as staging areas for fueling before onward flights.
+    - Recent literature uses environmental shocks as instruments (Noack et al., 2024; Meng et al, 2025). For India's bird migration context, two IV strategies appear promising.
+        - Weather shock IV: Baseline district exposure (from our eBird) interacting with NVDI and weather anomalies in the breeding grounds.
+        - Disease shock IV: I find this is more interesting because a recent work by Yang et al., 2024 at Nature Communications finds avian influenza outbreaks do not trigger migration but do affect survival and presence of birds at the Indian stopovers to a very large extent. This makes it a credible instrument because: (i) outbreaks are exogenous to the local economic variables and (ii) outbreak timing is tied to a peak of migration window/CAF (Aug-Nov, Feb-Apr) in India, allowing shocks to coincide with relevant bird presence.
+    - (iii) Data collection: Potential outbreak data sources, shapefiles include (i) FAO EMPRES-i+; (ii) WOAH/WAHIS, which tracks the outbreak locations, date, disease type, host species, and status. Lastly, GISAID shapefile data, which is an avian influenza sequence database, tracks the outbreak locations (used in Elbe & Buckland-Merrett, 2017, Global Challenges Journal; Yang et al, 2024, Nature Communications).
+    - (iv) Next step: Performing a spatial join between outbreak data and our ebird-based hotspots, aggregating outbreak counts to the district/hotspot-year panel level. I think this will allow us to construct the avian influenza IV as = Baseline exposure in district/hotspot d  x outbreak shock at time t.
+
+
+:::
+
 
 ::: {.callout-note collapse="true"}
 # 6/2/2025
