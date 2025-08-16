@@ -41,6 +41,84 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 8/15/2025
+
+> Ryan, Matt, Raahil
+
+# TODO: 
+- **Matt**: Demean data for State x month fixed effect and user fixed effects 
+- **Matt**: Resolve imputing species richness by estimating correlation of e-bird to bird life data and deflate value
+    - **Matt**: Degree of Imputation: Summary stats on % of missing in observed and counterfactual data
+- **Jovin**: Constructing the shift-share IV
+
+## Agenda
+
+1. Estimation of WTP
+    - negative values came from mismatched polygons
+        - Difference from the clipped calipers instead of the original simple circles
+    - weeks sometimes were only 53 (not 54). Solved with iso-week formating that allows for more merging of site attributes
+2. Data issue
+    - we don't observe species richness
+    - So we are imputing with range maps
+    - When there is missing, we currently fill with species map
+    - Possible species ranges is always higher than recorded value from e-birders
+    - So the imputed values always are super high when missing, and then this makes our estimates really weird.
+        - This penalizes the choice. Because counterfactual choice has huge species richness
+    - Potential Solution: replace missing with historical average (or minimum average) for each district or state in the same time period. 
+        - Impute that for hotspots with missing data 
+    - Potential Solution: correlation of bird life data and e-bird observations
+        - Then we can just deflate imputed value that rescales this to the e-bird values
+    - What is the main source of missing value? 
+        - want summary stats on % of missing in observed and counterfactual data
+        - Could make this seasonal species richness for imputed value
+3. Fixed Effects Issue
+    - NA for standard errors when adding individual fixed effects
+    - Running with python on MSI
+    - Could attempt to manually demean data (user fixed effects) before running
+    - State x month fixed effect and user fixed effects 
+        - Robustness by district x month fixed effects 
+        - This will just be more intense
+    - mlogit does not allow for fixed effects
+    - The key is to demean within each group
+        - hdfe is package in Stata
+4. Instrumental Variables
+    - Have a map data for bird migration routes
+        - Only found 2 species public for India 
+        - There are other species we can request access to
+    - Data avaliable for avian flu outbreak
+        - H5N1
+        - 2005 - 2025
+    - Combining the two data sets we can assign outbreaks to specific species that migrate to India
+    - Human cases of avian flu deaths should be controlled for in IV estimation
+    - If we have a shift-share IV, do we need to know the flyways?
+        - If this is the only channel, then we don't need to actually need to know the origin of the bird 
+
+$$
+IV_{dt} = shift_t \times share_d
+$$
+
+$$
+IV_{dt} = \text{Wild Avian Flu}_t \times \text{% of species pool from migration}_d
+$$
+
+$$
+Shift_t = \sum_{j = country}^J flu_{jt} \times \gamma_j
+$$
+
+$$
+\gamma_j = \sum_{s =\text{total \# of species in j}}^S \frac{\text{species range overlap India}_s}{S}
+$$
+
+- Assumes a uniform distribution of species across their species range
+    - This is an improvement over distance from India as the weight
+
+$$
+Share_d = \sum_d \frac{Indicator for migratory}{\text{count of potential species}}
+$$
+
+:::
+
+::: {.callout-note collapse="true"}
 # 8/1/2025
 
 > Ryan, Matt, Raahil

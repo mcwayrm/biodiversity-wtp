@@ -75,13 +75,14 @@ gdppc_values <- gdp_centroids$gdppc[nearest_indices]
 # ASSUMPTIONS
 # --------------------------------------------------------
 
-time_value_fraction <- 1/3           # Value of time assumed as 1/3 of wage (Jayalath et al., 2023)
-
-work_hours <- 2000                   # Based on 250 working days x 8 hours/day
-
-travel_speed_kmph <- 30              # Assumed average rural/urban travel speed consistent with MoRTH road studies - Ministry of Road Transport and Highways
-
-driving_cost_per_km <- 7.5             # INR/km
+# Value of time assumed as 1/3 of wage (Jayalath et al., 2023)
+time_value_fraction <- 1/3           
+# Based on 250 working days x 8 hours/day
+work_hours <- 2000                   
+# Assumed average rural/urban travel speed consistent with MoRTH road studies - Ministry of Road Transport and Highways 
+travel_speed_kmph <- 30              
+# INR/km
+driving_cost_per_km <- 7.5             
 
 # We adopt a per-kilometer driving cost of INR 7.5, consistent with estimates for vehicle running costs in India by excluding the fixed cost based on insurance, registration, and age-related depreciation.
 # According to the Times of India (Feb 14, 2024), small petrol cars cost about INR 7-8/km to operate.
@@ -91,8 +92,10 @@ driving_cost_per_km <- 7.5             # INR/km
 # --------------------------------------------------------
 # EXTRACT GDP-based hourly wage
 # --------------------------------------------------------
-gdppc_values <- gdp_centroids$gdppc[nearest_indices]      # GDP per capita at home
-hourly_wage <- gdppc_values / work_hours                  # INR/hour
+# GDP per capita at home
+gdppc_values <- gdp_centroids$gdppc[nearest_indices]      
+# INR/hour
+hourly_wage <- gdppc_values / work_hours                  
 
 # --------------------------------------------------------
 # PREP DISTANCE VARIABLE (ensure numeric)
@@ -106,26 +109,23 @@ master_cs50km <- master_cs50km %>%
   mutate(
     # Estimate one-way travel time (hours) = distance (km) / speed (km/h)
     travel_time_hours = geo_dist_cluster / travel_speed_kmph,
-    
     # Calculate round-trip time cost = 2 x (1/3 of wage) x travel time
     time_cost = 2 * time_value_fraction * hourly_wage * travel_time_hours,
-    
     # One-way driving cost = distance x cost per km
     fuel_cost = geo_dist_cluster * driving_cost_per_km,
-    
     # Total travel cost = time cost + driving cost
     travel_cost_combined = time_cost + fuel_cost,
-    
     # Natural log of travel cost (for regression), avoids log(0) error
     log_travel_cost_combined = log1p(travel_cost_combined)
   )
+
 # ----------------------------------------
 # Checking distribution
 # ----------------------------------------
 
 summary(master_cs50km$travel_cost_combined)
 hist(master_cs50km$travel_cost_combined, breaks = 50,
-     main = "Travel Cost", xlab = "Cost (INR)")
+    main = "Travel Cost", xlab = "Cost (INR)")
 
 # Save result
 output_path <- file.path("data", "clean", "master_cs50km_costs.rds")

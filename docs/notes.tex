@@ -1,0 +1,1829 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  letterpaper,
+]{article}
+
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+
+\makeatletter
+\@ifpackageloaded{tcolorbox}{}{\usepackage[skins,breakable]{tcolorbox}}
+\@ifpackageloaded{fontawesome5}{}{\usepackage{fontawesome5}}
+\definecolor{quarto-callout-color}{HTML}{909090}
+\definecolor{quarto-callout-note-color}{HTML}{0758E5}
+\definecolor{quarto-callout-important-color}{HTML}{CC1914}
+\definecolor{quarto-callout-warning-color}{HTML}{EB9113}
+\definecolor{quarto-callout-tip-color}{HTML}{00A047}
+\definecolor{quarto-callout-caution-color}{HTML}{FC5300}
+\definecolor{quarto-callout-color-frame}{HTML}{acacac}
+\definecolor{quarto-callout-note-color-frame}{HTML}{4582ec}
+\definecolor{quarto-callout-important-color-frame}{HTML}{d9534f}
+\definecolor{quarto-callout-warning-color-frame}{HTML}{f0ad4e}
+\definecolor{quarto-callout-tip-color-frame}{HTML}{02b875}
+\definecolor{quarto-callout-caution-color-frame}{HTML}{fd7e14}
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+
+\usepackage{bookmark}
+
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={The Economic Value of Biodiversity in India},
+  pdfauthor={Raahil Madhok; Matt Braaksma; Ryan McWay; Jovin Lasway},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\title{The Economic Value of Biodiversity in India}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{Running Notes}
+\author{Raahil Madhok \and Matt Braaksma \and Ryan McWay \and Jovin
+Lasway}
+\date{}
+
+\begin{document}
+\maketitle
+
+\renewcommand*\contentsname{Table of contents}
+{
+\hypersetup{linkcolor=}
+\setcounter{tocdepth}{3}
+\tableofcontents
+}
+
+\subsection{Project Description}\label{project-description}
+
+This project aims to produce the first measure of willingness to pay
+(WTP) for biodiversity. This provides a monetary measure to value
+biodiversity which can be applied to a wide variety of applications in
+environmental economics and natural captial accounting. The data relies
+on E-bird observations of diverse bird species observations. The sample
+is limited to local, long-time users who are residents (not tourists) in
+India. The methodology to calculate WTP relies on a revealed preference
+throughh the random utility model (RUM). The RUM determines the value of
+seeking out diverse species of birds by comparing the value of
+alternative counterfactual bird siting locations and the cost to go to
+these counterfactuals. Monetary value is determined through the RUM by
+estimating the travel cost of the reveal preference compared to
+counterfactual locations.
+
+\subsection{Notes}\label{notes}
+
+For notes, we present the most recent first so that notes are
+chronologically most recent.
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{8/15/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Ryan, Matt, Raahil
+\end{quote}
+
+\section{TODO:}\label{todo}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Matt}: Demean data for State x month fixed effect and user
+  fixed effects
+\item
+  \textbf{Matt}: Resolve imputing species richness by estimating
+  correlation of e-bird to bird life data and deflate value
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \textbf{Matt}: Degree of Imputation: Summary stats on \% of missing
+    in observed and counterfactual data
+  \end{itemize}
+\item
+  \textbf{Jovin}: Constructing the shift-share IV
+\end{itemize}
+
+\subsection{Agenda}\label{agenda}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Estimation of WTP
+
+  \begin{itemize}
+  \tightlist
+  \item
+    negative values came from mismatched polygons
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Difference from the clipped calipers instead of the original
+      simple circles
+    \end{itemize}
+  \item
+    weeks sometimes were only 53 (not 54). Solved with iso-week
+    formating that allows for more merging of site attributes
+  \end{itemize}
+\item
+  Data issue
+
+  \begin{itemize}
+  \tightlist
+  \item
+    we don't observe species richness
+  \item
+    So we are imputing with range maps
+  \item
+    When there is missing, we currently fill with species map
+  \item
+    Possible species ranges is always higher than recorded value from
+    e-birders
+  \item
+    So the imputed values always are super high when missing, and then
+    this makes our estimates really weird.
+
+    \begin{itemize}
+    \tightlist
+    \item
+      This penalizes the choice. Because counterfactual choice has huge
+      species richness
+    \end{itemize}
+  \item
+    Potential Solution: replace missing with historical average (or
+    minimum average) for each district or state in the same time period.
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Impute that for hotspots with missing data
+    \end{itemize}
+  \item
+    Potential Solution: correlation of bird life data and e-bird
+    observations
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Then we can just deflate imputed value that rescales this to the
+      e-bird values
+    \end{itemize}
+  \item
+    What is the main source of missing value?
+
+    \begin{itemize}
+    \tightlist
+    \item
+      want summary stats on \% of missing in observed and counterfactual
+      data
+    \item
+      Could make this seasonal species richness for imputed value
+    \end{itemize}
+  \end{itemize}
+\item
+  Fixed Effects Issue
+
+  \begin{itemize}
+  \tightlist
+  \item
+    NA for standard errors when adding individual fixed effects
+  \item
+    Running with python on MSI
+  \item
+    Could attempt to manually demean data (user fixed effects) before
+    running
+  \item
+    State x month fixed effect and user fixed effects
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Robustness by district x month fixed effects
+    \item
+      This will just be more intense
+    \end{itemize}
+  \item
+    mlogit does not allow for fixed effects
+  \item
+    The key is to demean within each group
+
+    \begin{itemize}
+    \tightlist
+    \item
+      hdfe is package in Stata
+    \end{itemize}
+  \end{itemize}
+\item
+  Instrumental Variables
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Have a map data for bird migration routes
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Only found 2 species public for India
+    \item
+      There are other species we can request access to
+    \end{itemize}
+  \item
+    Data avaliable for avian flu outbreak
+
+    \begin{itemize}
+    \tightlist
+    \item
+      H5N1
+    \item
+      2005 - 2025
+    \end{itemize}
+  \item
+    Combining the two data sets we can assign outbreaks to specific
+    species that migrate to India
+  \item
+    Human cases of avian flu deaths should be controlled for in IV
+    estimation
+  \item
+    If we have a shift-share IV, do we need to know the flyways?
+
+    \begin{itemize}
+    \tightlist
+    \item
+      If this is the only channel, then we don't need to actually need
+      to know the origin of the bird
+    \end{itemize}
+  \end{itemize}
+\end{enumerate}
+
+\[
+IV_{dt} = shift_t \times share_d
+\]
+
+\[
+IV_{dt} = \text{Wild Avian Flu}_t \times \text{% of species pool from migration}_d
+\]
+
+\[
+Shift_t = \sum_{j = country}^J flu_{jt} \times \gamma_j
+\]
+
+\[
+\gamma_j = \sum_{s =\text{total \# of species in j}}^S \frac{\text{species range overlap India}_s}{S}
+\]
+
+\begin{itemize}
+\tightlist
+\item
+  Assumes a uniform distribution of species across their species range
+
+  \begin{itemize}
+  \tightlist
+  \item
+    This is an improvement over distance from India as the weight
+  \end{itemize}
+\end{itemize}
+
+\[
+Share_d = \sum_d \frac{Indicator for migratory}{\text{count of potential species}}
+\]
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{8/1/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Ryan, Matt, Raahil
+\end{quote}
+
+\section{TODO:}\label{todo-1}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Matt}: Re-estimating WTP using new sample of users (expanded)
+\item
+  \textbf{Matt}: Adding a Visual: Attempting to run the simple
+  regression of biodiversity and hotspot visitations
+\item
+  \textbf{Jovin}: Complete the IV design by finding accompanying data.
+  Maps of migration patterns. Papers to cite for this phenomenon.
+\item
+  \textbf{Raahil/Ryan}: Write up the model in LaTeX
+\end{itemize}
+
+\subsection{Agenda}\label{agenda-1}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Figures describing variation
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Ryan presented some post estimation figures we tabled for later
+  \item
+    Matt presented some maps showing variation over space
+  \item
+    Raahil suggested we produce a margins plots. We run an endogenous
+    TWFE model of species richness on number of visitors. Then we plot
+    the marginal effects at different levels of biodiversity.
+  \end{itemize}
+\item
+  First estimates of WTP using super users
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Matt is able to run the conditional logit model. Not able to run the
+    mixed logit model
+  \item
+    Our \(\alpha\) for price has the wrong sign. This makes biodiversity
+    WTP a negative value
+  \item
+    We think that the sample may be too restrictive resulting in weird
+    results
+  \item
+    Additionally, Matt is working through some data issues in the
+    counterfactual data set that is dropping 1.1\% of site attributes
+  \item
+    And there is colinearity amongst site attributes when running the
+    conditional logit, so they are currently dropped in the model run.
+  \end{itemize}
+\item
+  Modeling updates using IV method
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Ryan has a clear idea of how to model the IV into our mixed logit
+    model
+  \item
+    The key is to rely on Jacob Bradt's model using control functions.
+  \item
+    We estimate the first stage linear regression. Residualize. And use
+    the residuals in our discrete choice method (mixed logit).
+  \item
+    We will need to bootstrap the 2nd stage in our to recover standard
+    errors.
+  \end{itemize}
+\item
+  Bird Migration Instruments
+
+  \begin{itemize}
+  \item
+    \begin{enumerate}
+    \def\labelenumii{(\roman{enumii})}
+    \tightlist
+    \item
+      Migration patterns: From the literature I've compiled so far:
+    \end{enumerate}
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Peak arrivals: August - November
+    \item
+      Peak departures: February - April
+    \item
+      Low migration periods: May - July, and December - January
+    \end{itemize}
+  \item
+    The Inbound migration: Birds arrive in India primarily from the
+    northern breeding grounds, especially in Mongolia, Kazakhstan, and
+    Siberia, during the August-November window to overwinter in wetlands
+    and coastal areas.
+  \item
+    The Outbound migration: Birds depart February-April, returning to
+    their breeding sites for nesting.
+  \item
+    \begin{enumerate}
+    \def\labelenumii{(\roman{enumii})}
+    \setcounter{enumii}{1}
+    \tightlist
+    \item
+      Drivers of bird migration and IV framework: Ecology literature
+      indicates that migration along the Central Asian Flyway is mainly
+      driven by (i) Ecological reasons, india's wetlands, lakes, and
+      agricultural landscapes provide abundant food and shelter during
+      winter, (ii) Climatic reasons: Wrmer winter conditions compared to
+      the northern latitudes reduce suruval stress (iii) Stopover
+      importance: Key sites such as Chilika, Keoladeo, Pong Dam, etc
+      serve as staging areas for fueling before onward flights.
+    \end{enumerate}
+  \item
+    Recent literature uses environmental shocks as instruments (Noack et
+    al., 2024; Meng et al, 2025). For India's bird migration context,
+    two IV strategies appear promising.
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Weather shock IV: Baseline district exposure (from our eBird)
+      interacting with NVDI and weather anomalies in the breeding
+      grounds.
+    \item
+      Disease shock IV: I find this is more interesting because a recent
+      work by Yang et al., 2024 at Nature Communications finds avian
+      influenza outbreaks do not trigger migration but do affect
+      survival and presence of birds at the Indian stopovers to a very
+      large extent. This makes it a credible instrument because: (i)
+      outbreaks are exogenous to the local economic variables and (ii)
+      outbreak timing is tied to a peak of migration window/CAF
+      (Aug-Nov, Feb-Apr) in India, allowing shocks to coincide with
+      relevant bird presence.
+    \end{itemize}
+  \item
+    \begin{enumerate}
+    \def\labelenumii{(\roman{enumii})}
+    \setcounter{enumii}{2}
+    \tightlist
+    \item
+      Data collection: Potential outbreak data sources, shapefiles
+      include (i) FAO EMPRES-i+; (ii) WOAH/WAHIS, which tracks the
+      outbreak locations, date, disease type, host species, and status.
+      Lastly, GISAID shapefile data, which is an avian influenza
+      sequence database, tracks the outbreak locations (used in Elbe \&
+      Buckland-Merrett, 2017, Global Challenges Journal; Yang et al,
+      2024, Nature Communications).
+    \end{enumerate}
+  \item
+    \begin{enumerate}
+    \def\labelenumii{(\roman{enumii})}
+    \setcounter{enumii}{3}
+    \tightlist
+    \item
+      Next step: Performing a spatial join between outbreak data and our
+      ebird-based hotspots, aggregating outbreak counts to the
+      district/hotspot-year panel level. I think this will allow us to
+      construct the avian influenza IV as = Baseline exposure in
+      district/hotspot d x outbreak shock at time t.
+    \end{enumerate}
+  \end{itemize}
+\end{enumerate}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{6/2/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Ryan, Matt, Jovin, Raahil
+\end{quote}
+
+\section{TODO:}\label{todo-2}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Matt}: Finish species richness site attribute (cluster-time
+  level)
+\item
+  \textbf{Matt}: Finish computing congestion site attribute
+\item
+  \textbf{Matt}: Check why sample size so big. Check number of elements
+  in the choice set for validation.
+\item
+  \textbf{Matt/Ryan}: Compute species richness in radius \emph{around
+  home} (varying at same time unit as other species richness attribute)
+\item
+  \textbf{Jovin}: Fix travel cost. I suggest checking it over with
+  Matt/Ryan
+\item
+  \textbf{Raahil/Ryan}: Work through paper framing
+\end{itemize}
+
+\subsection{Agenda}\label{agenda-2}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Species Richness
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Maps for imputation can't have the shannon index. Because we don't
+  have abundance counts
+\item
+  But we can do an index for the e-bird data hotspots
+\item
+  Estimates of bird life and expected species richness
+\item
+  Monthly values or seasonal values
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Other Site Attributes
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Have one site data set for temp, rain, and tree cover
+\item
+  This is at the hotspot cluster level
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Congestion
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Ready to go code, just not run yet
+\item
+  \# of users at hotspot cluster monthly
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Travel Cost
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Jovin has choice set and code that estmates this for a first attempt
+\item
+  Matched to GDP data to impute wages
+\item
+  Estimate Euclidean distance between households and hotspot clusters
+\item
+  Final data for RUM should be choice set dimensions (for our checks)
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Measure of Experience at the Individual Level
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Counts of trips (counter)
+\item
+  Count for \# of different hotspots (counter)
+\item
+  So ratio tells us if you have preference for location (``Habit
+  Formation'').
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Low ratio is little location preference
+  \item
+    High ratio is high location preference
+  \end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{5}
+\tightlist
+\item
+  Conceptual
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Birds vs.~non-bird still valued as travel cost. So both are still
+  measures of nature recreation.
+\item
+  Monetizing value \textgreater\textgreater{} Add in contribute to GEP
+  or ecosystem service value literature.
+\item
+  Novelty: Why is WTP lower in Developing Countries? Welfare for
+  environmental quality in envirodevonomics framework (Env-Dev framing)
+\end{itemize}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/16/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Ryan, Matt, Jovin, Raahil
+\end{quote}
+
+\section{TODO:}\label{todo-3}
+
+\begin{itemize}
+\tightlist
+\item
+  Seperate meetings for Matt/Jovin (coding) and Ryan/Raahil (conception)
+  for our specializations
+\end{itemize}
+
+\subsection{Agenda}\label{agenda-3}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Finalize the site attribute data and create the master dataset
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Matt and Ryan -- complete by next meeting (May 16)
+\item
+  We have monthly temperature and rainfall
+\item
+  We have annual tree cover data
+\item
+  These are as zonal statistics (average for 10KM radius of hotspot)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    In E-bird, we have the average distance walked around hotspot
+  \item
+    Or do we avoid this work because temp, rain, and tree cover does not
+    vary much at such a small spatial scale.
+  \item
+    Temp, rainfall, and tree are at higher resolutions. So as long as
+    the radius is less than the input data this will not vary.
+  \end{itemize}
+\item
+  We need to think more about mapping of hotspots and hotspot clusters.
+\item
+  Need to add a fourth site attribute: congestion
+
+  \begin{itemize}
+  \tightlist
+  \item
+    How frequently other users are using this site?
+  \item
+    Aggregate number of user trips for each hotspot but will need to do
+    this as a lag (week before)
+  \item
+    So this is expected congestion.
+  \end{itemize}
+\item
+  We need to transform this into a panel of counterfactual sets appended
+  to the observed trips.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Not balanced across counterfactual trips and time
+  \end{itemize}
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{1}
+\tightlist
+\item
+  Calculate travel costs -- see notes for guidance; this will be added
+  to the site attribute script
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  For GDP per capita data, use gridded data from here and extract the
+  value closest to each users' home. Then use the formula from
+  Kolstoe/cameron or lloyd-smith to calculate travel costs.
+\item
+  Jovin -- complete by next meeting (May 16)
+\item
+  Collected 2014-2024 GDP per capita data
+\item
+  Laptop trouble estimating, working with MPC.
+\item
+  Could run the travel cost with a small random sample to make this
+  managable for Jovin's laptop capacity.
+\item
+  Can re-run the pipeline so we are running for only frequent users
+  (1.6M instead of the 3M)
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\tightlist
+\item
+  Species richness
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  Matt and Ryan -- bring three ideas for next meeting (May 16)
+\item
+  Close to being done (Matt taking the lead)
+\item
+  Taking raw e-bird data and getting monthly counts
+\item
+  Need to translate from hotspots to hotspot clusters
+\item
+  Species ranges (for missing) shapefiles are crashing the code.
+\item
+  All of this is to get a species at a hotspot so we can turn this into
+  a richness index
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Will want this merged as richness for same month/week from previous
+    year
+  \item
+    In the app, you can see in real-time species count from their
+    favorite places.
+  \item
+    So likely quite responsive. Last week is best
+  \item
+    Can also do monthly to replicate results from month last year from
+    Kolsto paper method.
+  \end{itemize}
+\item
+  We aim to use the simpson and shanon index from \texttt{vegan} package
+\end{itemize}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Individual Attributes
+\end{enumerate}
+
+\begin{itemize}
+\tightlist
+\item
+  With individual fixed effects, we partial out any time-invariant
+\item
+  From the e-bird data:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    How frequently you went in the past year
+  \item
+    Average distance traveled in the past year
+  \item
+    Is there any measure of learning over time? Value of recreation is
+    not static
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Experience index
+    \item
+      Cumulative experience (simple counter of trips up unti that point)
+    \item
+      Could weight this by how much you walk, and taxonomy of bird level
+      data (raw text file of trip-species level)
+    \item
+      Could collapse species count to trip level.
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\subsection{Project Management}\label{project-management}
+
+\begin{itemize}
+\tightlist
+\item
+  Meetings need to be in person.
+\item
+  Jovin update meeting calendar
+\item
+  Start assigning tasks instead of asking for volunteers
+\item
+  Need to come up with a specialization of tasks.
+\item
+  Coding and Data: Matt (lead), Jovin, Ryan (assist)
+\item
+  Conceptualize: Ryan (lead), and Raahil
+
+  \begin{itemize}
+  \tightlist
+  \item
+    How our model departs from workhouse.
+  \item
+    Literature review for our novelty
+  \end{itemize}
+\item
+  Some tasks:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Google maps driving time
+  \item
+    inaturalist species richness mapping
+  \end{itemize}
+\end{itemize}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/15/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Ryan, Matt
+\end{quote}
+
+\subsection{Coding Notes}\label{coding-notes}
+
+\begin{itemize}
+\tightlist
+\item
+  Ryan is taking lead on estimating travel cost.
+\item
+  We need a seperate hotspots shapefile for running zonal stats
+\item
+  We need unique hotspot site IDs and hotspot cluster IDs
+\item
+  Explor alternatives to making hotspot clusters
+\item
+  Name for the master data
+\item
+  Need to add attributes to hotspot clusters (script 4)
+\item
+  Mapping of hotspot cluster ID to hotspot IDs
+\end{itemize}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/2/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Raahil, Matt
+\end{quote}
+
+\subsection{Agenda}\label{agenda-4}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Site attributes data progress
+
+  \begin{itemize}
+  \tightlist
+  \item
+    In progress
+  \end{itemize}
+\item
+  Individual attributes data progress
+\item
+  Coding sample selection progress
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Done, flexible to time period and years (e.g.~quarterly for at least
+    8 years)
+  \end{itemize}
+\end{enumerate}
+
+\subsection{Site Attributes}\label{site-attributes}
+
+\begin{itemize}
+\tightlist
+\item
+  Still gathering geospatial data
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \href{https://lpdaac.usgs.gov/products/mod44bv061/}{MODIS VCF forest
+    cover}
+  \item
+    \href{https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land?tab=download}{Copernicus
+    ERA5-Land}
+
+    \begin{itemize}
+    \tightlist
+    \item
+      \href{https://bluegreen-labs.github.io/ecmwfr/}{ecmwfr}, R API
+      interface
+    \end{itemize}
+  \end{itemize}
+\item
+  Run zonal statistics on buffer around hotspots
+\item
+  If data becomes to large to easily share, we can start using Globus
+  and MSI's tier 2 data storage
+\end{itemize}
+
+\subsection{Next tasks}\label{next-tasks}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Merge site and individual attributes to make master dataset
+\item
+  Calculate travel cost
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Start with linear distance for now
+  \item
+    Calculate cost
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Refer to Lloyd-Smith and Cameron/Kolstoe
+    \item
+      Travel cost = 2 (round trip) x distance x 1/3 x wage (from GDP)
+    \end{itemize}
+  \end{itemize}
+\item
+  Species Richness
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Decide on method:
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Weitzman index
+    \item
+      iNaturalist
+    \item
+      Simpson index
+    \item
+      Shannon index
+    \end{itemize}
+  \end{itemize}
+\item
+  Looking ahead
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Look at code for estimating mixed logit with big data
+
+    \begin{itemize}
+    \tightlist
+    \item
+      \href{https://github.com/joemolloy/fast-mixed-mnl}{mixl}, C++
+      based R package
+    \item
+      \href{https://xlogit.readthedocs.io/en/latest/index.html}{xlogit},
+      GPU-Accelerated Python Package
+    \end{itemize}
+  \item
+    How to properly weight the WTP for aggregation
+  \item
+    Research how to include fixed effects in utility functions
+    (alternative specific constant)
+
+    \begin{itemize}
+    \tightlist
+    \item
+      User fixed effects
+    \item
+      hotspot fixed effects
+    \end{itemize}
+  \end{itemize}
+\end{enumerate}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{4/25/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Matt, Ryan
+\end{quote}
+
+\subsection{Tasks:}\label{tasks}
+
+\begin{itemize}
+\tightlist
+\item
+  Matt: Download data and share
+\item
+  Ryan: Start writing pseudocode in the new scripts.
+\item
+  Both: Play with ClimateR
+\end{itemize}
+
+\subsection{Site Attributes}\label{site-attributes-1}
+
+\begin{itemize}
+\tightlist
+\item
+  Limitation:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    It takes time to build GIS data. So a lot of the attributes are not
+    updated for 2024/25
+  \item
+    ClimateR
+  \end{itemize}
+\item
+  Division of the attributes to collect
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Protected area (binary or distance) -- fuzzy borders leads to
+    spillovers
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Matt
+    \item
+      WDPA
+      (https://www.protectedplanet.net/en/thematic-areas/wdpa?tab=WDPA)
+    \end{itemize}
+  \item
+    Tree cover -- higher willingess to pay for forest
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Matt
+    \item
+      https://data.fs.usda.gov/geodata/rastergateway/treecanopycover/
+    \item
+      https://data.globalforestwatch.org/
+    \item
+      https://glad.umd.edu/dataset/global-2010-tree-cover-30-m
+    \item
+      Worse comes to worse we use the ESA data
+    \item
+      Or we could use NDVI data as a proxy.
+    \end{itemize}
+  \item
+    Rainfall (monthly) - seasonality
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Ryan
+    \item
+      https://ftp.cpc.ncep.noaa.gov/GIS/GRADS\_GIS/GeoTIFF/GLB\_DLY\_PREC/
+    \item
+      CHRIPS SPI data
+    \item
+      https://mikejohnson51.github.io/climateR/index.html
+    \end{itemize}
+  \item
+    Temperature (monthly) - seasonality
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Ryan
+    \item
+      GISS Surface Temperature Analysis (GISTEMP v3)
+    \item
+      Surface air temperature (no ocean data), 250km smoothing (9 MB)
+    \item
+      Might need the land mask
+    \item
+      https://data.giss.nasa.gov/gistemp/
+    \end{itemize}
+  \item
+    Distance to the coast -- species gradient to the coast
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Ryan
+    \item
+      Dissolve the districts data.
+    \item
+      Make a polyline and measure distance to the nearest line
+    \end{itemize}
+  \item
+    Species richness from the previous week (expectation) -- and any
+    other measures of biodiversity
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Both Matt and Ryan
+    \item
+      Weitzmen index using ebird data to generate diversity score
+    \item
+      https://scholar.harvard.edu/files/weitzman/files/on\_diversity.pdf
+    \item
+      Validate with inaturalist data on birds for india
+    \item
+      Could test a couple of different indices
+    \end{itemize}
+  \end{itemize}
+\item
+  How we are sharing the site attribute data
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Matt will have the GDrive link.
+  \end{itemize}
+\item
+  Updating the config files
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Once we have data download
+  \end{itemize}
+\item
+  Start script to merge site attributes to sites
+
+  \begin{itemize}
+  \tightlist
+  \item
+    What to do about 4.demographics. Seems like that should be site
+    attributes.
+  \item
+    Noteably, some of the data will need to become panel.
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Rainfall
+    \item
+      Temperature
+    \item
+      Protected Areas
+    \item
+      Tree cover
+    \item
+      species richness (we need to dig some that has a time dimension)
+    \end{itemize}
+  \item
+    Static:
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Distance to coast
+    \end{itemize}
+  \end{itemize}
+\end{itemize}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{4/18/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Raahil, Matt, Jovin, Ryan
+\end{quote}
+
+\subsection{Sample Selection Updates}\label{sample-selection-updates}
+
+\begin{itemize}
+\tightlist
+\item
+  different biodiversity levels by incorporating interaction terms in
+  locals and tourists. WTP for nature tourism vs WTP for nature
+  recreation or biodiverstiy
+
+  \begin{itemize}
+  \tightlist
+  \item
+    If we estimate both, then we can compare both measures. We can also
+    place it within the larger literature of many WTP for both subsets
+    of ecosystem services and the population using those services.
+  \item
+    Broadly compare conservation, nature recreation, tourism, or
+    biodiversity
+  \item
+    We need to frame this as a development paper as the lambda in the
+    Envirodevonomics paper
+  \end{itemize}
+\item
+  Frequency of observations are consistent over time and potentially
+  visits near protected areas.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Need to capture seasonanlity (time fixed effects)
+  \item
+    Need to consider some aspect of congestion (can calculate that as a
+    site attribute)
+  \item
+    If you go two months a year you are less likely to be a tourist
+  \end{itemize}
+\end{itemize}
+
+\subsection{Literature Review Updates}\label{literature-review-updates}
+
+\begin{itemize}
+\tightlist
+\item
+  We can uses species richness as an explanatory variable in the model.
+  But could add other biodiversity measures beyond bird diversity.
+\item
+  Need to think about how to frame this in the developing context
+  instead of the environment context
+\item
+  Very few WTP for environmental quality in development economics space
+\item
+  Would be great if our WTP measure could be placed within a welfare
+  model so we can make counterfactual statements
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Need to have homogenous agents to aggregate for welfare gains
+    \textgreater\textgreater{} e-bird users are not representative of
+    population
+  \item
+    Could overcome this by population demographic weights to make e-bird
+    users representative
+  \item
+    But welfare statements are a big improvement over the other e-bird
+    papers
+  \end{itemize}
+\item
+  Could explore the WTP measure of space and time. So we go beyond the
+  cross-sectional estimates in the literature
+
+  \begin{itemize}
+  \tightlist
+  \item
+    If we have 1st and 2nd moment, then we can assign individuals an
+    individual WTP.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Grant Proposal}\label{grant-proposal}
+
+\begin{itemize}
+\tightlist
+\item
+  Jovin will provide an update.
+\end{itemize}
+
+\subsection{Initial Results by Raahil}\label{initial-results-by-raahil}
+
+\begin{itemize}
+\tightlist
+\item
+  We are getting coverage of the country
+\item
+  Some overlap of population density and users
+  \textgreater\textgreater{} likely representative
+\item
+  Most hotspots and users are in the south (consistent with e-birder
+  users)
+\item
+  Hotspots data could be weighted by visits
+\item
+  Should plot protected areas overlapping hotspots
+\item
+  Demographic t-test shows e-bird users are richer on average. But we
+  can use this to back out our inverse weight for the welfare
+  calculations
+
+  \begin{itemize}
+  \tightlist
+  \item
+    E-bird users are selecting into this where there are richer places
+    (so can afford this hobby)
+  \end{itemize}
+\end{itemize}
+
+\subsection{Tasks}\label{tasks-1}
+
+\begin{itemize}
+\tightlist
+\item
+  How do we distinguish ourselves from the Pacific Northwest paper
+  Kolestet 2017
+\item
+  First pass of the sample: users who use this at least 2 months out of
+  the year
+\item
+  Make two new scripts:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Merging in site attributes (Can merge in satilette data -- radius
+    around the centriod and take the mean -- and district data about the
+    site attribtues -- merge on district ID)
+
+    \begin{itemize}
+    \tightlist
+    \item
+      Protected area (binary or distance) -- fuzzy borders leads to
+      spillovers
+    \item
+      Tree cover -- higher willingess to pay for forest
+    \item
+      Rainfall (monthly) - seasonality
+    \item
+      Temperature (monthly) - seasonality
+    \item
+      Distance to the coast -- species gradient to the coast
+    \item
+      Species richness from the previous week (expectation) -- and any
+      other measures of biodiversity
+    \end{itemize}
+  \item
+    Estimating the RUM via the mixed multinominal logit
+  \end{itemize}
+\item
+  Email tag for grant proposals
+\item
+  Make a script into a single PDF
+\end{itemize}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{3/31/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Raahil, Matt, Jovin
+\end{quote}
+
+\subsection{Sample Selection
+Discussion}\label{sample-selection-discussion}
+
+\begin{itemize}
+\tightlist
+\item
+  We want to ensure that the sample of ebird observers is representative
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Remove tourists
+  \item
+    Remove infrequent users
+  \end{itemize}
+\item
+  Potential strategies
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Limit to users that log at least a certain number of times per month
+  \item
+    Exclude users that post outside of protected areas
+  \item
+    Exclude users that include tourism tags in text
+    variable(e.g.~``ecolodge'')
+  \end{itemize}
+\end{itemize}
+
+\subsection{Tasks}\label{tasks-2}
+
+\begin{itemize}
+\tightlist
+\item
+  Matt/Jovin: descriptive analysis on data to determine distributions of
+  frequent users
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Complete by 4/18
+  \end{itemize}
+\end{itemize}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{3/21/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Raahil, Matt, Ryan, Jovin
+\end{quote}
+
+\subsection{Action Items:}\label{action-items}
+
+\begin{itemize}
+\tightlist
+\item
+  Everyone confirms that we can run the first 3 basic scripts
+\item
+  Starting the annotated bibliography with 10 most important papers:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    WTP for envrionmental quality
+  \item
+    WTP in developing countries using travel cost
+  \item
+    Review of mixed logit methodology
+  \end{itemize}
+\item
+  Next week we need to talk about sample selection in depth next week
+\end{itemize}
+
+\section{Division of Tasks:}\label{division-of-tasks}
+
+\begin{itemize}
+\item
+  Review mixed logit method
+\item
+  (Matt) Review of WTP in developing countries using travel cost methods
+\item
+  (Ryan) Review of WTP methods for environmental quality
+\item
+  (Ryan) Method to estimate welfare effects (some exogenous shock)
+\item
+  (Raahil + Jovin + Matt) Determining the sample population criteria --
+  important early step
+\item
+  (Raahil) Gathering data for population demographics (SHRUG, DHS, etc.)
+\item
+  Ways to annoate bibliography:
+
+  \begin{itemize}
+  \tightlist
+  \item
+    paper title + journal, research question, research design
+    (e.g.~stated preference), data/sample size, result (i.e.~WTP
+    estimate)
+  \end{itemize}
+\item
+  We need to think about how we contribute.
+\item
+  We need to think about sample selection.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Criteria based on usage, overlap with protected areas, etc.
+  \item
+    How do we remove tourists?
+  \item
+    Who is the average person? Estimates will be sensitive
+  \end{itemize}
+\item
+  Need to gridded map of ebird observations
+\end{itemize}
+
+\section{Next scripts}\label{next-scripts}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{3}
+\tightlist
+\item
+  Merge attributes of the counterfactual sites. Need to collect site
+  level data and/or individual level data
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Site attributes: biodiversity, accessibility, ruggedness,
+    congestion, temperature, rainfall, regional developmemnt
+  \item
+    For first run, just do biodiversity.
+  \item
+    Biodiversity comes from either diversity of birds or other
+    attributes of ecosystem diversity
+  \item
+    Expected biodiversity is why you go. So we can use historical
+    measures of biodiversity
+  \end{itemize}
+\item
+  Run the mixed logit to estimate the WTP values
+\item
+  Welfare analysis of WTP values
+\end{enumerate}
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{02/28/25}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+
+\begin{quote}
+Raahil, Matt, Ryan
+\end{quote}
+
+\subsection{Action Items:}\label{action-items-1}
+
+\begin{itemize}
+\tightlist
+\item
+  Ryan: Get the correct e-bird file from Matt (DONE)
+\item
+  Ryan: Merge code files into scripts folder. (DONE)
+\item
+  Ryan: Initate a document for literature review with template example
+  (DONE)
+\item
+  We need to specalize and define tasks. Volunteer over email. Tasks:
+  Lit review, sample selection, characterize the sample, theory person
+  (DONE)
+\item
+  And set up a recurring meeting time. Need a poll. Try for next two
+  weeks from now. (DONE)
+\item
+  Jovin: Provide your github username so Ryan can make you a
+  collaborator on the github repo. (DONE)
+\end{itemize}
+
+\subsection{Funding:}\label{funding}
+
+\begin{itemize}
+\tightlist
+\item
+  No longer pursue IonE funding
+\end{itemize}
+
+\subsection{Coding:}\label{coding}
+
+\begin{itemize}
+\tightlist
+\item
+  Matt was able to replicate everything
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Created a YAML to process file names
+  \item
+    No longer needs new file paths
+  \end{itemize}
+\item
+  Ryan stuck on loading data
+\item
+  Need to all use the same exact file download for e-bird
+\item
+  script 1: processes e-bird data, determines user homes, and calculates
+  home for those who don't report it.
+\item
+  script 2: Creates the hotspot observations. Measures distance from
+  home to hotspot.
+\item
+  script 3: Most important. 12,000 hotspots so too many counterfactuals.
+  This script reduces the counterfactual set by clustering hotspots
+  nearby (likley parks) and only consider hotspots within a distance of
+  home.
+\item
+  The final data set is a panel of person (user) ID by trip ID appended
+  to all counterfactual trips for this user.
+\item
+  When we actually estimate this, we will need to plan for a no-trip
+  counterfactual.
+\item
+  One of the main things we need to do is make the computation easier
+  for us. Otherwise it becomes too computationally intensive.
+\item
+  Keep all the scripts in scripts folder.
+\end{itemize}
+
+\subsection{Data:}\label{data}
+
+\begin{itemize}
+\tightlist
+\item
+  We will need to bring in site attribute data
+\item
+  So data on landscape measurements.
+\item
+  Matt says that not all intermediate files are being save
+\item
+  Specifically, the master file is not saving
+\item
+  Need to identify our sample population
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Need a careful (defensiable) data-driven criteria for sample
+  \item
+    Needs to be regular, local users (not temporary or tourists)
+  \item
+    Determine this based on usage frequency and mobility patterns
+  \item
+    Consider overlaying protected areas polygons on top of the
+    observations/hotspots
+  \item
+    Buffers may create a censoring problem. So we would just test this
+    against larger and larger buffers
+  \end{itemize}
+\item
+  Need to find ways to characteristize the users (demographics) without
+  having any information about them.
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Important for welfare calculations.
+  \item
+    Try to match with DHS data
+  \item
+    Or overlap home location with SHRUG data set
+  \item
+    Econometrically, take attribtues about where they live against the
+    average for the country, how do high and low WTP birders fall within
+    the distribution
+  \item
+    Potentially use this as weights for welfare calculations.
+  \end{itemize}
+\end{itemize}
+
+\subsection{Methods:}\label{methods}
+
+\begin{itemize}
+\tightlist
+\item
+  If we get a random shock to bird population, then we can think about
+  the causal effect of increasing biodiversity
+\end{itemize}
+
+\subsection{Paper/Writing:}\label{paperwriting}
+
+\begin{itemize}
+\tightlist
+\item
+  For the ML cluster, will want to read up later to find out if there is
+  a better way or more common practice in economics.
+\item
+  Create a lit review. Three groups:
+
+  \begin{enumerate}
+  \def\labelenumi{\arabic{enumi}.}
+  \tightlist
+  \item
+    estimates of WTP in developing countries generally using the
+    discrete choice travel cost method (Ted Miguel water quality paper).
+  \item
+    WTP for environmental quality papers and what design they are using
+    to estimate (e.g., contingent valuation, stated preferences --
+    something from ecology)
+  \item
+    Review of any updated versions of the mixed logit model -- new
+    adapations of the model from class
+  \end{enumerate}
+\item
+  For this: question, data used, design, and finding (dollar estimates
+  would be great).
+\item
+  Create a document in the docs folder
+\end{itemize}
+
+\end{tcolorbox}
+
+
+
+
+\end{document}
