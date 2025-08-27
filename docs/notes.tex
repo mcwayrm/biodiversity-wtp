@@ -209,13 +209,123 @@ counterfactual locations.
 For notes, we present the most recent first so that notes are
 chronologically most recent.
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{8/15/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{8/27/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
-Ryan, Matt, Raahil
+Ryan, Jovin
 \end{quote}
 
 \section{TODO:}\label{todo}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Matt}: We need to meet with you to discuss working on this
+  with MSI
+\item
+  \textbf{Jovin}: Responsible for Shift
+\item
+  \textbf{Ryan}: Responsible for Share
+\end{itemize}
+
+\subsection{Plan to Estimate
+Shift-Share}\label{plan-to-estimate-shift-share}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Merge the Species range data with the migratory species data
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Species range data: base-data/species/BOTW\_2024\_2.gpkg
+  \item
+    Migratory species data:
+    base-data/species/species\_list\_categorized.csv
+  \item
+    Merge by: scientific\_name
+  \item
+    Result: species level data with range map and classifier for
+    migratory
+  \end{itemize}
+\item
+  For each country \(j\), calculate \(\gamma_j\)
+\end{enumerate}
+
+\[
+\gamma_j = \sum_{s =\text{total num of species in j}}^S \frac{\text{species range overlap India}_{sj}}{S_j}
+\]
+
+\begin{verbatim}
+1. Count the number of species $s$ in $j$
+    - Species range data: base-data/species/BOTW_2024_2.gpkg
+    - India Borders: data/shp/district-2011
+    - Need to make one shape (spatial union) so any intersection with India shape
+    - Indicator for each species if any overlap of species with India borders
+2. Spatial overlap of species $s$ range over the country border of India. This will create some fraction. 
+    - Calculate sqkm for India shapefile one time (part 1)
+    - Spatial inner join of range $s$ on India. 
+    - Calculate sqkm for the inner join (part 2)
+    - Divide part 2 by part 1 to get the fraction of overlap for species range over India borders
+3. Combine to make $\gamma_j$ using the weighted sum $\sum_s$
+    - Spatial intersection of species range $s$ with countries in the flu dataset
+    - Create the weight $S_j$ by counting the number of indicators for intersecting ranges with $j$
+    - Create $\gamma_j$ for each $j$ by summing fractions in (2) divided by weight $S_j$
+    - Country $j$ Shapefiles: TODO.
+\end{verbatim}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{2}
+\item
+  Create the shift by merging \(\gamma_j\) with the flu data - Flu Data:
+  data/clean/flu-data.csv - Result is time series by \(t\) \[
+  Shift_t = \sum_{j = country}^J flu_{jt} \times \gamma_j
+  \]
+\item
+  Create the share for each hotspot \(d\)
+\end{enumerate}
+
+\[
+Share_d =  \sum_s \frac{\text{Indicator for migratory}_{sd}}{S_d}
+\]
+
+\begin{verbatim}
+1. Start with e-bird data. For each hotspot $d$ get the number of unique species observed in the data
+    - e-bird data: Ask Matt what is the best way to do this given the current workflow. 
+2. Merge in the migratory data on these species for each hotspot $d$
+    - Migratory species data: base-data/species/species_list_categorized.csv
+    - Merge by: scientific_name
+3. Create the share variable as weighted sum for hotspot $d$
+    - For hotspot $d$, count indicator for migratory. 
+    - For hotspot $d$, get count of unique species $S_d$
+    - Then construct sum of the fractions. 
+\end{verbatim}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\setcounter{enumi}{4}
+\tightlist
+\item
+  Create the IV by multiplying the shift by the share for each hotspot
+  \(d\)
+\end{enumerate}
+
+\[
+IV_{dt} = shift_t \times share_d
+\]
+
+\end{tcolorbox}
+
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{8/15/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
+
+\begin{quote}
+Ryan, Matt, Raahil, Jovin
+\end{quote}
+
+\section{TODO:}\label{todo-1}
 
 \begin{itemize}
 \tightlist
@@ -403,7 +513,7 @@ Shift_t = \sum_{j = country}^J flu_{jt} \times \gamma_j
 \]
 
 \[
-\gamma_j = \sum_{s =\text{total \# of species in j}}^S \frac{\text{species range overlap India}_s}{S}
+\gamma_j = \sum_{s =\text{total num of species in j}}^S \frac{\text{species range overlap India}_{sj}}{S_j}
 \]
 
 \begin{itemize}
@@ -419,18 +529,18 @@ Shift_t = \sum_{j = country}^J flu_{jt} \times \gamma_j
 \end{itemize}
 
 \[
-Share_d = \sum_d \frac{Indicator for migratory}{\text{count of potential species}}
+Share_d =  \sum_s \frac{\text{Indicator for migratory}_{sd}}{S_d}
 \]
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{8/1/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{8/1/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Ryan, Matt, Raahil
 \end{quote}
 
-\section{TODO:}\label{todo-1}
+\section{TODO:}\label{todo-2}
 
 \begin{itemize}
 \tightlist
@@ -600,13 +710,13 @@ Ryan, Matt, Raahil
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{6/2/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{6/2/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Ryan, Matt, Jovin, Raahil
 \end{quote}
 
-\section{TODO:}\label{todo-2}
+\section{TODO:}\label{todo-3}
 
 \begin{itemize}
 \tightlist
@@ -752,13 +862,13 @@ Ryan, Matt, Jovin, Raahil
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/16/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/16/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Ryan, Matt, Jovin, Raahil
 \end{quote}
 
-\section{TODO:}\label{todo-3}
+\section{TODO:}\label{todo-4}
 
 \begin{itemize}
 \tightlist
@@ -973,7 +1083,7 @@ Ryan, Matt, Jovin, Raahil
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/15/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/15/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Ryan, Matt
@@ -1001,7 +1111,7 @@ Ryan, Matt
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/2/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{5/2/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Raahil, Matt
@@ -1143,7 +1253,7 @@ Raahil, Matt
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{4/25/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{4/25/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Matt, Ryan
@@ -1324,7 +1434,7 @@ Matt, Ryan
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{4/18/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{4/18/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Raahil, Matt, Jovin, Ryan
@@ -1494,7 +1604,7 @@ Raahil, Matt, Jovin, Ryan
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{3/31/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{3/31/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Raahil, Matt, Jovin
@@ -1547,7 +1657,7 @@ Discussion}\label{sample-selection-discussion}
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{3/21/2025}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{3/21/2025}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Raahil, Matt, Ryan, Jovin
@@ -1651,7 +1761,7 @@ Raahil, Matt, Ryan, Jovin
 
 \end{tcolorbox}
 
-\begin{tcolorbox}[enhanced jigsaw, bottomrule=.15mm, coltitle=black, opacityback=0, opacitybacktitle=0.6, titlerule=0mm, leftrule=.75mm, arc=.35mm, toptitle=1mm, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{02/28/25}, bottomtitle=1mm, colbacktitle=quarto-callout-note-color!10!white, breakable, colback=white, colframe=quarto-callout-note-color-frame, rightrule=.15mm, toprule=.15mm, left=2mm]
+\begin{tcolorbox}[enhanced jigsaw, coltitle=black, left=2mm, arc=.35mm, bottomtitle=1mm, opacitybacktitle=0.6, leftrule=.75mm, opacityback=0, colback=white, toprule=.15mm, breakable, titlerule=0mm, colframe=quarto-callout-note-color-frame, colbacktitle=quarto-callout-note-color!10!white, title=\textcolor{quarto-callout-note-color}{\faInfo}\hspace{0.5em}{02/28/25}, toptitle=1mm, rightrule=.15mm, bottomrule=.15mm]
 
 \begin{quote}
 Raahil, Matt, Ryan

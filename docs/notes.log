@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (MiKTeX 24.1) (preloaded format=xelatex 2025.5.16)  15 AUG 2025 16:22
+This is XeTeX, Version 3.141592653-2.6-0.999995 (MiKTeX 24.1) (preloaded format=xelatex 2025.5.16)  27 AUG 2025 17:05
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1275,36 +1275,115 @@ fg
 File: mt-TU-empty.cfg 2021/06/22 v1.1 microtype config. file: fonts with nonsta
 ndard glyph set (RS)
 )
+Underfull \hbox (badness 10000) in paragraph at lines 245--248
+[]\TU/lmr/m/n/10 Migratory species data: base-
+ []
+
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(1)/m/n' will be
-(Font)              scaled to size 7.0pt on input line 393.
+(Font)              scaled to size 7.0pt on input line 254.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(1)/m/n' will be
-(Font)              scaled to size 5.0pt on input line 393.
+(Font)              scaled to size 5.0pt on input line 254.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 10.00092pt on input line 393.
+(Font)              scaled to size 10.00092pt on input line 254.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 7.00064pt on input line 393.
+(Font)              scaled to size 7.00064pt on input line 254.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(2)/m/n' will be
-(Font)              scaled to size 5.00046pt on input line 393.
+(Font)              scaled to size 5.00046pt on input line 254.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 9.99893pt on input line 393.
+(Font)              scaled to size 9.99893pt on input line 254.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 6.99925pt on input line 393.
+(Font)              scaled to size 6.99925pt on input line 254.
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
-(Font)              scaled to size 4.99947pt on input line 393.
+(Font)              scaled to size 4.99947pt on input line 254.
+
+Overfull \hbox (105.57286pt too wide) in paragraph at lines 265--265
+[]    \TU/lmtt/m/n/10 - Need to make one shape (spatial union) so any intersect
+ion with India shape[] 
+ []
+
+
+Overfull \hbox (84.57286pt too wide) in paragraph at lines 266--266
+[]    \TU/lmtt/m/n/10 - Indicator for each species if any overlap of species wi
+th India borders[] 
+ []
+
+
+Overfull \hbox (231.57286pt too wide) in paragraph at lines 267--267
+[]\TU/lmtt/m/n/10 2. Spatial overlap of species $s$ range over the country bord
+er of India. This will create some fraction.[] 
+ []
+
+
+Overfull \hbox (189.57286pt too wide) in paragraph at lines 271--271
+[]    \TU/lmtt/m/n/10 - Divide part 2 by part 1 to get the fraction of overlap 
+for species range over India borders[] 
+ []
+
+
+Overfull \hbox (0.57286pt too wide) in paragraph at lines 272--272
+[]\TU/lmtt/m/n/10 3. Combine to make $\gamma_j$ using the weighted sum $\sum_s$
+[] 
+ []
+
+
+Overfull \hbox (105.57286pt too wide) in paragraph at lines 273--273
+[]    \TU/lmtt/m/n/10 - Spatial intersection of species range $s$ with countrie
+s in the flu dataset[] 
+ []
+
+
+Overfull \hbox (200.07286pt too wide) in paragraph at lines 274--274
+[]    \TU/lmtt/m/n/10 - Create the weight $S_j$ by counting the number of indic
+ators for intersecting ranges with $j$[] 
+ []
+
+
+Overfull \hbox (142.32286pt too wide) in paragraph at lines 275--275
+[]    \TU/lmtt/m/n/10 - Create $\gamma_j$ for each $j$ by summing fractions in 
+(2) divided by weight $S_j$[] 
+ []
+
+
+Overfull \hbox (210.57286pt too wide) in paragraph at lines 296--296
+[]\TU/lmtt/m/n/10 1. Start with e-bird data. For each hotspot $d$ get the numbe
+r of unique species observed in the data[] 
+ []
+
+
+Overfull \hbox (137.07286pt too wide) in paragraph at lines 297--297
+[]    \TU/lmtt/m/n/10 - e-bird data: Ask Matt what is the best way to do this g
+iven the current workflow.[] 
+ []
+
+
+Overfull \hbox (37.32286pt too wide) in paragraph at lines 298--298
+[]\TU/lmtt/m/n/10 2. Merge in the migratory data on these species for each hots
+pot $d$[] 
+ []
+
+
+Overfull \hbox (79.32286pt too wide) in paragraph at lines 299--299
+[]    \TU/lmtt/m/n/10 - Migratory species data: base-data/species/species_list_
+categorized.csv[] 
+ []
+
+[1
+
+] [2]
 Runaway argument?
 {\] 
 ! Paragraph ended before \text@ was complete.
 <to be read again> 
                    \par 
-l.400 
+l.510 
        
 Here is how much of TeX's memory you used:
- 35522 strings out of 409617
- 704082 string characters out of 5774013
- 1932191 words of memory out of 5000000
- 57138 multiletter control sequences out of 15000+600000
- 564504 words of font info for 87 fonts, out of 8000000 for 9000
+ 35624 strings out of 409617
+ 706339 string characters out of 5774013
+ 1941191 words of memory out of 5000000
+ 57237 multiletter control sequences out of 15000+600000
+ 564512 words of font info for 88 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 90i,6n,120p,1004b,608s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,6n,120p,1004b,1034s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-No pages of output.
+Output written on notes.pdf (2 pages).
