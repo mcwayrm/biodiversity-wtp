@@ -41,6 +41,35 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 9/12/2025
+
+> Raahil, Matt, Ryan, Jovin
+
+# TODO: 
+
+- **Matt**: Diagnositics for missing species richness
+- **Matt/Jovin**: Migration component for Shift-share
+- **Ryan/Jovin**: Computing Shift-Share
+- **All**: Review new working paper (has new IV)
+
+## Agenda
+
+1. Missing information for species richness by season
+- Core issue coming from the imputation with BirdLife data leading to negative coefficient
+- Several hotspot clusters are missing seasonal information
+    - Means that noone is visiting these hotspots previously (e.g., rarely visited)
+- Diagnostic: Number of trips per hotspot (confirm they are hotspots)
+    - Number of distinct time periods with observations for each hotspot
+2. Migration for Shift-share
+- Classify birds are migratory or not
+- Remove species with missing migratory classification
+- Keep migratory species to determine migration connections to regions
+- Jovin has successfully matched a lot of these (fuzzy matching)
+:::
+
+
+
+::: {.callout-note collapse="true"}
 # 8/27/2025
 
 > Ryan, Jovin
@@ -63,17 +92,17 @@ $$
 \gamma_j = \sum_{s =\text{total num of species in j}}^S \frac{\text{species range overlap India}_{sj}}{S_j}
 $$
 
-    1. Count the number of species $s$ in $j$
+    - Count the number of species $s$ in $j$
         - Species range data: base-data/species/BOTW_2024_2.gpkg
         - India Borders: data/shp/district-2011
         - Need to make one shape (spatial union) so any intersection with India shape
         - Indicator for each species if any overlap of species with India borders
-    2. Spatial overlap of species $s$ range over the country border of India. This will create some fraction. 
+    - Spatial overlap of species $s$ range over the country border of India. This will create some fraction. 
         - Calculate sqkm for India shapefile one time (part 1)
         - Spatial inner join of range $s$ on India. 
         - Calculate sqkm for the inner join (part 2)
         - Divide part 2 by part 1 to get the fraction of overlap for species range over India borders
-    3. Combine to make $\gamma_j$ using the weighted sum $\sum_s$
+    - Combine to make $\gamma_j$ using the weighted sum $\sum_s$
         - Spatial intersection of species range $s$ with countries in the flu dataset
         - Create the weight $S_j$ by counting the number of indicators for intersecting ranges with $j$
         - Create $\gamma_j$ for each $j$ by summing fractions in (2) divided by weight $S_j$
