@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999995 (MiKTeX 24.1) (preloaded format=xelatex 2025.5.16)  12 SEP 2025 13:14
+This is XeTeX, Version 3.141592653-2.6-0.999995 (MiKTeX 24.1) (preloaded format=xelatex 2025.9.12)  12 SEP 2025 13:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1298,86 +1298,44 @@ LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
 LaTeX Font Info:    Font shape `TU/latinmodern-math.otf(3)/m/n' will be
 (Font)              scaled to size 4.99947pt on input line 329.
 
-Overfull \hbox (105.57286pt too wide) in paragraph at lines 340--340
-[]    \TU/lmtt/m/n/10 - Need to make one shape (spatial union) so any intersect
-ion with India shape[] 
- []
-
-
-Overfull \hbox (84.57286pt too wide) in paragraph at lines 341--341
-[]    \TU/lmtt/m/n/10 - Indicator for each species if any overlap of species wi
-th India borders[] 
- []
-
-
-Overfull \hbox (226.32286pt too wide) in paragraph at lines 342--342
-[]\TU/lmtt/m/n/10 - Spatial overlap of species $s$ range over the country borde
-r of India. This will create some fraction.[] 
- []
-
-
-Overfull \hbox (189.57286pt too wide) in paragraph at lines 346--346
-[]    \TU/lmtt/m/n/10 - Divide part 2 by part 1 to get the fraction of overlap 
-for species range over India borders[] 
- []
-
-
-Overfull \hbox (105.57286pt too wide) in paragraph at lines 348--348
-[]    \TU/lmtt/m/n/10 - Spatial intersection of species range $s$ with countrie
-s in the flu dataset[] 
- []
-
-
-Overfull \hbox (200.07286pt too wide) in paragraph at lines 349--349
-[]    \TU/lmtt/m/n/10 - Create the weight $S_j$ by counting the number of indic
-ators for intersecting ranges with $j$[] 
- []
-
-
-Overfull \hbox (142.32286pt too wide) in paragraph at lines 350--350
-[]    \TU/lmtt/m/n/10 - Create $\gamma_j$ for each $j$ by summing fractions in 
-(2) divided by weight $S_j$[] 
- []
-
-
-Overfull \hbox (210.57286pt too wide) in paragraph at lines 371--371
+Overfull \hbox (210.57286pt too wide) in paragraph at lines 405--405
 []\TU/lmtt/m/n/10 1. Start with e-bird data. For each hotspot $d$ get the numbe
 r of unique species observed in the data[] 
  []
 
 
-Overfull \hbox (137.07286pt too wide) in paragraph at lines 372--372
+Overfull \hbox (137.07286pt too wide) in paragraph at lines 406--406
 []    \TU/lmtt/m/n/10 - e-bird data: Ask Matt what is the best way to do this g
 iven the current workflow.[] 
  []
 
 
-Overfull \hbox (37.32286pt too wide) in paragraph at lines 373--373
+Overfull \hbox (37.32286pt too wide) in paragraph at lines 407--407
 []\TU/lmtt/m/n/10 2. Merge in the migratory data on these species for each hots
 pot $d$[] 
  []
 
 
-Overfull \hbox (79.32286pt too wide) in paragraph at lines 374--374
+Overfull \hbox (79.32286pt too wide) in paragraph at lines 408--408
 []    \TU/lmtt/m/n/10 - Migratory species data: base-data/species/species_list_
 categorized.csv[] 
  []
 
-[2]
+[2] [3]
 Runaway argument?
 {\] 
 ! Paragraph ended before \text@ was complete.
 <to be read again> 
                    \par 
-l.585 
+l.618 
        
 Here is how much of TeX's memory you used:
- 35627 strings out of 409617
- 706364 string characters out of 5774013
+ 35633 strings out of 409617
+ 706502 string characters out of 5774013
  1940191 words of memory out of 5000000
- 57240 multiletter control sequences out of 15000+600000
+ 57246 multiletter control sequences out of 15000+600000
  564512 words of font info for 88 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  90i,6n,120p,1004b,1033s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on notes.pdf (2 pages).
+Output written on notes.pdf (3 pages).

@@ -19,7 +19,7 @@ format:
         documentclass: article
         papersize: letter
 number-sections: false
-jupyter: python3
+# jupyter: python3
 # NOTE: Quarto preview will only render the html file
 #       To render both html and pdf file run in terminal: 
 #       quarto render docs/notes.qmd
@@ -38,6 +38,84 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 ## Notes
 
 For notes, we present the most recent first so that notes are chronologically most recent. 
+
+
+
+::: {.callout-note collapse="true"}
+# 10/10/2025
+
+> Raahil, Ryan, Jovin
+
+# TODO: 
+
+- **Matt**: Figure out missing species diversity issue.
+- **Jovin**: Completing migration classification for birds (add details on data sources into Overleaf)
+- **Jovin**: Completing the shift-share IV
+- **Jovin**: Raahil wants to know % of species are migratory vs resident.
+- **Ryan**: Expand on what the endogeneity concern (selection on expection of biodiversity)
+- **All**: What are our sources of identifying variation
+- **Ryan**: Write up why the model is wrong (CES is bad because (1) no prices/they are public good, (2) cannot purchase -- language of economists does not translate into ecological model)
+
+## Agenda
+
+1. Shift Share Construction: 
+- Jovin Update: 
+    - Confirming migratory status is creating difficulty in finishing
+        - This is for the birds that don't match given the classificaiton that Raahil provided
+        - This is for 300 birds with manual classification. 
+        - Goal is to complete this by next week.
+    - I've worked on matching between bird range polygons and migration status using the Birds of the World database. The classification is now almost ready as species-verified, replacing the earlier ChatGPT-based tagging to ensure consistency across migratory and non-migratory species.
+    - For the matching process, I've done -  first matching by exact genus-level matches and finally applying fuzzy matching, adhering to a Jaro-Winkler similarity of greater than 95%, to capture minor spelling variations and naming inconsistencies, which helps resolve most species-level mismatches.
+    - On the spatial side, I'm finalizing the one-to-one correspondence between polygons and migration categories. Once this is complete, I'll then jump to start building the shiftt-share IV.
+    - Raahil wants to know % of species are migratory vs resident.
+
+2. Value of Biodiversity Paper Review
+- Ryan Thoughts: 
+    - Strategy: 
+        - The model of species increase in period t-1 for ecosystem service value in period t is valuable. I think this is a useful framework for thinking of how species richness change drives tourism recreation for birds with the value coming from biodiversity. Proposition 1 in particular makes this point. 
+        - On page 11, the authors point out a weakness of our shift-share: covariate weather/environmental shocks driving the shock to migratory birds. 
+        - There shock derives from their theory of ecosystem service value which does have a nice benefit. We could invoke this theoretical motivation for recreation services value in our setting. 
+        - Good citations in Section 3.4 for why winter habitat conditions are important. For us, I think we would be stating the opposite (summer conditions) as these birds winter in India. This could be problematic for us. 
+        - Mimicking Figure 2 seems important to visualize the connection of the avian flu to specific regions in India.
+    - Issues/Improvements: 
+        - Their shock to winter conditions in NDVI. This is a bit too broad as it could associate with a whole lot of covariate economic and environmental conditions. Our localized avian flu is far more targeted, I believe. 
+        - Also, the NDVI measure is not really a shock (e.g., not +- 2 SD from local average) indicating a local shock. So we make an improvement by using a diesase outbreak which would directly negatively affect bird species. NDVI is unclear to me to hold the monotonicity assumption of an IV. 
+- What we like: 
+    - Very clear what is the identifying variation 
+        - Differences in migration routes
+        - Differential timing of Flu outbreaks across species into India
+        - Differences within species responding to flu by source country
+    - Valuation may be different from diversity vs abundnace
+        - If a species is rare then you may not be willing to pay much. 
+
+3. Shift Share Equations
+- Completed and in Overleaf now for review
+
+4. Missing Species data issue
+- Matt Updates: 
+    -  I was trying to understand the coverage by cluster in the data for our time period, so this is not our actual counterfactual panel but rather a day by year cluster panel for the ten years. So Table 5 is showing that coverage for cluster-days, which species richness variables exist in the data. Then table 5 subsets that by looking at only days where observations occurred, and which species richness variables exist in the data.
+    - From Table 4 and 5, it seems that some of these hotspots are much more popular than others. Coverage for the observed trips is pretty good; only 3.6% are missing all of the options. However, when including the full panel of cluster days (some of which will be counterfactual trips), the coverage is much worse. 
+    - Since this is the cluster panel, I will do this again for the actual counterfactual panel and update. 
+
+5. Endogeneity concern
+    - Selection by visitors on expectation of biodiversity
+    - Therefore biodiversity is endogenous to travel cost (unobservable characteristics in model leading to selection)
+    - Probably not the housing selection as in Bradt (2024)
+    - Consider reverse causality concerns. 
+    - What we want to think through is what is the bias in either of these $\beta$ which cannot be address with our controls 
+    - Potentially sorting. E-bird users in India are rich so could be Bradt moving argument.
+    - Things that:  
+        - Unobserved about location j
+        - Unobserved about user affecting income
+        - These things need to operate through travel cost
+    - We can draw simple DAG
+
+$$
+    WTP = \frac{\beta_{bio}}{\beta_{income}}
+$$
+
+
+:::
 
 
 ::: {.callout-note collapse="true"}
@@ -86,36 +164,38 @@ For notes, we present the most recent first so that notes are chronologically mo
     - Migratory species data: base-data/species/species_list_categorized.csv
     - Merge by: scientific_name
     - Result: species level data with range map and classifier for migratory
-2. For each country $j$, calculate $\gamma_j$
+2. For each country j, calculate $\gamma_j$
 
 $$
 \gamma_j = \sum_{s =\text{total num of species in j}}^S \frac{\text{species range overlap India}_{sj}}{S_j}
 $$
 
-    - Count the number of species $s$ in $j$
-        - Species range data: base-data/species/BOTW_2024_2.gpkg
-        - India Borders: data/shp/district-2011
-        - Need to make one shape (spatial union) so any intersection with India shape
-        - Indicator for each species if any overlap of species with India borders
-    - Spatial overlap of species $s$ range over the country border of India. This will create some fraction. 
-        - Calculate sqkm for India shapefile one time (part 1)
-        - Spatial inner join of range $s$ on India. 
-        - Calculate sqkm for the inner join (part 2)
-        - Divide part 2 by part 1 to get the fraction of overlap for species range over India borders
-    - Combine to make $\gamma_j$ using the weighted sum $\sum_s$
-        - Spatial intersection of species range $s$ with countries in the flu dataset
-        - Create the weight $S_j$ by counting the number of indicators for intersecting ranges with $j$
-        - Create $\gamma_j$ for each $j$ by summing fractions in (2) divided by weight $S_j$
-        - Country $j$ Shapefiles: TODO.
+- Count the number of species $s$ in $j$
+    - Species range data: base-data/species/BOTW_2024_2.gpkg
+    - India Borders: data/shp/district-2011
+    - Need to make one shape (spatial union) so any intersection with India shape
+    - Indicator for each species if any overlap of species with India borders
 
-3. Create the shift by merging $\gamma_j$ with the flu data
+- Spatial overlap of species $s$ range over the country border of India. This will create some fraction. 
+    - Calculate sqkm for India shapefile one time (part 1)
+    - Spatial inner join of range $s$ on India. 
+    - Calculate sqkm for the inner join (part 2)
+    - Divide part 2 by part 1 to get the fraction of overlap for species range over India borders
+
+- Combine to make $\gamma_j$ using the weighted sum $\sum_s$
+    - Spatial intersection of species range $s$ with countries in the flu dataset
+    - Create the weight $S_j$ by counting the number of indicators for intersecting ranges with $j$
+    - Create $\gamma_j$ for each $j$ by summing fractions in (2) divided by weight $S_j$
+    - Country $j$ Shapefiles: TODO.
+
+1. Create the shift by merging $\gamma_j$ with the flu data
         - Flu Data: data/clean/flu-data.csv
-        - Result is time series by $t$
+        - Result is time series by t
 $$
 Shift_t = \sum_{j = country}^J flu_{jt} \times \gamma_j
 $$
 
-4. Create the share for each hotspot $d$
+1. Create the share for each hotspot t
 
 $$
 Share_d =  \sum_s \frac{\text{Indicator for migratory}_{sd}}{S_d}
@@ -131,7 +211,7 @@ $$
         - For hotspot $d$, get count of unique species $S_d$
         - Then construct sum of the fractions. 
 
-5. Create the IV by multiplying the shift by the share for each hotspot $d$
+5. Create the IV by multiplying the shift by the share for each hotspot d
 
 $$
 IV_{dt} = shift_t \times share_d
