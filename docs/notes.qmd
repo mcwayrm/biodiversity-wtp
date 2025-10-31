@@ -42,6 +42,61 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 10/17/2025
+
+> Raahil, Matt, Jovin, Ryan
+
+# TODO: 
+
+- **Matt**: 
+
+## Agenda
+
+1. Missing expected species richness data:
+    - 
+2. Shift share instrument progress:
+    - 
+3. IV and endogeneity:
+    - 
+4. Explanation of why CES production function is bad
+    - Ryan: Added a snippet into the overleaf document. 
+:::
+
+
+::: {.callout-note collapse="true"}
+# 10/17/2025
+
+> Raahil, Matt, Jovin
+
+# TODO: 
+
+- **Matt**: experiment with the discussed techniques to decrease the missing data
+- **Matt**: estimate WTP after dropping the missing observations
+- **Jovin**: Complete the shift-share IV
+- **All**: Brainstorm other reasons that location to biodiversity could be endogenous
+
+## Agenda
+
+1. Missing expected species richness data:
+    - We reviewed the attached document to better understand the large amount of missing values in the expected species richness variable
+        - There are relatively few missing observations for observed trips
+        - Most of the missing values occur in the counterfactual trips
+    - We discussed how to best deal with the issue
+    - Raahil noted that with mixed logit, IIA is not violated. So we can proceed with estimating WTP after dropping the missing values
+    - To attempt to reduce the number of missing values, we can
+        - subset the time frame to more recent data (last 5 years)
+        - decrease the overall number of clusters
+        - decrease the restrictions on ebird users
+1. Shift share instrument:
+    - Jovin has finished matching the birdlife range data to the migration categories
+2. IV and endogeneity:
+    - Raahil reviewed the lack of endogeneity concerns from the previous meeting
+        - One potential source could be road quality
+
+:::
+
+
+::: {.callout-note collapse="true"}
 # 10/10/2025
 
 > Raahil, Ryan, Jovin
