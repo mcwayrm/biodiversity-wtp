@@ -42,24 +42,61 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
-# 10/17/2025
+# 10/30/2025
 
 > Raahil, Matt, Jovin, Ryan
 
 # TODO: 
 
-- **Matt**: 
+- **Matt**: Attempt robustness checks (vary years, vary experience level)
+- **Jovin**: Check units for GDP >> make travel cost in USD.
+- **Jovin**: Focusing on constructing shift
 
 ## Agenda
 
 1. Missing expected species richness data:
-    - 
+    - Limit to 5 years and missing species richness reduced to only 33% of sites
+        - 2019 -- 2023
+    - Dropping if choice where trip or counterfacutal are missing. 
+    - Limited coutnerfactual choice set to 30 (helps with convergence of estimates)
+    - Dropped trips where there was less than 2 counterfactuals
+    - Results produced
+        - Fixed effects are not having an effect (odd)
+        - signs are correct in utilty space
+        - WTP is about .3 ruppees for an additional species
+        - Jovin checking if the wage conversion is GDP in rupees not USD.
+    - We will do WTP manually
+    - Next steps are on quality control. Pinning down a WTP that works and makes sense. 
+        - Expand robustness checks for 5 years / 10 years, vary user experience, cluster size
+    - Matt will update the workflow
 2. Shift share instrument progress:
-    - 
+    - Finished classifying migratory species.
+    - Working on constructing shift in the IV. 
+        - $\gamma$ is completed
+        - Disentangling the avian flu data from India and originating foriegn.
+    - Share is completed
+    - Can complete by next week's meeting. 
 3. IV and endogeneity:
-    - 
+    - What determines utility which is not explained in the utility function. 
+        - The observed is species richness and forest cover (landscape factors)
+        - Unobserved determinants which may be systematically correlated with species richness and utility which would manifest through travel cost
+            - Bradt paper claims with is amenity values of where people live. 
+    - Exisiting case: Development effects species diversity and site selection choices. 
+        - High biodiversity areas which have high development (deforesting), then cost is affected by environment and the development activities
+        - This would lead to bias in the choice decision. 
+        - IV only affects species diversity but not local economic development or infrastructure. 
+    - Use IV for individual WTP
+        - Panel data set of WTP by person over time
+        - (1) why does WTP change over time (determinants of WTP) - village characteristics, home attributes, 
+        - (2) TBD... 
+        - People in greener areas have higher WTP, but places with greener areas attract people with higher WTP
 4. Explanation of why CES production function is bad
     - Ryan: Added a snippet into the overleaf document. 
+5. Estimating individual WTP
+    - Endorsed my Richard Carson
+    - Determinants to WTP (why do some people value biodiversity more than others)
+    - Outcome is WTP. Explanatory is many determinants
+    - This is a better justification for the IV.
 :::
 
 
