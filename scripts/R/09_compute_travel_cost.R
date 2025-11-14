@@ -42,14 +42,15 @@ travel_speed_kmph <- if (!is.null(params$travel_speed_kmph)) {
 driving_cost_per_km <- if (!is.null(params$driving_cost_per_km)) {
   params$driving_cost_per_km
 } else {
-  7.5  # INR/km vehicle running cost (Times of India, 2024)
+  7.5 / 60.95  # INR/km vehicle running cost (Times of India, 2024)
+  # Exchange rate approx. 1 USD = 60.95 INR (World Trade Scanner)
 }
 
 message("Travel cost parameters:")
 message("  Time value fraction: ", time_value_fraction)
 message("  Work hours/year: ", work_hours)
 message("  Travel speed: ", travel_speed_kmph, " km/h")
-message("  Driving cost: ", driving_cost_per_km, " INR/km")
+message("  Driving cost: ", driving_cost_per_km, " USD/km")
 
 # -----------------------------------------------------------------------------
 # Load Master Dataset
@@ -96,16 +97,16 @@ gdp_india <- gdp_all[iso == "IND" & year >= 2014 & year <= 2024]
 gdp_india_sf <- st_as_sf(gdp_india, coords = c("longitude", "latitude"), crs = 4326) %>%
   st_transform(crs = params$projection_crs)
 
-# Keep one point per grid cell for year 2020
+# Keep one point per grid cell for year 2014
 gdp_summary <- gdp_india_sf %>%
-  filter(year == 2020) %>%
+  filter(year == 2014) %>%
   group_by(cell_id) %>%
   summarize(geometry = st_centroid(st_union(geometry)), .groups = "drop")
 
 # Merge GDP per capita values
 gdp_centroids <- left_join(
   gdp_summary,
-  as.data.frame(gdp_india)[gdp_india$year == 2020, c("cell_id", "predicted_GCP_current_USD")],
+  as.data.frame(gdp_india)[gdp_india$year == 2014, c("cell_id", "predicted_GCP_current_USD")],
   by = "cell_id"
 ) %>%
   rename(gdppc = predicted_GCP_current_USD)
