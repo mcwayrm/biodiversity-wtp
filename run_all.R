@@ -10,7 +10,7 @@
 # Looks for username to set custom paths; otherwise defaults to 'data/raw'
 source(file.path("scripts", "R", "utils_config.R"))
 
-# Load scenaios
+# Load scenarios
 source(file.path("scripts", "R", "utils_scenarios.R"))
 
 # Load task runner function
@@ -108,7 +108,7 @@ for (scenario_name in names(scenarios)) {
       hotspots_clustered = file.path(scenario_dir, "ebird_hotspots_clustered.parquet"),
       voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
       precip_dir = file.path(input_data_dir, "era5_total_precipitation"),
-      temp_dir = file.path(input_data_dir, "era5_total_precipitation"),
+      temp_dir = file.path(input_data_dir, "era5_2m_temperature"),
       trees_dir = file.path(input_data_dir, "modis_vcf")
     ),
     output_paths = list(
