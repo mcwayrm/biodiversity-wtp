@@ -6,9 +6,9 @@
 generate_scenarios <- function(output_path = "scenarios.yml",
                                intervals = c(2, 3, 6, 12),
                                min_years = c(2, 4, 6, 8),
-                               clust_sizes = c(5, 10),
-                               voronoi_multipliers = c(1, 2),
-                               choice_radii = c(5, 10),
+                               clust_sizes = c(5),
+                               voronoi_multipliers = c(1),
+                               choice_radii = c(5), # Key parameter to vary later (30)
                                max_alternatives = c(Inf),
                                interval_codes = NULL) {
 
