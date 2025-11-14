@@ -42,6 +42,56 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 11/14/2025
+
+> Raahil, Matt, Jovin, Ryan
+
+# TODO: 
+
+- **Matt**: Attempt robustness checks (vary years, vary experience level)
+- **Matt**: Santity check for running robustness checks
+- **Jovin**: Focusing on constructing shift (within next two weeks)
+- **Ryan**: Re-run Matt's new code structure
+- **Ryan**: Explore how mlogit function works
+- **Raahil**: Figure out the steps to do the individual WTP
+
+
+## Agenda
+
+1. Check on GDP
+    - GDP (income) was in USD
+    - Travel cost was in rupees. per KM cost is 7.5 Rupees
+    - So we need an exchange rate conversion to USD
+    - GDP values should be 2014. And exchange rate for 2014
+2. Updates on Shift development
+    - No updates
+    - Creating the share for each household
+3. [JEEM Paper](https://www.sciencedirect.com/science/article/abs/pii/S0095069617307398) allows us to estimate WTP with only 5% or 10% of counterfactual sample
+    - Validates our approach.
+4. Matt showed the updated structure
+    - Set up so you can change the scenario settings and re-run as much as we want
+    - Some sanity checking to complete. 
+5. Scenarios
+    - Manage size for computer but representative birdwatchers (cannot limit to super birders)
+    - 3 types of user: new users, medium users, and experts (recording the break points in the distribution of visits)
+        - Could be a line graph (WTP is y axis, parameter value)
+        - So this shows how WTP changes as we change the parameter value for any given parameter
+    - Vary choice radius for each household. 
+        - 5 to 30 alternative choices (driven by finding from JEEM paper)
+    - Seasonality model
+6. Mixed Logit packet
+    - Why are we geting a negative number. 
+    - What is going on inside the mlogit packet. 
+7. Potential Tasks
+    - IV estimate 
+    - Individual WTP
+    - Welfare estimates
+
+:::
+
+
+
+::: {.callout-note collapse="true"}
 # 10/30/2025
 
 > Raahil, Matt, Jovin, Ryan
