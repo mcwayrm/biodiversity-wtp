@@ -65,7 +65,7 @@ generate_scenarios <- function(output_path = "scenarios.yml",
 }
 
 # Generate scenarios.yml if no present
-if (!file.exists(file.path("scenarios", "scenarios.yml"))) {
+if (!file.exists(file.path("scenarios.yml"))) {
   message("scenarios.yml not found. Generating...")
   generate_scenarios()
 }
