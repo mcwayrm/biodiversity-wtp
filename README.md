@@ -1,145 +1,372 @@
 # Willingness to Pay for Biodiversity
 
-## Set up 
+This repository implements a modular pipeline for analyzing eBird observation data to estimate birders' willingness-to-pay (WTP) for biodiversity using random utility models (RUM).
 
-### Configuration File (`config.yml`)
+## Overview
 
-The config.yml file defines the directory structure and file paths used in processing eBird data. It includes:
-- Default directories and paths for storing shapefiles, intermediate data, and function scripts.
-- User-specific configurations that adjust input data paths based on the operating system username.
-- A reference file structure to clarify how data is organized.
+The pipeline processes eBird trip data, constructs choice sets of potential birding destinations, extracts site attributes (biodiversity metrics, environmental conditions, travel costs), and estimates discrete choice models to quantify WTP for biodiversity.
 
-### Structure of `config.yml`
+## Project Structure
 
-The YAML file consists of two main sections:
+```
+biodiversity-wtp/
+├── run_all.R                               # Master pipeline controller
+├── scenarios.yml                           # Scenario parameter definitions
+├── scripts/R/
+│   ├── utils_config.R                      # Configuration and package loading
+│   ├── utils_scenarios.R                   # Scenario definitions loader
+│   ├── utils_tasks.R                       # Task runner with logging
+│   ├── 01_load_ebird_data.R                # Clean eBird data, assign homes
+│   ├── 02_filter_users.R                   # Filter to active users
+│   ├── 03_distance_to_hotspots.R           # Calculate home-to-hotspot distances
+│   ├── 04_generate_voronoi_clusters.R      # Create spatial clusters
+│   ├── 05_create_choice_set.R              # Generate observed + counterfactual choices
+│   ├── 06_extract_site_attributes.R        # Extract climate & vegetation data
+│   ├── 07_compute_biodiversity_metrics.R   # Calculate species richness & congestion
+│   ├── 08_merge_site_attributes.R          # Combine all site-level data
+│   ├── 09_compute_travel_cost.R            # Calculate travel costs
+│   ├── 10_estimate_rum_models.R            # Fit discrete choice models
+│   ├── 11_generate_scenario_outputs.R      # Create maps, tables, figures
+│   └── 12_generate_summary_report.R        # Cross-scenario comparison report
+├── data/
+│   ├── raw/                                # Raw input data (user-specific location)
+│   ├── intermediate/
+│   │   ├── ebird_clean/                    # Cleaned eBird trips & user homes
+│   │   └── scenarios/{scenario_name}/      # Scenario-specific intermediate files
+├── output/
+│   └── scenarios/{scenario_name}/          # Final outputs per scenario
+│       ├── figures/                        # Maps and plots
+│       ├── tables/                         # Summary statistics and WTP estimates
+│       └── models/                         # Saved model objects
+│   └── summary_report                      # Report comparing all scenarios (html/qmd)
+├── logs/
+│   └── processing_times.csv                # Task execution log
+└── README.md
+```
 
-1. Default Configuration
-- Defines directory structures for core data categories such as shapefiles (shp), intermediate processed data (intermediate), and function scripts (functions).
-- Uses !expr do.call(file.path, ...) to dynamically construct file paths.
+## Setup
 
-2. User-Specific Configurations
-- Provides an override mechanism for individual users based on their system username.
-- Ensures that different users can specify unique input data locations while adhering to the standard directory structure.
+### 1. Configuration (`utils_config.R`)
 
-### Configuration Loader (`0.load_config.R`)
+The configuration script:
 
-The 0.load_config.R script is responsible for:
-- Detecting the operating system (Windows or Unix).
-- Identifying the current username to select the appropriate configuration.
-- Loading the user-specific or default settings from `config.yml`.
-- Extracting all directory-related variables except input_data_dir.
-- Ensuring that all required directories exist, creating any missing ones automatically.
+- Detects the operating system and username
+- Sets user-specific paths to raw input data
+- Loads required R packages
+- Ensures consistent directory structure across users
 
-#### Key Features:
-- Uses `yaml::read_yaml()` to parse the YAML file.
-- Dynamically constructs directory paths based on user configuration.
-- Verifies and creates directories as needed to maintain a consistent file structure.
+### 2. Required Input Data Structure
 
-### Usage
-1. Ensure `config.yml` is correctly set up for your user.
-2. Run `0.load_config.R` at the beginning of your scripts to automatically load paths and create missing directories.
-3. Proceed with data processing scripts using the loaded configurations.
+Place raw data in your configured `input_data_dir` following this structure:
 
-This setup ensures flexibility across different environments while maintaining a structured and reproducible workflow for eBird data processing.
+```
+input_data_dir/
+├── districts/
+│   └── district-2011/
+│       └── district-2011.shp              # India administrative boundaries (2011)
+├── ebird/
+│   ├── ebd_IN_201501_202412_relDec-2024/
+│   │   └── ebd_IN_201501_202412_relDec-2024.txt  # eBird Basic Dataset for India
+│   └── hotspots.rds                       # eBird hotspot locations
+├── era5_2m_temperature/
+│   ├── era5_2m_temperature_2015_01.tif    # Monthly temperature rasters
+│   └── ...
+├── era5_total_precipitation/
+│   ├── era5_total_precipitation_2015_01.tif  # Monthly precipitation rasters
+│   └── ...
+├── gdp/
+│   └── final_GDP_0_25deg_postadjust_pop_density.csv  # GDP data for travel cost
+├── modis_vcf/
+│   ├── MOD44B.061_Percent_Tree_Cover_doy2015065_aid0001.tif  # MODIS Tree cover
+│   └── ...
+└── protected_areas/
+    └── 04_MainlandPAsShapefile/
+        └── MainlandPAs_HolesFilled100k_FewRivRemv.shp  # Protected area boundaries
+```
 
-# Scripts
+### 3. Scenario Configuration (`scenarios.yml`)
 
-This describes the scripts in the repository. To perform the analysis, run the following scripts in order. 
+Define analysis scenarios with different parameters. The pipeline will automatically generate a template `scenarios.yml` if one doesn't exist using `utils_scenarios.R`.
 
-- `0.load_config.R`: This script sets up the configuration of the file paths and allows for flexible loading of the data for each user. Modifications to the personal users preferences can be made in `config.yml`. 
-- `1.ebd_process.R`: This script cleans the e-bird data set and creates the data set of homes for the users, trips by the users, and attributes about the users. 
-- `2.distance_to_hotspot.R`: This script determines the distance of birders from observed hotspots to create the counterfactual options for travel and their potential travel cost. 
-- `3.make_choice_sets.R`: This script performs the mixed logit analysis of comparing the selected destination over possible desitinations. This uses the random utility model (RUM).
+Scenario Naming Convention: `{interval_code}-{min_years}y_c{clust_size}km_v{voronoi_limit}km_r{choice_radius}km_m{max_alternatives}`
 
-# Data
+#### Parameter Definitions
 
-This describes the data needed to run the code. For each data set, we describe it and explain how it is used in the analysis. 
-
-## Inputs
-
-These are the input data (raw files) prior to processing: 
-
-- `data/rds/hotspots.rds`: 
-- `data/shp/district-2011`: This is the administrative boundaries for India from 2011 provided by GADM.
-- `../ebd_IN_smp_relJan-2025.zip`: This is the e-bird data set of bird observations by users for the India sample. 
-
-## Intermediates
-
-These are the intermediate files generated through the scripts but not the main files for analysis: 
-
-Generated in 1.ebd_process.R
-- User's Real Home Coordinates (`config$user_home_real_path`)
-    - This file contains the home coordinates of users who explicitly recorded observations at their home (e.g., "my home," "my backyard").
-    - It includes user_id, lon_home_real, lat_home_real, and c_code_2011_home_real (district code).
-- User's Imputed Home Coordinates (`config$user_home_impute_path`)
-    - This file estimates home locations for users who did not explicitly record home observations based on the center of all recorded trips.
-    - This file includes user_id, lon_home, lat_home, and c_code_2011_home
-- Cleaned eBird Trip Data (config$ebird_trip_clean_path)
-    - This dataset contains cleaned and filtered eBird trip records.
-    - Key steps include assigning trips to census districts (`c_code_2011`), removing out-of-bounds trips, setting distance to 0 for stationary trips, and merging in imputed home coordinates.
-    - The final dataset includes key trip details like user_id, trip_id, date, duration, distance, protocol_type, and district codes.
-
-Generated in 2.distance_to_hotspots.R
-- Processed Hotspot Trips (`config$ebird_trip_hotspots_path`)
-    - This dataset includes only trips to eBird hotspots (locality_type == 'H').
-    - The final dataset includes key trip details like user_id, trip_id, date, duration, distance, geo_dist (home-to-hotspot distance), and c_code_2011 (district code).
-
-Generated in 3.make_choice_set.R
-- Processed Choice Set (`config$choice_sets_dir/master_cs{radius}km_clust_{clust_size}km.rds`)
-    - This dataset includes both observed eBird trips and counterfactual (unobserved) choices within a specified radius around the user's home.
-    - The final dataset includes key trip details like user_id, trip_id, date, choice (observed vs. counterfactual), c_code_2011_home (home district), and assigned choice set information.
-
-# Final
-
-These are the final data sets generated for the main analysis: 
-
-- 
-
-# Dependencies
-
-This describes the dependencies required to perform the analysis. This includes both the software and the packages necessary including the versions that were used for the analysis. This is helful for replcation of the work. 
-
-## Software: 
-
-- R Programming: This is the main statistical tool used to perfom the analysis. Version 4.3.2
-
-## Packages: 
-
-For R: 
-
-- `yaml`: describe and version...
-- `pacman`: Efficently load in several R packages at once. 
-- `sf`: Handles spatial vector data sets. 
-- `tidyverse`: Tools for cleaning data.
-- `data.table`: Efficient management of tabular data for data cleaning. 
-- `lubridate`: Handles date formating. 
-- `units`: 
-
-## Functions: 
-
-- `/functions/choice_set_travel.R`: This function...
-- `/functions/hotspot_clustering.R`: This function...
-
-# Questions
-
-This is a section to ask questions and assign team members to respond to them. Below is an example. 
-
-- @mcwayrm How do I use the questions section of the `README.md`?
-    - Answer: Well, you simply follow this example. You ask a question and direct it towards an individual or generally and provide details about the specific files, tasks, or code that is of concern. Adding details assists us in the future and helps us document ongoing concerns and potential problems. 
-
-- Put you questions here...
-- @rmadhok We don't have a clear understanding of the intermediate data sets and how they relate to the scripts. Can you help use make these connections?
-- @rmadhok Where does `data/rds/hotspots.rds` data come from? How was it constructed? 
-- @mcwayrm Issue with `scripts/R/2.distance_to_hotspots.R` line 27: My data does not appear to have locality_type, locality in the data set.
-- @rmadhok Can we get some documentation on the hotspot data? How is it made? Where is it made? 
-    - Recieved it from e-bird. Don't think we can download it anymore. 
-- In `scripts/R/1.ebd_process.R` line 105, are we doing the correct oultier desstection? 
-- In `scripts/R/3.make_choice_set.R` line 56 the columns are not reading in correctly. 
-- 
+```yaml
+scenarios:
+  BM-2y_c5km_v5km_r5km_mInf:
+    # User filtering parameters
+    interval_months: 2.0                   # Activity interval: users must have ≥1 trip per this many months
+    min_years_active: 2.0                  # Minimum years of observed birding activity
+    interval_code: BM                      # Code for naming (BM=bimonthly, Q=quarterly, M=monthly)
+    
+    # Spatial clustering parameters
+    clustering_method: complete            # Hierarchical clustering method (complete, single, average)
+    projection_crs: 8857                   # Projected CRS for distance calculations (EPSG:8857 for India)
+    clust_size_km: 5.0                     # Maximum distance for hotspots to be grouped into same cluster
+    voronoi_limit_km: 5.0                  # Max distance from cluster centroid to Voronoi polygon boundary
+    
+    # Choice set construction parameters
+    choice_radius_km: 5.0                  # Radius around user home to include counterfactual alternatives
+    max_alternatives: .inf                 # Maximum counterfactual alternatives per choice set (use .inf for unlimited)
+    
+    # Analysis period
+    analysis_start_year: 2019              # First year to include in analysis
+    analysis_end_year: 2023                # Last year to include in analysis
+    
+    # Model specification
+    model_vars:                            # Variables to include in RUM
+      - expected_richness                  # Species richness (continuous)
+      - expected_congestion                # Number of birders (continuous)
+      - precip                             # Precipitation (mm)
+      - temp                               # Temperature (°C)
+      - trees                              # Tree cover (%)
+      - travel_cost_combined               # Total travel cost
+      - dist_to_pa_km                      # Distance to protected area (km)
+    
+    fe_vars:                               # Fixed effects variables
+      - user_id                            # Individual birder fixed effects
+      - year_month                         # Time fixed effects
+      - c_code_2011                        # District fixed effects
+    
+    mixed_vars:                            # Random coefficient variables (for mixed logit)
+      - expected_richness                  # Allow WTP for richness to vary across individuals
+```
 
 
-# Tasks
+## Running the Pipeline
 
-This is a section to provide directed tasks to others, or as reminders for one's self. 
-- `./scripts/R/1.ebd_process.R` line 129: Create a table of mapping off-coast homes into nearby districts. What is the average distance away?
-- For numbers where we know they should be a certain length, add assertions to stop run if not equal to that number (e.g.. throw an error)
+### Full Pipeline Execution
+
+Run all scenarios defined in `scenarios.yml`:
+
+```r
+source("run_all.R")
+```
+
+This executes all 12 tasks for each scenario sequentially.
+
+### Individual Task Execution
+
+Run specific tasks manually:
+
+```r
+source("scripts/R/utils_config.R")
+source("scripts/R/utils_scenarios.R")
+source("scripts/R/utils_tasks.R")
+
+# Example: Run task 1 for a specific scenario
+run_task(
+  script = "01_load_ebird_data.R",
+  scenario_name = "BM-2y_c5km_v5km_r5km_mInf",
+  input_paths = list(...),
+  output_paths = list(...),
+  skip_if_exists = TRUE
+)
+```
+
+### Task Logging
+
+The pipeline automatically logs processing times to `logs/processing_times.csv`:
+
+```csv
+timestamp,scenario,task,elapsed_seconds,status
+2025-11-13 12:00:00,BM-2y_c5km_v5km_r5km_mInf,01_load_ebird_data.R,45.2,completed
+2025-11-13 12:00:45,BM-2y_c5km_v5km_r5km_mInf,02_filter_users.R,12.8,completed
+```
+
+View processing time summaries:
+
+```r
+source("scripts/R/utils_tasks.R")
+summarize_processing_times()
+summarize_processing_times(scenario = "BM-2y_c5km_v5km_r5km_mInf")
+```
+
+## Pipeline Tasks
+
+### Task 1: Load and Clean eBird Data
+Script: `01_load_ebird_data.R`
+
+Outputs:
+
+- `data/intermediate/ebird_clean/ebird_trips.parquet` - Cleaned trip records
+- `data/intermediate/ebird_clean/user_home_real.rds` - Explicit home locations
+- `data/intermediate/ebird_clean/user_home_imputed.rds` - Imputed home locations
+
+### Task 2: Filter Users
+Script: `02_filter_users.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/ebird_trips_filtered.parquet`
+
+### Task 3: Calculate Distance to Hotspots
+Script: `03_distance_to_hotspots.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/ebird_trips_hotspots.parquet`
+
+### Task 4: Generate Voronoi Clusters
+Script: `04_generate_voronoi_clusters.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/ebird_hotspots_voronoi.gpkg` - Spatial polygons
+- `data/intermediate/scenarios/{scenario}/ebird_hotspots_clustered.parquet` - Cluster assignments
+
+### Task 5: Create Choice Set
+Script: `05_create_choice_set.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/master_data.parquet`
+
+### Task 6: Extract Site Attributes
+Script: `06_extract_site_attributes.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/site_precip.parquet`
+- `data/intermediate/scenarios/{scenario}/site_temp.parquet`
+- `data/intermediate/scenarios/{scenario}/site_trees.parquet`
+
+### Task 7: Compute Biodiversity Metrics
+Script: `07_compute_biodiversity_metrics.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/biodiv_monthly_richness.parquet`
+- `data/intermediate/scenarios/{scenario}/biodiv_weekly_richness.parquet`
+- `data/intermediate/scenarios/{scenario}/biodiv_seasonal_richness.parquet`
+- `data/intermediate/scenarios/{scenario}/biodiv_monthly_congestion.parquet`
+- `data/intermediate/scenarios/{scenario}/biodiv_weekly_congestion.parquet`
+- `data/intermediate/scenarios/{scenario}/biodiv_seasonal_congestion.parquet`
+
+### Task 8: Merge Site Attributes
+Script: `08_merge_site_attributes.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/master_data_with_attributes.parquet`
+
+### Task 9: Compute Travel Cost
+Script: `09_compute_travel_cost.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/master_data_with_travel_cost.parquet`
+
+### Task 10: Estimate RUM Models
+Script: `10_estimate_rum_models.R`
+
+Outputs:
+
+- `data/intermediate/scenarios/{scenario}/master_data_final.parquet`
+- `output/scenarios/{scenario}/models/model_basic.rds`
+- `output/scenarios/{scenario}/models/model_fe.rds`
+- `output/scenarios/{scenario}/models/model_mixed.rds`
+
+### Task 11: Generate Scenario Outputs
+Script: `11_generate_scenario_outputs.R`
+
+Outputs:
+
+- `output/scenarios/{scenario}/figures/voronoi_map.png`
+- `output/scenarios/{scenario}/tables/wtp_comparison.csv`
+- `output/scenarios/{scenario}/tables/data_summary.csv`
+
+### Task 12: Generate Summary Report
+Script: `12_generate_summary_report.R`
+
+Outputs:
+
+- `output/summary_report.html`
+
+<!-- ## Data Dictionary
+
+### Key Variables
+
+**Trip/Choice Variables:**
+
+- `user_id` - Unique eBird user identifier
+- `trip_id` - Unique trip identifier
+- `choice` - Binary indicator (1 = observed trip, 0 = counterfactual)
+- `cluster_id` - Hotspot cluster identifier
+- `date` - Trip date
+- `duration_minutes` - Trip duration
+- `geo_dist` - Geodesic distance from home to hotspot (km)
+
+**Site Attributes:**
+
+- `expected_richness` - Species richness (unique species count)
+- `expected_congestion` - Number of birders/checklists
+- `precip` - Precipitation (mm)
+- `temp` - Temperature (°C)
+- `trees` - Tree cover percentage
+- `dist_to_pa_km` - Distance to nearest protected area (km)
+
+**Geographic:**
+
+- `c_code_2011` - Census district code (2011 boundaries)
+- `lon_home`, `lat_home` - User home coordinates
+- `longitude`, `latitude` - Hotspot coordinates
+
+**Economic:**
+
+- `travel_cost_combined` - Total travel cost (distance + opportunity cost of time) -->
+
+## Dependencies
+
+### Software
+- **R** (version 4.3.2 or higher)
+
+### R Packages
+- `yaml` - YAML configuration parsing
+- `tidyverse` - Data manipulation and visualization
+- `arrow` - Parquet file I/O
+- `here` - Path management
+- `sf` - Spatial vector data
+- `terra` - Spatial raster data
+- `data.table` - Efficient data processing
+- `lubridate` - Date handling
+- `logitr` - Logit model estimation
+- `fixest` - Fixed effects models
+- `vegan` - Biodiversity metrics
+- `pbapply` - Progress bars
+- `cluster`, `factoextra` - Clustering algorithms
+
+<!-- ## Outputs
+
+### Scenario-Specific Outputs
+
+Each scenario produces:
+
+1. **Models:** Saved model objects (`.rds`) for basic, fixed effects, and mixed logit models
+2. **Tables:** WTP estimates, data summaries, coefficient tables (`.csv`)
+3. **Figures:** Voronoi cluster maps, spatial distributions (`.png`)
+
+### Cross-Scenario Summary
+
+The final report (`output/summary_report.html`) compares:
+
+- WTP estimates across scenarios
+- Model fit statistics
+- Robustness checks
+- Sample composition differences -->
+
+<!-- ## Citation
+
+[Add citation information]
+
+## License
+
+[Add license information] -->
+
+## Contact
+
+- Raahil Madhok
+- Matthew Braaksma
+- Ryan McWay
+- Jovin Lasway

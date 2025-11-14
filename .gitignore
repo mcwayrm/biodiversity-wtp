@@ -1,12 +1,7 @@
-/data/api-key-ebird-raahil-2.txt
-/data/api-key-ebird-raahil.txt
-/data/intermediate/*
-/data/clean/*
-data/shp/wdpa/
-data/raster/era5*
-data/raster/modis*
+data/*
 .Rhistory
-/functions/.Rhistory
 *.DS_Store
-cache/*
+cache/
 .vscode/
+output/*
+logs/*

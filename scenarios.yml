@@ -1,0 +1,54 @@
+scenarios:
+  BM-2y_c5km_v5km_r5km_mInf:
+    interval_months: 2.0
+    min_years_active: 2.0
+    interval_code: BM
+    clustering_method: complete
+    projection_crs: 8857.0
+    clust_size_km: 5.0
+    voronoi_limit_km: 5.0
+    choice_radius_km: 5.0
+    max_alternatives: .inf
+    analysis_start_year: 2019
+    analysis_end_year: 2023
+    model_vars:
+      - expected_richness
+      - expected_congestion
+      - precip
+      - temp
+      - trees
+      - travel_cost_combined
+      - dist_to_pa_km
+    fe_vars:
+      - user_id
+      - year_month
+      - c_code_2011
+    mixed_vars:
+      - expected_richness
+  Q-2y_c5km_v5km_r5km_mInf:
+    interval_months: 3.0
+    min_years_active: 2.0
+    interval_code: BM
+    clustering_method: complete
+    projection_crs: 8857.0
+    clust_size_km: 5.0
+    voronoi_limit_km: 5.0
+    choice_radius_km: 5.0
+    max_alternatives: .inf
+    analysis_start_year: 2019
+    analysis_end_year: 2023
+    model_vars:
+      - expected_richness
+      - expected_congestion
+      - precip
+      - temp
+      - trees
+      - travel_cost_combined
+      - dist_to_pa_km
+    fe_vars:
+      - user_id
+      - year_month
+      - c_code_2011
+    mixed_vars:
+      - expected_richness
+
