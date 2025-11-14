@@ -155,7 +155,7 @@ master_data[, `:=`(
   # Round-trip time cost = 2 x (time value fraction) x wage x time
   time_cost = 2 * time_value_fraction * hourly_wage * (geo_dist / travel_speed_kmph),
   # One-way fuel cost
-  fuel_cost = geo_dist * driving_cost_per_km * 
+  fuel_cost = geo_dist * driving_cost_per_km
 )]
 
 # Total travel cost
