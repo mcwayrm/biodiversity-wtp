@@ -28,8 +28,8 @@ create_cluster_voronoi <- function(hotspots_df, max_distance_km = 10, boundary_s
 
   # Convert centroids to sf in WGS84, then immediately project
   centroids_temp_sf <- st_as_sf(cluster_centroids,
-                               coords = c('centroid_lon', 'centroid_lat'),
-                               crs = 4326) %>%
+                                coords = c('centroid_lon', 'centroid_lat'),
+                                crs = 4326) %>%
     st_transform(crs = proj_crs)
   
   # Attach district codes to centroids (to filter offshore clusters)
@@ -122,35 +122,35 @@ hotspots <- hotspots %>%
   distinct(c_code_2011, name, .keep_all = TRUE)
 
 # Project for clustering (already in projected CRS)
-hotspots_proj <- st_as_sf(hotspots, coords = c('lon','lat'), crs = 4326) %>% 
+hotspots_proj <- st_as_sf(hotspots, coords = c('lon','lat'), crs = 4326) %>%
   st_transform(params$projection_crs)
 distm <- st_distance(hotspots_proj)
 
-# Cluster
+# Hierarchal Cluster based on distance
 hc <- hclust(as.dist(distm), method = params$clustering_method)
 hotspots$cluster_id <- cutree(hc, h = params$clust_size_km * 1000)
 
 # Build India mainland boundary (IN PROJECTED CRS, VALIDATED)
-india_mainland <- india_dist %>% 
+india_mainland <- india_dist %>%
   filter(!grepl("Andaman|Nicobar|Lakshadweep", STATE_UT, ignore.case = TRUE))
 
-india_boundary <- india_mainland %>% 
-  st_union() %>% 
+india_boundary <- india_mainland %>%
+  st_union() %>%
   st_make_valid() %>%
-  st_sf() %>% 
+  st_sf() %>%
   mutate(country = "India")
 
 # Create Voronoi polygons (pass projected CRS to function)
 voronoi_results <- create_cluster_voronoi(
-  hotspots, 
-  max_distance_km = params$voronoi_limit_km, 
+  hotspots,
+  max_distance_km = params$voronoi_limit_km,
   boundary_sf = india_boundary,
   proj_crs = params$projection_crs
 )
 
-st_write(voronoi_results$unlimited, outputs$voronoi_shp, 
+st_write(voronoi_results$unlimited, outputs$voronoi_shp,
          layer = "cluster_voronoi_unlimited", delete_layer = TRUE, quiet = TRUE)
-st_write(voronoi_results$distance_limited, outputs$voronoi_shp, 
+st_write(voronoi_results$distance_limited, outputs$voronoi_shp,
          layer = "cluster_voronoi_limited", delete_layer = TRUE, quiet = TRUE)
 
 

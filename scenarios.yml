@@ -26,18 +26,18 @@ scenarios:
     mixed_vars:                   # Mixed logit distribution variable
       - expected_richness
   Q-2y_c5km_v5km_r5km_mInf:
-    interval_months: 3.0
-    min_years_active: 2.0
-    interval_code: BM
-    clustering_method: complete
-    projection_crs: 8857.0
-    clust_size_km: 5.0
-    voronoi_limit_km: 5.0
-    choice_radius_km: 5.0
-    max_alternatives: .inf
-    analysis_start_year: 2019
-    analysis_end_year: 2023
-    model_vars:
+    interval_months: 3.0          # Quarterly intervals
+    min_years_active: 2.0         # Minimum 2 years of active data
+    interval_code: BM             # Bi-monthly code
+    clustering_method: complete   # Use all the data when clustering
+    projection_crs: 8857.0        # CRS WGS 84 / Equal Earth Greenwich
+    clust_size_km: 5.0            # Cluster size of 5 km  
+    voronoi_limit_km: 5.0         # Voronoi limit of 5 km
+    choice_radius_km: 5.0         # Choice radius of 5 km
+    max_alternatives: .inf        # Unlimited alternatives in choice set
+    analysis_start_year: 2019     # Start year for analysis
+    analysis_end_year: 2023       # End year for analysis
+    model_vars:                   # Variables in WTP model
       - expected_richness
       - expected_congestion
       - precip
@@ -45,10 +45,10 @@ scenarios:
       - trees
       - travel_cost_combined
       - dist_to_pa_km
-    fe_vars:
+    fe_vars:                      # Fixed effects variables
       - user_id
       - year_month
       - c_code_2011
-    mixed_vars:
+    mixed_vars:                   # Mixed logit distribution variable
       - expected_richness
 

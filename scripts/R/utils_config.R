@@ -50,7 +50,7 @@ if (username == "mbraaksma") {
 # │   ├── ebd_IN_201501_202412_relDec-2024/
 # │   │   ├── ebd_IN_201501_202412_relDec-2024.txt
 # │   ├── hotspots.rds
-# ├── era5_2m_temperature/era5_2m_temperature_2015_01.tif
+# ├── era5_2m_temperature/
 # │   ├── era5_2m_temperature_2015_01.tif
 # │   ├── . . .
 # │   ├── era5_2m_temperature_2024_12.tif

@@ -20,7 +20,7 @@ ebird <- fread(
   ),
   quote = ""
 )
-stopifnot(nrow(ebird) == 58563093)
+stopifnot(nrow(ebird) == 58563093) # Asserts correct ebird file size
 
 # Standardize names
 colnames(ebird) <- gsub("\\.", "_", tolower(make.names(colnames(ebird))))
@@ -42,7 +42,7 @@ ebird <- mutate(ebird, distance = replace(distance, is.na(distance), 0))
 
 # Collapse to user–trip level
 ebird <- distinct(ebird, trip_id, .keep_all = TRUE)
-stopifnot(nrow(ebird) == 3463250)
+stopifnot(nrow(ebird) == 3463250) # Asserts unique user-trips in ebird data
 
 # Add dates
 ebird$date      <- ymd(ebird$observation_date)
@@ -97,6 +97,7 @@ user_home <- ebird %>%
   summarize(lon_home_real = mean(lon, na.rm = TRUE),
             lat_home_real = mean(lat, na.rm = TRUE))
   stopifnot(nrow(user_home) == 347) # CHECK: Obs = 347 users homes
+
 # Assign users to a district they live in using spatial intersection with district polygons
 user_home$c_code_2011_home_real <- st_join(st_as_sf(user_home,
                                                     coords = c('lon_home_real', 'lat_home_real'),
@@ -144,7 +145,7 @@ user <- user %>%
   stopifnot(nrow(user) == 42486) # CHECK: Obs = 42,486 homes
 
 # Overlay home districts
-# Note: If gravity center is off coast home is the centroid of nearest dist
+# Note: If gravity center is off coast, home is the centroid of nearest dist
 user$c_code_2011_home <- st_join(st_as_sf(user,
                                           coords = c('lon_home', 'lat_home'),
                                           crs = 4326), # World Geodetic System 1984
@@ -152,7 +153,7 @@ user$c_code_2011_home <- st_join(st_as_sf(user,
                                 join = st_intersects)$c_code_2011
 # Handle homes in the ocean
 # For off-coast homes, assign id of nearest district
-user_na <- filter(user, is.na(c_code_2011_home))  
+user_na <- filter(user, is.na(c_code_2011_home))
   stopifnot(nrow(user_na) == 786) # CHECK: 786 users out of 42,486
 # Note: 1.9% of users have homes off-coast
 user_na$c_code_2011_home <- st_join(st_as_sf(user_na,

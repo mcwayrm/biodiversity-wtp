@@ -31,6 +31,7 @@ run_task <- function(script,
     return(invisible(TRUE))
   }
   
+  # start to run script
   message("Running ", script, " ...")
   message("Declared outputs:")
   for (i in seq_along(out_paths_char)) {
@@ -38,6 +39,7 @@ run_task <- function(script,
         if (exists_vec[i]) " (exists)\n" else "\n")
   }
   
+  # read environmental setup
   env <- new.env(parent = globalenv())
   env$inputs        <- input_paths
   env$outputs       <- output_paths
@@ -124,7 +126,7 @@ log_task_time <- function(task_name, elapsed_seconds, scenario_name = NULL,
 ##########################################
 summarize_processing_times <- function(log_file = "logs/processing_times.csv", 
                                        scenario = NULL) {
-  
+  # detect if log exists
   if (!file.exists(log_file)) {
     message("No log file found at: ", log_file)
     return(invisible(NULL))

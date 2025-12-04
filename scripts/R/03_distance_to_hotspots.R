@@ -8,7 +8,7 @@
 #-----------------------------------------
 # Select observed hotspots
 #-----------------------------------------
-# We identify the straight-line distance
+# We identify the straight-line (Euclidean) distance
 # from home to every hotspot visited
 
 # Read ebird trips

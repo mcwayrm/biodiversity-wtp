@@ -12,7 +12,7 @@
 # Load eBird trips
 ebird <- read_parquet(inputs$ebird_trips)
 
-# Define parameters
+# Define sample selection parameters
 interval_months <- params$interval_months    # 2 for bi-monthly, 3 for quarterly, 6 for semi-annual
 min_years_active <- params$min_years_active
 
@@ -29,7 +29,7 @@ monthly_activity <- ebird %>%
 # Total number of periods in a year
 n_periods <- ceiling(12 / interval_months)
 
-# Count how many unique periods each user was active in per year
+# Count how many unique periods each user was active per year
 active_per_year <- monthly_activity %>%
   group_by(user_id, year) %>%
   summarize(n_periods_active = n_distinct(period), .groups = "drop") %>%
