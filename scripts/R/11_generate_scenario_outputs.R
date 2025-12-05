@@ -16,11 +16,11 @@ message("Loading scenario data...")
 
 # Load Voronoi polygons
 voronoi_unlimited <- st_read(inputs$voronoi_shp,
-                            layer = "cluster_voronoi_unlimited",
-                            quiet = TRUE)
+                             layer = "cluster_voronoi_unlimited",
+                             quiet = TRUE)
 voronoi_limited <- st_read(inputs$voronoi_shp,
-                          layer = "cluster_voronoi_limited",
-                          quiet = TRUE)
+                           layer = "cluster_voronoi_limited",
+                           quiet = TRUE)
 
 # Load clustered hotspots
 hotspots <- read_parquet(inputs$hotspots_clustered)
@@ -89,40 +89,73 @@ model_mixed <- readRDS(inputs$model_mixed)
 
 message("\n--- Creating WTP comparison table ---")
 
-# Extract WTP estimates from each model
 extract_wtp <- function(model_obj, model_name) {
-  if (is.null(model_obj$wtp)) {
-    return(data.frame(
-      variable = character(),
-      wtp = numeric(),
-      model = character()
-    ))
-  }
+  empty_df <- data.frame(
+    variable = character(),
+    wtp = numeric(),
+    se = numeric(),
+    model = character(),
+    stringsAsFactors = FALSE
+  )
+  if (is.null(model_obj$wtp)) return(empty_df)
   
-  if ("method" %in% names(model_obj$wtp) && model_obj$wtp$method == "manual") {
-    # Manual WTP calculation
-    wtp_values <- model_obj$wtp$Estimate
-    wtp_df <- data.frame(
-      variable = names(wtp_values),
-      wtp = as.numeric(wtp_values),
-      se = NA,
-      model = model_name,
-      stringsAsFactors = FALSE
-    )
+  wtp_raw <- model_obj$wtp
+  
+  # handle manual-style list with Estimate element
+  if (is.list(wtp_raw) && "method" %in% names(wtp_raw) && wtp_raw$method == "manual") {
+    est_raw <- wtp_raw$Estimate
+    if (is.null(est_raw)) return(empty_df)
+    if (is.matrix(est_raw) || is.data.frame(est_raw)) {
+      est <- as.numeric(est_raw[,1])
+      vars <- rownames(est_raw)
+    } else {
+      est <- as.numeric(est_raw)
+      vars <- names(est_raw)
+    }
+    se <- rep(NA_real_, length(est))
   } else {
-    # Standard WTP output
-    wtp_values <- model_obj$wtp
-    wtp_df <- data.frame(
-      variable = rownames(wtp_values),
-      wtp = wtp_values$Estimate,
-      se = wtp_values$StdError,
-      model = model_name,
-      stringsAsFactors = FALSE
-    )
+    # standard: could be data.frame/matrix with Estimate and optionally StdError,
+    # or a named numeric vector
+    if (is.data.frame(wtp_raw) || is.matrix(wtp_raw)) {
+      wtp_df <- as.data.frame(wtp_raw, stringsAsFactors = FALSE)
+      if ("Estimate" %in% colnames(wtp_df)) {
+        est <- as.numeric(wtp_df$Estimate)
+      } else {
+        # fall back to first numeric column
+        numcols <- which(sapply(wtp_df, is.numeric))
+        if (length(numcols) == 0) return(empty_df)
+        est <- as.numeric(wtp_df[[numcols[1]]])
+      }
+      if ("StdError" %in% colnames(wtp_df)) {
+        se <- as.numeric(wtp_df$StdError)
+      } else {
+        se <- rep(NA_real_, length(est))
+      }
+      vars <- rownames(wtp_df)
+    } else if (is.numeric(wtp_raw) && !is.null(names(wtp_raw))) {
+      est <- as.numeric(wtp_raw)
+      se <- rep(NA_real_, length(est))
+      vars <- names(wtp_raw)
+    } else {
+      return(empty_df)
+    }
   }
   
-  return(wtp_df)
+  # ensure lengths align
+  n <- length(est)
+  if (is.null(vars) || length(vars) != n) vars <- paste0("V", seq_len(n))
+  if (length(se) == 1 && n > 1) se <- rep(se, n)
+  if (length(se) != n) se <- rep(NA_real_, n)
+  
+  data.frame(
+    variable = vars,
+    wtp = est,
+    se = se,
+    model = model_name,
+    stringsAsFactors = FALSE
+  )
 }
+
 
 # WTP Models
 wtp_basic_df <- extract_wtp(model_basic, "Basic")
