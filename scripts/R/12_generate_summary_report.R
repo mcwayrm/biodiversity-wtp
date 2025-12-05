@@ -311,7 +311,6 @@ message("Quarto document created: ", qmd_file)
 # -----------------------------------------------------------------------------
 # Render Report
 # -----------------------------------------------------------------------------
-
 message("Rendering HTML report...")
 
 # Create output directory if needed
@@ -320,55 +319,19 @@ if (!dir.exists(output_dir_report)) {
   dir.create(output_dir_report, recursive = TRUE)
 }
 
-# Render the Quarto document (output goes to temp dir)
-tryCatch({
-  quarto::quarto_render(
-    input = qmd_file
-  )
-  
-  # Move rendered HTML to final location
-  rendered_file <- sub("\\.qmd$", ".html", qmd_file)
-  if (file.exists(rendered_file)) {
-    file.copy(rendered_file, outputs$summary_report, overwrite = TRUE)
-    unlink(rendered_file)
-    message("Report successfully rendered: ", outputs$summary_report)
-  } else {
-    stop("Rendered file not found")
-  }
-}, error = function(e) {
-  message("Error rendering Quarto report: ", e$message)
-  message("Attempting alternative rendering method...")
-  
-  # Fallback: try rmarkdown if quarto fails
-  tryCatch({
-    # Render in temp location
-    rmarkdown::render(
-      input = qmd_file,
-      output_format = "html_document"
-    )
-    
-    # Move to final location
-    rendered_file <- sub("\\.qmd$", ".html", qmd_file)
-    if (file.exists(rendered_file)) {
-      file.copy(rendered_file, outputs$summary_report, overwrite = TRUE)
-      unlink(rendered_file)
-      message("Report rendered using rmarkdown: ", outputs$summary_report)
-    } else {
-      stop("Rendered file not found")
-    }
-  }, error = function(e2) {
-    message("Both Quarto and rmarkdown rendering failed.")
-    message("Error: ", e2$message)
-    # Save the qmd file for manual rendering
-    qmd_backup <- file.path(output_dir_report, "summary_report.qmd")
-    file.copy(qmd_file, qmd_backup, overwrite = TRUE)
-    message("Quarto source saved to: ", qmd_backup)
-    message("You can manually render with: quarto render ", qmd_backup)
-  })
-})
+# Copy qmd file to output directory (Quarto renders in-place)
+qmd_final <- file.path(output_dir_report, "summary_report.qmd")
+file.copy(qmd_file, qmd_final, overwrite = TRUE)
 
-# Clean up temp file
+# Render in the output directory
+quarto::quarto_render(
+  input = qmd_final
+)
+
+# Clean up only the temp qmd file
 unlink(qmd_file)
+# Don't delete qmd_final - leave it in output directory
 
 message("\n=== SUMMARY REPORT GENERATION COMPLETE ===")
 message("Report location: ", outputs$summary_report)
+message("Source file: ", qmd_final)
