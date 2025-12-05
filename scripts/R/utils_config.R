@@ -41,7 +41,7 @@ if (username == "mbraaksma") {
   input_data_dir <- here("data", "raw")
 }
 
-# Input dir must follow structure: 
+# Input dir must follow structure:
 # input_data_dir/
 # ├── districts/
 # │   ├── district-2011/

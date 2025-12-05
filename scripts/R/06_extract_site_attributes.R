@@ -87,9 +87,9 @@ extract_zonal_stats <- function(
       }
       
       # Extract zonal statistics
-      stats <- terra::extract(r, buffer_vect_proj, 
-                              fun = extraction_fun, 
-                              na.rm = na.rm, 
+      stats <- terra::extract(r, buffer_vect_proj,
+                              fun = extraction_fun,
+                              na.rm = na.rm,
                               touches = TRUE)
       
       if (is.null(stats) || nrow(stats) == 0) {
@@ -152,7 +152,7 @@ extract_zonal_stats <- function(
   total_obs <- nrow(result_data)
   missing_obs <- sum(is.na(result_data[[variable_name]]))
   
-  message("Extraction complete: ", total_obs, " observations, ", 
+  message("Extraction complete: ", total_obs, " observations, ",
           missing_obs, " missing (", round(100 * missing_obs / total_obs, 2), "%)")
   
   return(result_data)
@@ -169,8 +169,8 @@ hotspots <- read_parquet(inputs$hotspots_clustered) %>%
 
 # Load Voronoi polygons (limited version for extraction)
 voronoi_polygons <- st_read(inputs$voronoi_shp, 
-                           layer = "cluster_voronoi_limited",
-                           quiet = TRUE)
+                            layer = "cluster_voronoi_limited",
+                            quiet = TRUE)
 
 # Transform to WGS84 for raster extraction
 voronoi_wgs84 <- st_transform(voronoi_polygons, crs = 4326)
@@ -181,6 +181,7 @@ message("Loaded ", nrow(hotspots), " clusters and ", nrow(voronoi_polygons), " V
 # Extract Precipitation
 # -----------------------------------------------------------------------------
 
+# Zonal Stats for Precipitation
 hotspots_precip <- extract_zonal_stats(
   variable_name = "precip",
   dir_path = inputs$precip_dir,
@@ -197,6 +198,7 @@ write_parquet(hotspots_precip, outputs$precip)
 # Extract Temperature
 # -----------------------------------------------------------------------------
 
+# Zonal Stata for Temperature
 hotspots_temp <- extract_zonal_stats(
   variable_name = "temp",
   dir_path = inputs$temp_dir,
@@ -213,6 +215,7 @@ write_parquet(hotspots_temp, outputs$temp)
 # Extract Tree Cover
 # -----------------------------------------------------------------------------
 
+# Zonal Stats for Tree Cover
 hotspots_trees <- extract_zonal_stats(
   variable_name = "trees",
   dir_path = inputs$trees_dir,

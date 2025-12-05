@@ -10,7 +10,7 @@
 #    - time_value_fraction: Value of time as fraction of wage (default: 1/3)
 #    - work_hours_per_year: Annual work hours (default: 2000)
 #    - travel_speed_kmph: Average travel speed in km/h (default: 30)
-#    - driving_cost_per_km: Vehicle operating cost in INR/km (default: 7.5)
+#    - driving_cost_per_km: Vehicle operating exchange rate adjusted cost in INR/km (default: 7.5 / 60.95)
 #  Required inputs:
 #    - master_data_with_attributes: Output from stage 8
 #    - district_shp: District boundaries for home location centroids
@@ -21,24 +21,28 @@
 # Load Parameters (with defaults)
 # -----------------------------------------------------------------------------
 
+# Value of time from wage
 time_value_fraction <- if (!is.null(params$time_value_fraction)) {
   params$time_value_fraction
 } else {
   1/3  # Value of time assumed as 1/3 of wage (Jayalath et al., 2023)
 }
 
+# Annual work hours
 work_hours <- if (!is.null(params$work_hours_per_year)) {
   params$work_hours_per_year
 } else {
   2000  # 250 working days x 8 hours/day
 }
 
+# Average travel speed
 travel_speed_kmph <- if (!is.null(params$travel_speed_kmph)) {
   params$travel_speed_kmph
 } else {
   30  # Average rural/urban travel speed (MoRTH road studies)
 }
 
+# Driving cost per km
 driving_cost_per_km <- if (!is.null(params$driving_cost_per_km)) {
   params$driving_cost_per_km
 } else {
@@ -91,6 +95,7 @@ if (!all(c("lon_home", "lat_home") %in% names(master_data))) {
 message("Loading GDP data...")
 gdp_all <- fread(inputs$gdp)
 
+# Filter for India
 gdp_india <- gdp_all[iso == "IND" & year >= 2014 & year <= 2024]
 
 # Convert GDP data to spatial features
@@ -120,8 +125,8 @@ message("GDP centroids: ", nrow(gdp_centroids), " locations")
 message("Matching home locations to GDP data...")
 
 # Get unique home locations
-unique_homes <- master_data[, .(lon_home = first(lon_home), 
-                                lat_home = first(lat_home)), 
+unique_homes <- master_data[, .(lon_home = first(lon_home),
+                                lat_home = first(lat_home)),
                             by = .(user_id)]
 
 # Convert to sf
@@ -134,7 +139,7 @@ unique_homes[, gdppc := gdp_centroids$gdppc[nearest_indices]]
 unique_homes[, hourly_wage := gdppc / work_hours]
 
 # Merge back to master data
-master_data <- master_data[unique_homes[, .(user_id, gdppc, hourly_wage)], 
+master_data <- master_data[unique_homes[, .(user_id, gdppc, hourly_wage)],
                           on = "user_id"]
 
 message("GDP data matched for ", master_data[!is.na(gdppc), uniqueN(user_id)], " users")

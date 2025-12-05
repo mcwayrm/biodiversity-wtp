@@ -4,7 +4,7 @@
 #  - Loads final master dataset with all attributes and costs
 #  - Filters to analysis years and cleans problematic trips
 #  - Estimates three models: basic, fixed effects, and mixed logit
-#  - Saves: outputs$data_clean (cleaned data), outputs$model_basic, 
+#  - Saves: outputs$data_clean (cleaned data), outputs$model_basic,
 #           outputs$model_fe, outputs$model_mixed
 #
 #  Required params:
@@ -30,6 +30,7 @@ message("Initial dataset: ", nrow(cs), " rows, ", cs[, uniqueN(trip_id)], " trip
 # Filter to Analysis Years
 # -----------------------------------------------------------------------------
 
+# Start and End years
 start_year <- params$analysis_start_year
 end_year <- params$analysis_end_year
 
@@ -37,12 +38,13 @@ message("Filtering to years ", start_year, "-", end_year)
 before_rows <- nrow(cs)
 before_trips <- cs[, uniqueN(trip_id)]
 
+# Filter
 cs <- cs[!is.na(year) & year >= start_year & year <= end_year]
 
 after_rows <- nrow(cs)
 after_trips <- cs[, uniqueN(trip_id)]
 
-message(sprintf("Filtered: %d -> %d rows ; %d -> %d trips", 
+message(sprintf("Filtered: %d -> %d rows ; %d -> %d trips",
                 before_rows, after_rows, before_trips, after_trips))
 
 # -----------------------------------------------------------------------------
@@ -66,11 +68,11 @@ if (length(missing_choice_trips) > 0) {
 # Drop counterfactual alternatives with missing expected_richness
 before_cc <- nrow(cs)
 cs <- cs[!(choice == 0 & is.na(expected_richness))]
-message(sprintf("Dropped %d counterfactual rows with missing expected_richness", 
+message(sprintf("Dropped %d counterfactual rows with missing expected_richness",
                 before_cc - nrow(cs)))
 
 # Check trip statistics
-trip_stats <- cs[, .(n_alts = .N, n_chosen = sum(as.integer(choice), na.rm = TRUE)), 
+trip_stats <- cs[, .(n_alts = .N, n_chosen = sum(as.integer(choice), na.rm = TRUE)),
                 by = trip_id]
 
 message("\nTrip statistics:")
@@ -115,11 +117,13 @@ model_vars <- params$model_vars
 
 message("Model variables: ", paste(model_vars, collapse = ", "))
 
+# Basic Logit Model
 ebird_basic <- logitr(
   data = as.data.frame(cs),
   outcome = "choice",
   obsID = "obs_id_num",
-  pars = model_vars
+  pars = model_vars,
+  robust = TRUE
 )
 
 message("Basic model estimated")
@@ -186,7 +190,8 @@ ebird_fe <- logitr(
   data = as.data.frame(cs),
   outcome = "choice",
   obsID = "obs_id_num",
-  pars = paste0(model_vars, "_dm")
+  pars = paste0(model_vars, "_dm"),
+  robust = TRUE
 )
 
 message("Fixed effects model estimated")
@@ -240,13 +245,15 @@ message("Random parameters: ", paste(mixed_vars, collapse = ", "))
 # Create randPars specification
 rand_pars <- setNames(rep("n", length(mixed_vars)), mixed_vars)
 
+# Mixed Logit Model
 ebird_mixed <- logitr(
   data = as.data.frame(cs),
   outcome = "choice",
   obsID = "obs_id_num",
   pars = model_vars,
   randPars = rand_pars,
-  numMultiStarts = 5
+  numMultiStarts = 5,
+  robust = TRUE
 )
 
 message("Mixed logit model estimated")

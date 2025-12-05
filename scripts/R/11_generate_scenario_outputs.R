@@ -15,12 +15,12 @@
 message("Loading scenario data...")
 
 # Load Voronoi polygons
-voronoi_unlimited <- st_read(inputs$voronoi_shp, 
-                             layer = "cluster_voronoi_unlimited",
-                             quiet = TRUE)
-voronoi_limited <- st_read(inputs$voronoi_shp, 
-                           layer = "cluster_voronoi_limited",
-                           quiet = TRUE)
+voronoi_unlimited <- st_read(inputs$voronoi_shp,
+                            layer = "cluster_voronoi_unlimited",
+                            quiet = TRUE)
+voronoi_limited <- st_read(inputs$voronoi_shp,
+                          layer = "cluster_voronoi_limited",
+                          quiet = TRUE)
 
 # Load clustered hotspots
 hotspots <- read_parquet(inputs$hotspots_clustered)
@@ -53,12 +53,12 @@ p <- ggplot() +
           fill = "lightblue", alpha = 0.3, color = "blue", linewidth = 0.3) +
   # Hotspot points
   geom_point(data = hotspots, aes(x = lon, y = lat), 
-             color = "red", size = 0.8, alpha = 0.6) +
+            color = "red", size = 0.8, alpha = 0.6) +
   labs(
     title = "Voronoi Clusters and Hotspot Locations",
     subtitle = paste0("Scenario: ", basename(dirname(dirname(inputs$voronoi_shp))),
-                     " | ", nrow(voronoi_limited), " clusters, ", 
-                     nrow(hotspots), " hotspots"),
+                    " | ", nrow(voronoi_limited), " clusters, ",
+                    nrow(hotspots), " hotspots"),
     x = "Longitude",
     y = "Latitude"
   ) +
@@ -124,6 +124,7 @@ extract_wtp <- function(model_obj, model_name) {
   return(wtp_df)
 }
 
+# WTP Models
 wtp_basic_df <- extract_wtp(model_basic, "Basic")
 wtp_fe_df <- extract_wtp(model_fe, "Fixed Effects")
 wtp_mixed_df <- extract_wtp(model_mixed, "Mixed Logit")
@@ -160,8 +161,8 @@ print(wtp_comparison)
 message("\n--- Creating data summary ---")
 
 # Variable list
-summary_vars <- c("expected_richness", "expected_congestion", "precip", "temp", 
-                 "trees", "travel_cost_combined", "dist_to_pa_km", "geo_dist")
+summary_vars <- c("expected_richness", "expected_congestion", "precip", "temp",
+                  "trees", "travel_cost_combined", "dist_to_pa_km", "geo_dist")
 
 # Calculate summary statistics
 summary_stats <- data_clean[, lapply(.SD, function(x) {
@@ -179,8 +180,8 @@ summary_stats <- data_clean[, lapply(.SD, function(x) {
 # Convert to long format
 summary_df <- data.frame(
   variable = rep(names(summary_stats), each = 7),
-  statistic = rep(c("mean", "sd", "min", "median", "max", "n_missing", "pct_missing"), 
-                 length(summary_stats)),
+  statistic = rep(c("mean", "sd", "min", "median", "max", "n_missing", "pct_missing"),
+                  length(summary_stats)),
   value = unlist(summary_stats)
 )
 

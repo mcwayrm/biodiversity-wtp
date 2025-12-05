@@ -18,10 +18,10 @@ message("Loading eBird data...")
 ebird <- fread(
   inputs$ebird_basic,
   select = c('LATITUDE', 'LONGITUDE', 'OBSERVATION DATE',
-             'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
-             'PROTOCOL TYPE', 'DURATION MINUTES',
-             'EFFORT DISTANCE KM', 'ALL SPECIES REPORTED',
-             'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY'),
+              'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
+              'PROTOCOL TYPE', 'DURATION MINUTES',
+              'EFFORT DISTANCE KM', 'ALL SPECIES REPORTED',
+              'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY'),
   quote = ""
 )
 
@@ -33,8 +33,8 @@ ebird[, observation_date := as.Date(observation_date)]
 dt <- ebird[
   locality_type == "H" & category == "species" &
     !is.na(observation_date) & !is.na(common_name),
-  .(lat = latitude, lon = longitude, observation_date, common_name, 
-    sampling_event_identifier, observer_id, protocol_type, 
+  .(lat = latitude, lon = longitude, observation_date, common_name,
+    sampling_event_identifier, observer_id, protocol_type,
     duration_minutes, effort_distance_km, all_species_reported)
 ]
 
@@ -44,6 +44,7 @@ message("Filtered eBird data: ", nrow(dt), " species observations")
 # Create Trip-Level Data
 # -----------------------------------------------------------------------------
 
+# Aggregate to trip level
 trip_data <- dt[, .(
   species_richness = uniqueN(common_name),
   lat = first(lat),
@@ -58,13 +59,13 @@ message("Created trip-level data: ", nrow(trip_data), " trips")
 # -----------------------------------------------------------------------------
 
 # Load Voronoi polygons
-voronoi_polygons <- st_read(inputs$voronoi_shp, 
-                           layer = "cluster_voronoi_limited",
-                           quiet = TRUE)
+voronoi_polygons <- st_read(inputs$voronoi_shp,
+                            layer = "cluster_voronoi_limited",
+                            quiet = TRUE)
 
 # Convert trips to sf and transform
 trip_df <- as.data.frame(trip_data)
-trip_sf <- st_as_sf(trip_df, coords = c('lon', 'lat'), crs = 4326) %>% 
+trip_sf <- st_as_sf(trip_df, coords = c('lon', 'lat'), crs = 4326) %>%
   st_transform(crs = params$projection_crs)
 
 # Transform voronoi to match

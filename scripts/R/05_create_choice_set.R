@@ -112,7 +112,7 @@ create_trip_choice_stacks <- function(trip_data, choice_data) {
   
   # Cartesian join
   merged <- merge(td, cd, by = "user_id", allow.cartesian = TRUE, all.x = TRUE, 
-                 suffixes = c("_trip", "_choice"))
+                  suffixes = c("_trip", "_choice"))
   
   # Create choice indicator
   md <- as.data.table(merged)
@@ -143,6 +143,7 @@ message("Loaded ", nrow(trip_data), " trips within ", params$choice_radius_km, "
 # Generate Choice Sets
 # -----------------------------------------------------------------------------
 
+# Create choice set
 choice_sets <- generate_choice_sets(
   clustered_hotspots = hotspots_clustered,
   trip_df = trip_data,

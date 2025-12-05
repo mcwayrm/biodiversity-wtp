@@ -49,9 +49,9 @@ choice_set[, year_season := paste0(year, "-", season)]
 
 # Create lookback periods for expected richness/congestion
 choice_set[, `:=`(
-  prev_week = sprintf("%04d-%02d", 
-                     isoyear(date - 7), 
-                     isoweek(date - 7)),
+  prev_week = sprintf("%04d-%02d",
+                      isoyear(date - 7),
+                      isoweek(date - 7)),
   prev_month = format(date %m-% months(1), "%Y-%m"),
   prev_year_season = paste0(year - 1, "-", season)
 )]
@@ -117,7 +117,7 @@ choice_set[, expected_richness_source := fcase(
   default = "missing"
 )]
 
-message("Expected richness available: ", 
+message("Expected richness available: ",
         choice_set[!is.na(expected_richness), .N], " / ", nrow(choice_set))
 
 # -----------------------------------------------------------------------------
@@ -179,7 +179,7 @@ choice_set[, expected_congestion_source := fcase(
   default = "missing"
 )]
 
-message("Expected congestion available: ", 
+message("Expected congestion available: ",
         choice_set[!is.na(expected_congestion), .N], " / ", nrow(choice_set))
 
 # -----------------------------------------------------------------------------
@@ -199,7 +199,7 @@ choice_set <- merge(
   by = c("cluster_id", "year_month"),
   all.x = TRUE
 )
-message("Merged precipitation: ", 
+message("Merged precipitation: ",
         choice_set[!is.na(precip), .N], " / ", nrow(choice_set))
 
 # Temperature
@@ -213,7 +213,7 @@ choice_set <- merge(
   by = c("cluster_id", "year_month"),
   all.x = TRUE
 )
-message("Merged temperature: ", 
+message("Merged temperature: ",
         choice_set[!is.na(temp), .N], " / ", nrow(choice_set))
 
 # Tree cover
@@ -230,7 +230,7 @@ choice_set <- merge(
   by = c("cluster_id", "year"),
   all.x = TRUE
 )
-message("Merged tree cover: ", 
+message("Merged tree cover: ",
         choice_set[!is.na(trees), .N], " / ", nrow(choice_set))
 
 # -----------------------------------------------------------------------------
@@ -280,8 +280,8 @@ protected_areas <- protected_areas_raw[valid_indices, ] %>%
 message("Valid protected areas: ", nrow(protected_areas), " polygons")
 
 # Convert cluster centroids to sf
-hotspots_points <- st_as_sf(cluster_centroids, 
-                            coords = c('lon', 'lat'), 
+hotspots_points <- st_as_sf(cluster_centroids,
+                            coords = c('lon', 'lat'),
                             crs = 4326) %>%
   st_transform(crs = params$projection_crs)
 
@@ -293,6 +293,7 @@ is_in_pa <- lengths(intersections) > 0
 distances_to_pa <- numeric(nrow(hotspots_points))
 distances_to_pa[is_in_pa] <- 0
 
+# Handles clusters outside of protected areas (measures distance)
 if (sum(!is_in_pa) > 0) {
   message("Computing distances for ", sum(!is_in_pa), " clusters outside protected areas")
   points_outside <- hotspots_points[!is_in_pa, ]
@@ -316,7 +317,7 @@ choice_set <- merge(
   all.x = TRUE
 )
 
-message("Clusters in protected areas: ", sum(pa_data$in_protected_area), 
+message("Clusters in protected areas: ", sum(pa_data$in_protected_area),
         " / ", nrow(pa_data))
 
 # -----------------------------------------------------------------------------
@@ -330,7 +331,7 @@ message("Final dataset: ", nrow(choice_set), " rows, ", ncol(choice_set), " colu
 
 # Summary statistics
 message("\n--- Data Availability Summary ---")
-message("Expected richness: ", 
+message("Expected richness: ",
         sprintf("%.1f%%", 100 * choice_set[!is.na(expected_richness), .N] / nrow(choice_set)))
 message("Expected congestion: ", 
         sprintf("%.1f%%", 100 * choice_set[!is.na(expected_congestion), .N] / nrow(choice_set)))

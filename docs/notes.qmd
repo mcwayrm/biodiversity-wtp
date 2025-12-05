@@ -42,6 +42,96 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 12/04/2025
+
+>  Ryan
+
+## Code Review
+
+- Attempted a task by task run for scenario "BM-2y_c5km_v5km_r5km_mInf"
+- Updated input data
+- Reviewed README, file and data structure
+- Reviewed scenarios.yml, utils_config.R, utils_scenarios.R, and utils_tasks.R
+- Began individual runs with baseline scenario with run_task() and reviewing code in each task. 
+
+- Script 01:
+	- TODO estimating average distance when re-assigning home
+	- TODO Table by district of number of re-assignments for off-coast homes.
+	- Loading the ebird data is MUCH faster this time (187.6 seconds). Yeah new computer.
+	- `Warning: In CPL_read_ogr(dsn, layer, query, as.character(options), quiet,  :automatically selected the first layer in a data source containing more than one.`
+	- This warning comes up quite frequently later on.
+- Script 02: 
+	- Very straight forward. 
+	- 10.59 seconds 
+- Script 03: 
+	- Again, no major change here. 
+	- 10.1 seconds
+- Script 04: 
+	- Definitely new with the Voronoi
+	- A bit confused why you need to go from centroids, to polygons, to voronois, back to centroids.
+	- 176.81 seconds 
+- Script 05: 
+	- 105.19 seconds
+	- No major changes from before. 
+- Script 06: 
+	- This is new script to me. 
+	- I had the era5_2m_percipitation not `_total_`. Took me a while to download the new total data (about 1 hour)
+	- Main function makes sense. Just takes time to run. 
+	- 1998.65 seconds
+- Script 07: 
+	- I wonder if lines 97-99 would be more efficient with fcase() function in DT
+	`trip_richness[month %in% c(12, 1, 2), season := "Winter"]`
+	`trip_richness[month %in% c(3, 4, 5), season := "Spring"]`
+	`trip_richness[month %in% c(6, 7, 8), season := "Summer"]`
+	- 170.52 seconds
+- Script 08: 
+	- New to me. Makes sense the merging and the selection of PA intersection
+	- These parquet files are VERY light.
+	- 30.99 seconds
+- Script 09: 
+	- There is still 6.travel_cost.R instead of 09_compute_travel_cost.R
+	- Should we delete this script? Does it still have value?
+	- This is familiar and has the exchange rate adjustment
+	- On line 98, does it make more sense to use param start and end years instead of hard coding 2014 - 2024. Broader point about the use of 2014 for filters later on. 
+	`gdp_india <- gdp_all[iso == "IND" & year >= 2014 & year <= 2024]`
+	- To be clear, we don't use travel time from 159 in 161. So this is redundant?
+    `travel_time_hours = geo_dist / travel_speed_kmph`
+	- 3.93 seconds
+- Script 10: 
+    - This is debatable to change given Raahil's search into logitr
+    `wtp_manual <- -coefs / price_coef`
+    - 9.67 seconds
+    - Could be useful to know the average expected richness. This is a way to interpert the result.
+    - For these models, are we able to add clustered standard errors? We can add level of clustering into the params vector
+    - I added `robust = TRUE` 
+    - Results I got: 
+
+> WTP estimates (basic model):
+>                       Estimate  Std. Error  z-value  Pr(>|z|)    
+> expected_richness    0.00107252  0.00038516   2.7846  0.005360 **
+
+> WTP estimates (FE model):
+>                           Estimate  Std. Error  z-value  Pr(>|z|)    
+> expected_richness_dm    0.00107697  0.00038518   2.7960  0.005174 **
+
+> WTP estimates (mixed logit):
+>                         Estimate  Std. Error  z-value  Pr(>|z|)    
+> expected_richness     1.0716e-03  3.9770e-04   2.6945  0.007049 **
+
+- Script 11: 
+    - Nice way to consolidate the output for any given scenario
+    - Came up with error trying to produce WTP table 
+    `--- Creating WTP comparison table ---`
+    `Error running 11_generate_scenario_outputs.R: arguments imply differing number of rows: 7, 0, 1`
+    `Error in data.frame(variable = rownames(wtp_values), wtp = wtp_values$Estimate,  :`
+    `arguments imply differing number of rows: 7, 0, 1`
+
+- Script 12: 
+    - Have not tried to produce this yet as I would like to get script 11 working first. 
+:::
+
+
+::: {.callout-note collapse="true"}
 # 11/14/2025
 
 > Raahil, Matt, Jovin, Ryan
