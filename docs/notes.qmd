@@ -40,6 +40,69 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 
+::: {.callout-note collapse="true"}
+# 12/5/2025
+
+> Raahil, Matt, Jovin, Ryan
+
+# TODO: 
+
+- **Matt**: Scenarios to add: seasonality and interaction of seasonality with month
+- **Ryan**: Add polynomial of species richness into model
+- **Jovin**: Write up documention to verify IV results and why this makes sense with flyway zone
+- **Ryan**: Add the IV into the task flow
+
+
+## Agenda
+
+1. Matt: Attempt robustness checks (vary years, vary experience levels)
+    - For scenarios: 
+        - 3 types of users (new, medium, and experts determined from breakpoints in distribution of visits)
+        - varying radius of household (5 to 30 alternative choices) 
+        - model version with seasonality
+    - Currently working on implmenting the scenario settings
+        - Changing the choice set around household is crashing the logit estimation
+        - Crashes at 30 KM, so proceeding with 10 KM
+        - So only partial results currently
+    - Can proceed with the conditional logit for now -- will return to mixed logit
+        - Need mixed logit to estimate individual WTP
+    - Results would be 3 x 3 grid for WTP on species richness   
+        - One dimension: user experience 
+        - One dimension: choice set size
+2. Matt: Sanctity checks for running robustness checks 
+    - Still working through all the robustness checks
+3. Jovin: Completing constructing the shift so we can complete the shift-share IV
+    - Raahil had already classified migratory species for some birds
+    - Jovin is appending data for migratory classification on the remaining species
+    - 410 new migratory species
+    - In total, 1,228 migratory species
+        - This is likely an over-estimation of the number of birds in India
+        - Online search says roughly 1,400 birds (migratory and resident)
+    - Have constructed $S_J, \gamma_j, shift_t$
+    - So we have constructed $IV_{dt}$
+    - Most of the exposure and volatility in the IV is in the northwest of the country.
+4. Ryan: Re-running Matt's code structure from start to finish (code review)
+    - Adaptable to any context
+    - Just need some small tweeks to input data specific to any country or setting
+    - Add this to the data section
+5. Ryan/Raahil: Explore the logitr command (Raahil has an explanation in prior email)
+    - We may be getting negative WTP because of user type
+    - So experienced users are seeking a specific species (key stone species)
+    - Less experienced users seek a broader diversity of species (biodiversity)
+    - Actually don't know which type of user perfers biodiversity (Pos. WTP) vs targeting a key stone species (Neg. WTP)
+        - Perhaps incedental observations are more of biodiversity rather than targeted species
+        - Targeted species would only be from 'highlighted' report by birders
+        - Targeted species may appear only with seasonal migration
+            - We could estimate for only a specific month (compare Nov. to Nov.)
+        - Interacting species richness with each month
+    - Could create a polynomial for species richness
+        - Add $species^2$
+6. Raahil: Figure out steps for individual WTP
+    - No pre-written script for this in R, but exists in Stata
+    - So might need to call a Stata command from R. 
+
+:::
+
 
 ::: {.callout-note collapse="true"}
 # 12/04/2025
@@ -430,7 +493,7 @@ $$
 1. Create the share for each hotspot t
 
 $$
-Share_d =  \sum_s \frac{\text{Indicator for migratory}_{sd}}{S_d}
+Share_d = \sum_s \frac{\text{Indicator for migratory}_{sd}}{S_d}
 $$
 
     1. Start with e-bird data. For each hotspot $d$ get the number of unique species observed in the data
