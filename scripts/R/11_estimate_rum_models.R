@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# scripts/R/10_estimate_rum_models.R
+# scripts/R/11_estimate_rum_models.R
 #############################################
 #  - Loads final master dataset with all attributes and costs
 #  - Filters to analysis years and cleans problematic trips

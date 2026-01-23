@@ -41,6 +41,88 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 01/23/2026
+
+> Raahil, Matt, Jovin, Ryan
+
+# TODO: 
+
+- **Matt**: Updated the scenarios and estimates given the discussion.
+- **Ryan**: Adding IV to pipeline
+- **Ryan**: Expand out contributions in the literature for presentation
+- **Raahil**: Narrative about how preferences 
+- **Jovin**: Adding documentation about data sources
+
+## Plan for the semester (medium term milestone)
+
+- Pin down the story
+- Then proceed to IV estimates
+- Leave the individual WTP for after medium term
+- NatCap meeting sign up for late in the semester 
+    - Completed estimates without the IV or individual WTP
+    - March 30th 
+    - Matt presentation
+
+## Agenda
+
+1. Raahil: Figure out steps for individual WTP
+    - No pre-written script for this in R, but exists in Stata
+    - So might need to call a Stata command from R. 
+2. Seasonality to the utilty function
+    - When expanding to 30KM, the WTP increases. 
+    - Maybe do for 50KM.
+    - About 18 scenarios estimated so far
+    - Can remove the 5KM for now. 
+    - Vary by new user, expert, and average user
+3. Adding polynomial to species richness
+    - Add $species^2$
+    - Start by adding to one scenario
+        - If it doesn't work in one, then won't be important in the others.
+4. Adding IV to master data 
+    - Incorporating Jovin's data to base data
+    - New script to estimate IV and merge with master data 
+    - Add regression run for IV
+        - Because species richness is residual, then will need to bootstrap the residuals and estimate of WTP
+    - Supply shifters may explain why winter is so low (even though there are high migration in winter)
+        - So we need to account for Total along with marginal willingness to pay
+        - And the IV will account for why WTP (price) drops when supply of species is abudnant (quantity)
+        - In winter, you may not need to travel anywhere because species are so abundant they could be right outside your window (= 0 travel cost but still high value)
+    - Case for IV: 
+        - Migratory species over seasons by attenuate results
+5. Presentation
+    - How will be present the results cleanly
+    - Ideally, MWTP and TWTP for species richness for the combination of these: 
+        - User type: average (annually at least 2 years), veteran/super user (quaterly for 5 year), expert (bi-annually for 3 years)
+            - Alternative, create a variable that is use rate (number of trips per year, number of months recording data)
+            - Then look at a histogram with three quantiles (i.e., terciles)
+            - Now it is based on the distribution of use 
+        - Counterfactual space: 30 KM, 50KM
+        - Use the fixed effects version (dropping basic)
+    - Do you value the site or value the diversity at the site?
+        - So the other variables are important place based effects
+        - Congestion would be popularity
+        - For tree cover, can be negative because birds hang on the edge of the tree ----------
+        - Temperature is odd as highly positive. 
+        - Percipitation makes sense
+    - For interpertation: 
+        - Number of trips in a year (so disperse cost over several trips)
+        - Cost is relative to base income (absolute MWTP may be better interperted as a relative measure)
+6. User Controls
+    - User-trip info on duration of the trip AND distance walked
+    - For distance walked:
+        - Stationary trips: NA = 0
+        - Travel trips: should have a value
+    - So need these to control for value of time outdoors or exercise, rather than biodiversity
+7. Contributions: 
+    - Developing country setting
+    - Supply angle (why it is low)
+    - migration IV
+    - Mixed logit
+
+:::
+
+
+::: {.callout-note collapse="true"}
 # 12/5/2025
 
 > Raahil, Matt, Jovin, Ryan

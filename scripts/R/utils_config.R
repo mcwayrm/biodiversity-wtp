@@ -11,8 +11,10 @@ packages <- c(
   "yaml", "tidyverse", "arrow", "here", "lwgeom", "logitr", "fixest",
   "sf", "config", "pacman", "data.table", "lubridate", "units",
   "pbapply", "cluster", "factoextra", "terra", "vegan", "RColorBrewer",
-  "quarto", "htmltools"
+  "quarto", "htmltools", "readr", "stringr", "purrr", "rnaturalearth", 
+  "rnaturalearthdata", "lwgeom", "ggplot2"
 )
+
 
 # Try to load via pacman if available; otherwise try library() for installed pkgs
 if (requireNamespace("pacman", quietly = TRUE)) {
