@@ -187,8 +187,11 @@ for (scenario_name in names(scenarios)) {
     output_paths = list(
       master_data_final = file.path(scenario_dir, "master_data_final.parquet"),
       model_basic = file.path("output", "scenarios", scenario_name, "models", "model_basic.rds"),
+      wtp_basic = file.path("output", "scenarios", scenario_name, "models", "wtp_basic.rds"),
       model_fe = file.path("output", "scenarios", scenario_name, "models", "model_fe.rds"),
-      model_mixed = file.path("output", "scenarios", scenario_name, "models", "model_mixed.rds")
+      wtp_fe = file.path("output", "scenarios", scenario_name, "models", "wtp_fe.rds")
+      # model_mixed = file.path("output", "scenarios", scenario_name, "models", "model_mixed.rds"),
+      # wtp_mixed = file.path("output", "scenarios", scenario_name, "models", "wtp_mixed.rds")
     ),
     params = params,
     scenario_name = scenario_name
@@ -207,8 +210,8 @@ for (scenario_name in names(scenarios)) {
       model_mixed = file.path("output", "scenarios", scenario_name, "models", "model_mixed.rds")
     ),
     output_paths = list(
-      voronoi_plot = file.path("output", "scenarios", scenario_name, "figures", "voronoi_map.png"),
-      wtp_table = file.path("output", "scenarios", scenario_name, "tables", "wtp_comparison.csv"),
+      # voronoi_plot = file.path("output", "scenarios", scenario_name, "figures", "voronoi_map.png"),
+      # wtp_table = file.path("output", "scenarios", scenario_name, "tables", "wtp_comparison.csv"),
       data_summary = file.path("output", "scenarios", scenario_name, "tables", "data_summary.csv")
     ),
     params = params,
@@ -217,17 +220,58 @@ for (scenario_name in names(scenarios)) {
 }
 
 # Generate Summary Report
-run_task(
-  "12_generate_summary_report.R",
-  input_paths = list(
-    scenario_outputs = here("output", "scenarios")
-  ),
-  output_paths = list(
-    summary_report = here("output", "summary_report.html")
-  ),
-  params = list(
-    scenarios = names(scenarios)
-  ),
-  skip_if_exists = FALSE,
-  scenario_name = "summary_all_scenarios"
+message("\n======================================")
+message("Generating Summary Report")
+message("======================================\n")
+
+quarto::quarto_render(
+  input = here("summary_report.qmd"),
+  execute_params = list(
+    scenarios = names(scenarios),
+    output_dir = "scenarios"
+  )
 )
+
+message("Summary report generated")
+
+# # List of scenario names
+# scenarios <- c(
+#   "A-5y_c5km_v5km_r5km_mInf",
+#   "A-5y_c5km_v5km_r5km_mInf_ERmonth",
+#   "A-5y_c5km_v5km_r5km_mInf_ERseason",
+#   "A-5y_c5km_v5km_r30km_mInf",
+#   "A-5y_c5km_v5km_r30km_mInf_ERmonth",
+#   "A-5y_c5km_v5km_r30km_mInf_ERseason",
+#   "BM-2y_c5km_v5km_r5km_mInf",
+#   "BM-2y_c5km_v5km_r5km_mInf_ERmonth",
+#   "BM-2y_c5km_v5km_r5km_mInf_ERseason",
+#   "BM-2y_c5km_v5km_r30km_mInf",
+#   "BM-2y_c5km_v5km_r30km_mInf_ERmonth",
+#   "BM-2y_c5km_v5km_r30km_mInf_ERseason",
+#   "Q-2y_c5km_v5km_r5km_mInf",
+#   "Q-2y_c5km_v5km_r5km_mInf_ERmonth",
+#   "Q-2y_c5km_v5km_r5km_mInf_ERseason",
+#   "Q-2y_c5km_v5km_r30km_mInf",
+#   "Q-2y_c5km_v5km_r30km_mInf_ERmonth",
+#   "Q-2y_c5km_v5km_r30km_mInf_ERseason"
+# )
+
+# output_dir <- "output/scenarios"
+
+# for (scenario in scenarios) {
+#   for (model_type in c("basic", "fe")) {
+#     model_path <- file.path(output_dir, scenario, "models", paste0("model_", model_type, ".rds"))
+#     wtp_path <- file.path(output_dir, scenario, "models", paste0("wtp_", model_type, ".rds"))
+#     if (file.exists(model_path)) {
+#       model_obj <- readRDS(model_path)
+#       if (!is.null(model_obj$wtp)) {
+#         saveRDS(model_obj$wtp, wtp_path)
+#         message("Saved WTP for ", model_type, " in scenario: ", scenario)
+#       } else {
+#         message("No WTP found in model for ", model_type, " in scenario: ", scenario)
+#       }
+#     } else {
+#       message("Model file not found for ", model_type, " in scenario: ", scenario)
+#     }
+#   }
+# }

@@ -4,13 +4,24 @@
 ##########################################
 
 generate_scenarios <- function(output_path = "scenarios.yml",
-                               intervals = c(2, 3, 6, 12),
-                               min_years = c(2, 4, 6, 8),
+                               intervals = c(3, 6, 12),
+                               min_years = c(2),
                                clust_sizes = c(5),
                                voronoi_multipliers = c(1),
-                               choice_radii = c(5), # Key parameter to vary later (30)
+                               choice_radii = c(5, 30), 
                                max_alternatives = c(Inf),
-                               interval_codes = NULL) {
+                               interval_codes = NULL,
+                               analysis_start_year = 2019,
+                               analysis_end_year = 2023,
+                               model_vars = c("expected_richness",
+                                              "expected_congestion",
+                                              "precip",
+                                              "temp",
+                                              "trees",
+                                              "travel_cost_combined",
+                                              "dist_to_pa_km"),
+                               fe_vars = c("user_id", "year_month", "c_code_2011"),
+                               mixed_vars = c("expected_richness")) {
 
   # default human-friendly codes
   default_codes <- c("2" = "BM", "3" = "Q", "6" = "SA", "12" = "A")
@@ -33,7 +44,6 @@ generate_scenarios <- function(output_path = "scenarios.yml",
           for (cr in choice_radii) {
             for (ma in max_alternatives) {
               # scenario name includes interval code, years, cluster size, voronoi limit, choice radius, and max alternatives
-              # example: BM-8y_c5km_v10km_r5km_mInf
               ma_tag <- if (is.finite(ma)) as.character(ma) else "Inf"
               name <- sprintf("%s-%dy_c%dkm_v%dkm_r%dkm_m%s", code, yrs, cs, voronoi_limit, cr, ma_tag)
               scenarios[[name]] <- list(
@@ -42,12 +52,18 @@ generate_scenarios <- function(output_path = "scenarios.yml",
                 interval_code      = code,
                 # clustering / voronoi parameters
                 clustering_method  = 'complete',
-                projection_crs      = 8857,
+                projection_crs     = 8857,
                 clust_size_km      = cs,
                 voronoi_limit_km   = voronoi_limit,
                 # user choice set parameters
                 choice_radius_km   = cr,
-                max_alternatives   = ma
+                max_alternatives   = ma,
+                # RUM estimation / analysis parameters (variable via function args)
+                analysis_start_year = analysis_start_year,
+                analysis_end_year   = analysis_end_year,
+                model_vars          = model_vars,
+                fe_vars             = fe_vars,
+                mixed_vars          = mixed_vars
               )
             }
           }

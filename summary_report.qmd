@@ -1,0 +1,477 @@
+---
+title: "Biodiversity WTP Analysis - Summary Report"
+date: "`r Sys.Date()`"
+format: 
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    theme: cosmo
+    embed-resources: true
+    fig-width: 14
+    fig-height: 18
+params:
+  scenarios:
+    value:
+      - baseline
+  output_dir:
+    value: "output/scenarios"
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(kableExtra)
+library(RColorBrewer)
+library(htmltools)
+
+# Get parameters
+scenarios <- params$scenarios
+output_dir <- params$output_dir
+
+message("Scenarios: ", paste(scenarios, collapse = ", "))
+message("Output directory: ", output_dir)
+
+# Verify scenario directories exist
+for (scenario in scenarios) {
+  scenario_dir <- file.path(output_dir, scenario)
+  if (!dir.exists(scenario_dir)) {
+    warning("Scenario directory not found: ", scenario_dir)
+  }
+}
+```
+
+# Overview
+
+This report summarizes the Random Utility Model (RUM) analysis across **`r length(scenarios)` scenarios**: `r paste(scenarios, collapse = ", ")`.
+
+---
+
+# Voronoi Clusters
+
+:::{.panel-tabset}
+
+```{r voronoi-tabs, results='asis'}
+for (scenario in scenarios) {
+  rel_path <- file.path("output", "scenarios", scenario, "figures", "voronoi_map.png")
+  abs_path <- here::here(rel_path)
+
+  cat('\n##', scenario, '\n\n')
+  if (file.exists(abs_path)) {
+    cat('![](', rel_path, '){ width=100% }\n\n', sep = '')
+  } else {
+    cat("Voronoi map not found for scenario:", scenario, "\n\n")
+  }
+}
+```
+
+:::
+
+---
+
+# Data Summary
+
+```{r data-summary-combined}
+# Load data summaries from all scenarios
+summary_list <- list()
+
+for (scenario in scenarios) {
+  summary_path <- file.path("output", "scenarios", scenario, "tables", "data_summary.csv")
+  if (file.exists(summary_path)) {
+    df <- read.csv(summary_path, stringsAsFactors = FALSE)
+    
+    # Keep only key variables and statistics
+    key_vars <- c("Sample Size", "Number of Trips", "Number of Users",
+                  "expected_richness", "expected_congestion", "precip", 
+                  "temp", "trees", "travel_cost_combined", "dist_to_pa_km")
+    
+    df_filtered <- df %>%
+      filter(variable %in% key_vars) %>%
+      select(variable, mean, sd)
+    
+    # Create formatted column with SD side by side
+    df_filtered <- df_filtered %>%
+      mutate(
+        formatted = ifelse(
+          variable %in% c("Sample Size", "Number of Trips", "Number of Users"),
+          format(round(mean, 0), big.mark = ",", scientific = FALSE),
+          paste0(
+            format(round(mean, 2), nsmall = 2),
+            ifelse(!is.na(sd) & sd > 0, 
+                   paste0(" (", format(round(sd, 2), nsmall = 2), ")"),
+                   "")
+          )
+        )
+      )
+    
+    summary_list[[scenario]] <- df_filtered %>%
+      select(variable, formatted)
+    names(summary_list[[scenario]])[2] <- scenario
+  }
+}
+
+# Merge all scenarios
+if (length(summary_list) > 0) {
+  summary_combined <- Reduce(function(x, y) {
+    full_join(x, y, by = "variable")
+  }, summary_list)
+  
+  # Reorder rows
+  var_order <- c("Sample Size", "Number of Trips", "Number of Users",
+                 "expected_richness", "expected_congestion", "precip", 
+                 "temp", "trees", "travel_cost_combined", "dist_to_pa_km")
+  
+  summary_combined <- summary_combined %>%
+    mutate(variable = factor(variable, levels = var_order)) %>%
+    arrange(variable) %>%
+    mutate(variable = as.character(variable))
+  
+  # Clean variable names for display
+  summary_combined <- summary_combined %>%
+    mutate(
+      Variable = case_when(
+        variable == "Sample Size" ~ "Sample Size",
+        variable == "Number of Trips" ~ "Number of Trips",
+        variable == "Number of Users" ~ "Number of Users",
+        variable == "expected_richness" ~ "Expected Richness",
+        variable == "expected_congestion" ~ "Expected Congestion",
+        variable == "precip" ~ "Precipitation (mm)",
+        variable == "temp" ~ "Temperature (°C)",
+        variable == "trees" ~ "Tree Cover (%)",
+        variable == "travel_cost_combined" ~ "Travel Cost (INR)",
+        variable == "dist_to_pa_km" ~ "Distance to PA (km)",
+        TRUE ~ variable
+      )
+    ) %>%
+    select(-variable) %>%
+    select(Variable, everything())
+  
+  kable(summary_combined,
+        align = c("l", rep("r", length(scenarios))),
+        caption = "Summary Statistics Across Scenarios (Mean with SD in parentheses)") %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
+                  full_width = FALSE) %>%
+    row_spec(0, bold = TRUE) %>%
+    row_spec(1:3, background = "#f0f0f0")
+} else {
+  cat("No summary data available")
+}
+```
+
+---
+
+# Willingness to Pay Estimates
+
+```{r wtp-data-prep, echo=FALSE, message=FALSE}
+# Load WTP objects directly from all scenarios (not full models)
+wtp_list <- list()
+available_models <- c()  # Track which models exist across scenarios
+
+message("\n=== Loading WTP Data ===")
+
+for (scenario in scenarios) {
+  message("\nScenario: ", scenario)
+  
+  # Define WTP RDS files for each model type
+  wtp_files <- list(
+    Basic = file.path("output", "scenarios", scenario, "models", "wtp_basic.rds"),
+    "Fixed Effects" = file.path("output", "scenarios", scenario, "models", "wtp_fe.rds"),
+    "Mixed Logit" = file.path("output", "scenarios", scenario, "models", "wtp_mixed.rds")
+  )
+  
+  for (model_name in names(wtp_files)) {
+    wtp_path <- wtp_files[[model_name]]
+    message("  Checking: ", wtp_path)
+    message("  Exists: ", file.exists(wtp_path))
+    
+    if (file.exists(wtp_path)) {
+      available_models <- c(available_models, model_name)
+      tryCatch({
+        wtp_obj <- readRDS(wtp_path)
+        message("  Loaded successfully")
+        message("  Class: ", paste(class(wtp_obj), collapse = ", "))
+        message("  Is data.frame: ", is.data.frame(wtp_obj))
+        message("  Names: ", paste(names(wtp_obj), collapse = ", "))
+        
+        wtp_df <- NULL
+        
+        # Check if it's a data.frame with Estimate column
+        if (is.data.frame(wtp_obj) && "Estimate" %in% names(wtp_obj)) {
+          message("  Processing as data.frame")
+          message("  nrow: ", nrow(wtp_obj))
+          message("  Rownames: ", paste(head(rownames(wtp_obj)), collapse = ", "))
+          
+          # Get variable names - prefer rownames if they exist and aren't just numbers
+          if (!is.null(rownames(wtp_obj)) && 
+              !all(rownames(wtp_obj) %in% as.character(1:nrow(wtp_obj)))) {
+            variable_names <- rownames(wtp_obj)
+            message("  Using rownames for variables")
+          } else if ("variable" %in% names(wtp_obj)) {
+            variable_names <- as.character(wtp_obj$variable)
+            message("  Using 'variable' column")
+          } else {
+            variable_names <- paste0("V", seq_len(nrow(wtp_obj)))
+            message("  Creating variable names V1, V2, ...")
+          }
+          
+          message("  Variable names length: ", length(variable_names))
+          message("  Estimate length: ", length(wtp_obj$Estimate))
+          
+          # Check for Std. Error column
+          if ("Std. Error" %in% names(wtp_obj)) {
+            se_values <- as.numeric(wtp_obj[["Std. Error"]])
+            message("  SE length: ", length(se_values))
+          } else {
+            se_values <- rep(NA_real_, nrow(wtp_obj))
+            message("  No Std. Error column, using NA")
+          }
+          
+          wtp_df <- data.frame(
+            variable = variable_names,
+            estimate = as.numeric(wtp_obj$Estimate),
+            se = se_values,
+            scenario = scenario,
+            model = model_name,
+            stringsAsFactors = FALSE
+          )
+        } else if (is.list(wtp_obj) && !is.null(wtp_obj$Estimate)) {
+          message("  Processing as list")
+          wtp_df <- data.frame(
+            variable = names(wtp_obj$Estimate),
+            estimate = as.numeric(wtp_obj$Estimate),
+            se = NA_real_,
+            scenario = scenario,
+            model = model_name,
+            stringsAsFactors = FALSE
+          )
+        } else if (is.matrix(wtp_obj)) {
+          message("  Processing as matrix")
+          wtp_df <- data.frame(
+            variable = rownames(wtp_obj),
+            estimate = as.numeric(wtp_obj[, "Estimate"]),
+            se = as.numeric(wtp_obj[, "Std. Error"]),
+            scenario = scenario,
+            model = model_name,
+            stringsAsFactors = FALSE
+          )
+        }
+        
+        if (!is.null(wtp_df)) {
+          message("  Initial rows: ", nrow(wtp_df))
+          wtp_df <- wtp_df %>%
+            filter(variable != "scalePar", !grepl("^sd_", variable))
+          message("  After filtering: ", nrow(wtp_df), " estimates")
+          wtp_list[[paste(scenario, model_name, sep = "_")]] <- wtp_df
+        } else {
+          message("  ✖ Could not parse WTP object")
+        }
+      }, error = function(e) {
+        message("  ✖ Error loading WTP: ", e$message)
+      })
+    }
+  }
+}
+
+available_models <- unique(available_models)
+message("\n=== WTP Loading Complete ===")
+message("Total WTP datasets loaded: ", length(wtp_list))
+message("Available models: ", paste(available_models, collapse = ", "))
+```
+
+```{r wtp-prepare-plots}
+if (length(wtp_list) > 0) {
+  wtp_combined <- bind_rows(wtp_list)
+  wtp_combined <- wtp_combined %>% mutate(variable = gsub("_dm$", "", variable))
+  wtp_combined <- wtp_combined %>% mutate(
+    ci_lower = estimate - 1.96 * se,
+    ci_upper = estimate + 1.96 * se
+  )
+  
+  # Define variable levels
+  month_levels <- c(
+    "expected_richness_Jan", "expected_richness_Feb", "expected_richness_Mar", 
+    "expected_richness_Apr", "expected_richness_May", "expected_richness_Jun", 
+    "expected_richness_Jul", "expected_richness_Aug", "expected_richness_Sep", 
+    "expected_richness_Oct", "expected_richness_Nov", "expected_richness_Dec"
+  )
+  season_levels <- c(
+    "expected_richness_Winter", "expected_richness_Spring", 
+    "expected_richness_Summer", "expected_richness_Fall"
+  )
+  other_levels <- c(
+    "expected_richness", "expected_congestion", "precip", "temp", 
+    "trees", "dist_to_pa_km", "geo_dist"
+  )
+  
+  variable_order <- c(month_levels, season_levels, other_levels)
+  
+  wtp_combined <- wtp_combined %>% mutate(
+    variable_clean = case_when(
+      variable == "expected_richness" ~ "Expected Richness",
+      variable == "expected_congestion" ~ "Expected Congestion",
+      variable == "precip" ~ "Precipitation",
+      variable == "temp" ~ "Temperature",
+      variable == "trees" ~ "Tree Cover",
+      variable == "dist_to_pa_km" ~ "Distance to PA",
+      variable == "geo_dist" ~ "Geographic Distance",
+      grepl("^expected_richness_", variable) ~ variable,
+      TRUE ~ variable
+    ),
+    variable_clean = factor(variable_clean, levels = c(
+      month_levels, season_levels,
+      "Expected Richness", "Expected Congestion", "Precipitation", 
+      "Temperature", "Tree Cover", "Distance to PA", "Geographic Distance"
+    ))
+  ) %>% 
+    filter(!grepl("travel_cost|^cost$", variable, ignore.case = TRUE))
+  
+  # Filter valid variables
+  valid_vars <- wtp_combined %>% 
+    group_by(variable_clean) %>% 
+    summarise(has_data = any(!is.na(estimate))) %>% 
+    filter(has_data) %>% 
+    pull(variable_clean)
+  
+  wtp_combined <- wtp_combined %>% 
+    filter(variable_clean %in% valid_vars)
+  
+  wtp_combined <- wtp_combined %>% 
+    filter(model %in% available_models) %>% 
+    mutate(model = factor(model, levels = c("Basic", "Fixed Effects", "Mixed Logit")))
+  
+  # Separate Expected Richness variables from others
+  er_vars <- grep("^expected_richness", wtp_combined$variable, value = TRUE)
+  wtp_er <- wtp_combined %>% filter(variable %in% er_vars)
+  wtp_other <- wtp_combined %>% filter(!variable %in% er_vars)
+  
+  # Create color palette
+  get_family <- function(s) sub("(_r5km|_r30km)?(_ERmonth|_ERseason)?$", "", s)
+  scenario_families <- unique(sapply(unique(wtp_combined$scenario), get_family))
+  
+  # Assign base color to each family
+  base_colors <- brewer.pal(min(max(length(scenario_families), 3), 8), "Set2")
+  names(base_colors) <- scenario_families
+  
+  # Generate shades for each family
+  scenario_color_map <- c()
+  for (fam in scenario_families) {
+    fam_scenarios <- grep(paste0('^', fam), unique(wtp_combined$scenario), value = TRUE)
+    pal <- colorRampPalette(c(base_colors[fam], "white"))(length(fam_scenarios) + 1)
+    scenario_color_map[fam_scenarios] <- pal[1:length(fam_scenarios)]
+  }
+  
+  # Calculate y-axis range for ER plot
+  er_ci_range <- range(wtp_er$ci_lower, wtp_er$ci_upper, na.rm = TRUE)
+  
+  # Create plots
+  p_er <- ggplot(wtp_er, aes(x = scenario, y = estimate, color = scenario, group = scenario)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+                  width = 0.3, linewidth = 0.9, position = position_dodge(width = 0.6)) +
+    geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
+    facet_grid(variable_clean ~ model, scales = "fixed") +
+    labs(
+      title = "WTP for Expected Richness Variables", 
+      subtitle = paste0(
+        "Point estimates with 95% confidence intervals | Rows = Variables, Columns = Model Types\n",
+        "Models: ", paste(available_models, collapse = ", ")
+      ),
+      x = NULL, 
+      y = "WTP (INR)", 
+      color = "Scenario"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 15, face = "bold"), 
+      plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)), 
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 9), 
+      axis.text.y = element_text(size = 9), 
+      strip.text.x = element_text(size = 11, face = "bold"), 
+      strip.text.y = element_text(size = 10, face = "bold", angle = 0, hjust = 0), 
+      strip.background = element_rect(fill = "gray95", color = "gray80"), 
+      panel.grid.minor = element_blank(), 
+      panel.spacing.x = unit(1.2, "lines"), 
+      panel.spacing.y = unit(1.5, "lines"), 
+      legend.position = "bottom", 
+      legend.title = element_text(face = "bold", size = 10), 
+      legend.text = element_text(size = 9)
+    ) +
+    scale_color_manual(values = scenario_color_map) +
+    scale_y_continuous(limits = er_ci_range)
+  
+  p_other <- ggplot(wtp_other, aes(x = scenario, y = estimate, color = scenario, group = scenario)) +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
+    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
+                  width = 0.3, linewidth = 0.9, position = position_dodge(width = 0.6)) +
+    geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
+    facet_grid(variable_clean ~ model, scales = "free_y") +
+    labs(
+      title = "WTP for Other Variables", 
+      subtitle = paste0(
+        "Point estimates with 95% confidence intervals | Rows = Variables, Columns = Model Types\n",
+        "Models: ", paste(available_models, collapse = ", ")
+      ),
+      x = NULL, 
+      y = "WTP (INR)", 
+      color = "Scenario"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 15, face = "bold"), 
+      plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)), 
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 9), 
+      axis.text.y = element_text(size = 9), 
+      strip.text.x = element_text(size = 11, face = "bold"), 
+      strip.text.y = element_text(size = 10, face = "bold", angle = 0, hjust = 0), 
+      strip.background = element_rect(fill = "gray95", color = "gray80"), 
+      panel.grid.minor = element_blank(), 
+      panel.spacing.x = unit(1.2, "lines"), 
+      panel.spacing.y = unit(1.5, "lines"), 
+      legend.position = "bottom", 
+      legend.title = element_text(face = "bold", size = 10), 
+      legend.text = element_text(size = 9)
+    ) +
+    scale_color_manual(values = scenario_color_map)
+  
+  # Calculate dynamic heights
+  n_vars_er <- length(unique(wtp_er$variable_clean))
+  n_models_er <- length(unique(wtp_er$model))
+  fig_height_er <- n_vars_er * n_models_er * 1.5
+  
+  n_vars_other <- length(unique(wtp_other$variable_clean))
+  n_models_other <- length(unique(wtp_other$model))
+  fig_height_other <- n_vars_other * n_models_other * 1.5
+} else {
+  message("No WTP data available")
+}
+```
+
+## Expected Richness Variables
+
+```{r wtp-er-plot}
+#| fig-height: !expr if(exists("fig_height_er")) fig_height_er else 10
+
+if (exists("p_er")) {
+  print(p_er)
+} else {
+  cat("No Expected Richness WTP estimates available\n")
+}
+```
+
+## Other Variables
+
+```{r wtp-other-plot}
+#| fig-height: !expr if(exists("fig_height_other")) fig_height_other else 10
+
+if (exists("p_other")) {
+  print(p_other)
+} else {
+  cat("No other WTP estimates available\n")
+}
+```

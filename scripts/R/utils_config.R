@@ -10,7 +10,7 @@ rm(list = ls())
 packages <- c(
   "yaml", "tidyverse", "arrow", "here", "lwgeom", "logitr", "fixest",
   "sf", "config", "pacman", "data.table", "lubridate", "units",
-  "pbapply", "cluster", "factoextra", "terra", "vegan"
+  "pbapply", "cluster", "factoextra", "terra", "vegan", "RColorBrewer"
 )
 
 # Try to load via pacman if available; otherwise try library() for installed pkgs

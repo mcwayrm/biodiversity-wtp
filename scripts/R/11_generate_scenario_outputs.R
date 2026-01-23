@@ -3,7 +3,7 @@
 #############################################
 #  - Generates scenario-specific diagnostic outputs
 #  - Creates Voronoi polygon map
-#  - Generates WTP comparison table across all models
+#  - Generates WTP comparison table with SE across all models
 #  - Creates data summary statistics
 #  - Saves: outputs$voronoi_plot, outputs$wtp_table, outputs$data_summary
 #############################################
@@ -37,155 +37,177 @@ message("Loaded ", nrow(data_clean), " clean observations")
 # Generate Voronoi Map
 # -----------------------------------------------------------------------------
 
-message("\n--- Creating Voronoi map ---")
+if (!file.exists(outputs$voronoi_plot)) {
+  # Load India boundaries for context
+  india_boundary <- st_read(inputs$district_shp, quiet = TRUE) %>%
+    st_union() %>%
+    st_transform(crs = 4326)
 
-# Load India boundaries for context
-india_boundary <- st_read(inputs$district_shp, quiet = TRUE) %>%
-  st_union() %>%
-  st_transform(crs = 4326)
+  # Create map
+  p <- ggplot() +
+    # India boundary
+    geom_sf(data = india_boundary, fill = NA, color = "gray30", linewidth = 0.8) +
+    # Voronoi polygons
+    geom_sf(data = st_transform(voronoi_limited, 4326), 
+            fill = "lightblue", alpha = 0.3, color = "blue", linewidth = 0.3) +
+    # Hotspot points
+    geom_point(data = hotspots, aes(x = lon, y = lat), 
+              color = "red", size = 0.8, alpha = 0.6) +
+    labs(
+      title = "Voronoi Clusters and Hotspot Locations",
+      subtitle = paste0("Scenario: ", basename(dirname(dirname(inputs$voronoi_shp))),
+                      " | ", nrow(voronoi_limited), " clusters, ",
+                      nrow(hotspots), " hotspots"),
+      x = "Longitude",
+      y = "Latitude"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      plot.subtitle = element_text(size = 10),
+      panel.grid.minor = element_blank()
+    )
 
-# Create map
-p <- ggplot() +
-  # India boundary
-  geom_sf(data = india_boundary, fill = NA, color = "gray30", linewidth = 0.8) +
-  # Voronoi polygons
-  geom_sf(data = st_transform(voronoi_limited, 4326), 
-          fill = "lightblue", alpha = 0.3, color = "blue", linewidth = 0.3) +
-  # Hotspot points
-  geom_point(data = hotspots, aes(x = lon, y = lat), 
-            color = "red", size = 0.8, alpha = 0.6) +
-  labs(
-    title = "Voronoi Clusters and Hotspot Locations",
-    subtitle = paste0("Scenario: ", basename(dirname(dirname(inputs$voronoi_shp))),
-                    " | ", nrow(voronoi_limited), " clusters, ",
-                    nrow(hotspots), " hotspots"),
-    x = "Longitude",
-    y = "Latitude"
-  ) +
-  theme_minimal() +
-  theme(
-    plot.title = element_text(size = 14, face = "bold"),
-    plot.subtitle = element_text(size = 10),
-    panel.grid.minor = element_blank()
-  )
-
-# Save plot
-ggsave(outputs$voronoi_plot, p, width = 10, height = 12, dpi = 300)
-message("Voronoi map saved to: ", outputs$voronoi_plot)
+  # Save plot
+  ggsave(outputs$voronoi_plot, p, width = 10, height = 12, dpi = 300)
+  message("Voronoi map saved to: ", outputs$voronoi_plot)
+} else {
+  message("Voronoi map already exists at: ", outputs$voronoi_plot)
+}
 
 # -----------------------------------------------------------------------------
 # Load Model Results
 # -----------------------------------------------------------------------------
 
-message("\n--- Loading model results ---")
+# message("\n--- Loading model results ---")
 
-model_basic <- readRDS(inputs$model_basic)
-model_fe <- readRDS(inputs$model_fe)
-model_mixed <- readRDS(inputs$model_mixed)
+# model_basic <- readRDS(inputs$model_basic)
+# model_fe <- readRDS(inputs$model_fe)
+# model_mixed <- readRDS(inputs$model_mixed)
 
-# -----------------------------------------------------------------------------
-# Generate WTP Comparison Table
-# -----------------------------------------------------------------------------
+# # -----------------------------------------------------------------------------
+# # Generate WTP Comparison Table with Standard Errors
+# # -----------------------------------------------------------------------------
 
-message("\n--- Creating WTP comparison table ---")
+# message("\n--- Creating WTP comparison table ---")
 
-extract_wtp <- function(model_obj, model_name) {
-  empty_df <- data.frame(
-    variable = character(),
-    wtp = numeric(),
-    se = numeric(),
-    model = character(),
-    stringsAsFactors = FALSE
-  )
-  if (is.null(model_obj$wtp)) return(empty_df)
+# # Enhanced extraction function that gets both estimates and SEs
+# extract_wtp_with_se <- function(model_obj, model_name) {
+#   empty_df <- data.frame(
+#     variable = character(),
+#     estimate = numeric(),
+#     se = numeric(),
+#     model = character(),
+#     stringsAsFactors = FALSE
+#   )
   
-  wtp_raw <- model_obj$wtp
+#   if (is.null(model_obj$wtp)) return(empty_df)
   
-  # handle manual-style list with Estimate element
-  if (is.list(wtp_raw) && "method" %in% names(wtp_raw) && wtp_raw$method == "manual") {
-    est_raw <- wtp_raw$Estimate
-    if (is.null(est_raw)) return(empty_df)
-    if (is.matrix(est_raw) || is.data.frame(est_raw)) {
-      est <- as.numeric(est_raw[,1])
-      vars <- rownames(est_raw)
-    } else {
-      est <- as.numeric(est_raw)
-      vars <- names(est_raw)
-    }
-    se <- rep(NA_real_, length(est))
-  } else {
-    # standard: could be data.frame/matrix with Estimate and optionally StdError,
-    # or a named numeric vector
-    if (is.data.frame(wtp_raw) || is.matrix(wtp_raw)) {
-      wtp_df <- as.data.frame(wtp_raw, stringsAsFactors = FALSE)
-      if ("Estimate" %in% colnames(wtp_df)) {
-        est <- as.numeric(wtp_df$Estimate)
-      } else {
-        # fall back to first numeric column
-        numcols <- which(sapply(wtp_df, is.numeric))
-        if (length(numcols) == 0) return(empty_df)
-        est <- as.numeric(wtp_df[[numcols[1]]])
-      }
-      if ("StdError" %in% colnames(wtp_df)) {
-        se <- as.numeric(wtp_df$StdError)
-      } else {
-        se <- rep(NA_real_, length(est))
-      }
-      vars <- rownames(wtp_df)
-    } else if (is.numeric(wtp_raw) && !is.null(names(wtp_raw))) {
-      est <- as.numeric(wtp_raw)
-      se <- rep(NA_real_, length(est))
-      vars <- names(wtp_raw)
-    } else {
-      return(empty_df)
-    }
-  }
+#   wtp_raw <- model_obj$wtp
   
-  # ensure lengths align
-  n <- length(est)
-  if (is.null(vars) || length(vars) != n) vars <- paste0("V", seq_len(n))
-  if (length(se) == 1 && n > 1) se <- rep(se, n)
-  if (length(se) != n) se <- rep(NA_real_, n)
+#   # The wtp object from logitr::wtp() is a matrix/data.frame with columns:
+#   # Estimate, Std. Error, z-value, Pr(>|z|)
+#   # Note: column name is "Std. Error" with a space and period
   
-  data.frame(
-    variable = vars,
-    wtp = est,
-    se = se,
-    model = model_name,
-    stringsAsFactors = FALSE
-  )
-}
-
-
-# WTP Models
-wtp_basic_df <- extract_wtp(model_basic, "Basic")
-wtp_fe_df <- extract_wtp(model_fe, "Fixed Effects")
-wtp_mixed_df <- extract_wtp(model_mixed, "Mixed Logit")
-
-# Combine all WTP estimates
-wtp_all <- rbind(wtp_basic_df, wtp_fe_df, wtp_mixed_df)
-
-# Pivot wider for comparison table
-wtp_comparison <- wtp_all %>%
-  select(variable, wtp, model) %>%
-  pivot_wider(names_from = model, values_from = wtp) %>%
-  arrange(variable)
-
-# Add standard errors in separate columns if available
-if (any(!is.na(wtp_all$se))) {
-  wtp_se <- wtp_all %>%
-    filter(!is.na(se)) %>%
-    select(variable, se, model) %>%
-    pivot_wider(names_from = model, values_from = se, names_prefix = "SE_")
+#   if (is.matrix(wtp_raw) || is.data.frame(wtp_raw)) {
+#     wtp_df <- as.data.frame(wtp_raw, stringsAsFactors = FALSE)
+    
+#     # Get estimates
+#     if ("Estimate" %in% colnames(wtp_df)) {
+#       est <- as.numeric(wtp_df$Estimate)
+#     } else {
+#       message("Warning: No 'Estimate' column found in WTP object for ", model_name)
+#       return(empty_df)
+#     }
+    
+#     # Get standard errors - try different column name formats
+#     se <- NULL
+#     if ("Std. Error" %in% colnames(wtp_df)) {
+#       se <- as.numeric(wtp_df$"Std. Error")
+#     } else if ("Std.Error" %in% colnames(wtp_df)) {
+#       se <- as.numeric(wtp_df$Std.Error)
+#     } else if ("StdError" %in% colnames(wtp_df)) {
+#       se <- as.numeric(wtp_df$StdError)
+#     } else if ("SE" %in% colnames(wtp_df)) {
+#       se <- as.numeric(wtp_df$SE)
+#     } else {
+#       message("Warning: No standard error column found in WTP object for ", model_name)
+#       message("Available columns: ", paste(colnames(wtp_df), collapse = ", "))
+#       se <- rep(NA_real_, length(est))
+#     }
+    
+#     # Get variable names from row names
+#     vars <- rownames(wtp_df)
+#     if (is.null(vars)) {
+#       vars <- paste0("var_", seq_along(est))
+#     }
+    
+#     # Remove scalePar row if present (it's the price coefficient, not an attribute)
+#     keep_rows <- vars != "scalePar"
+#     vars <- vars[keep_rows]
+#     est <- est[keep_rows]
+#     se <- se[keep_rows]
+    
+#   } else {
+#     message("Warning: WTP object is not a matrix or data.frame for ", model_name)
+#     return(empty_df)
+#   }
   
-  wtp_comparison <- left_join(wtp_comparison, wtp_se, by = "variable")
-}
+#   # Ensure lengths align
+#   n <- length(est)
+#   if (length(se) != n) se <- rep(NA_real_, n)
+  
+#   data.frame(
+#     variable = vars,
+#     estimate = est,
+#     se = se,
+#     model = model_name,
+#     stringsAsFactors = FALSE
+#   )
+# }
 
-# Save WTP table
-write.csv(wtp_comparison, outputs$wtp_table, row.names = FALSE)
-message("WTP comparison table saved to: ", outputs$wtp_table)
+# # Extract WTP with SEs for all models
+# wtp_basic_df <- extract_wtp_with_se(model_basic, "Basic")
+# wtp_fe_df <- extract_wtp_with_se(model_fe, "Fixed Effects")
+# wtp_mixed_df <- extract_wtp_with_se(model_mixed, "Mixed Logit")
 
-print(wtp_comparison)
+# # Combine all WTP estimates
+# wtp_all <- rbind(wtp_basic_df, wtp_fe_df, wtp_mixed_df)
+
+# # Pivot wider for comparison table
+# wtp_comparison <- wtp_all %>%
+#   select(variable, estimate, model) %>%
+#   pivot_wider(names_from = model, values_from = estimate) %>%
+#   arrange(variable)
+
+# # Add standard errors in separate columns
+# wtp_se <- wtp_all %>%
+#   select(variable, se, model) %>%
+#   pivot_wider(names_from = model, values_from = se, names_prefix = "SE_")
+
+# wtp_comparison <- left_join(wtp_comparison, wtp_se, by = "variable")
+
+# # Reorder columns: Basic, SE_Basic, Fixed Effects, SE_Fixed Effects, Mixed Logit, SE_Mixed Logit
+# col_order <- c("variable")
+# for (model_name in c("Basic", "Fixed Effects", "Mixed Logit")) {
+#   col_name <- gsub(" ", ".", model_name)
+#   if (col_name %in% names(wtp_comparison)) {
+#     col_order <- c(col_order, col_name)
+#   }
+#   se_col_name <- paste0("SE_", col_name)
+#   if (se_col_name %in% names(wtp_comparison)) {
+#     col_order <- c(col_order, se_col_name)
+#   }
+# }
+
+# wtp_comparison <- wtp_comparison %>%
+#   select(any_of(col_order))
+
+# # Save WTP table
+# write.csv(wtp_comparison, outputs$wtp_table, row.names = FALSE)
+# message("WTP comparison table saved to: ", outputs$wtp_table)
+
+# print(wtp_comparison)
 
 # -----------------------------------------------------------------------------
 # Generate Data Summary Statistics
@@ -251,32 +273,32 @@ message("Data summary saved to: ", outputs$data_summary)
 
 print(summary_table)
 
-# -----------------------------------------------------------------------------
-# Model Fit Statistics
-# -----------------------------------------------------------------------------
+# # -----------------------------------------------------------------------------
+# # Model Fit Statistics
+# # -----------------------------------------------------------------------------
 
-message("\n--- Model fit statistics ---")
+# message("\n--- Model fit statistics ---")
 
-model_fit <- data.frame(
-  model = c("Basic", "Fixed Effects", "Mixed Logit"),
-  log_likelihood = c(
-    model_basic$model$logLik,
-    model_fe$model$logLik,
-    model_mixed$model$logLik
-  ),
-  n_parameters = c(
-    length(coef(model_basic$model)),
-    length(coef(model_fe$model)),
-    length(coef(model_mixed$model))
-  )
-)
+# model_fit <- data.frame(
+#   model = c("Basic", "Fixed Effects", "Mixed Logit"),
+#   log_likelihood = c(
+#     model_basic$model$logLik,
+#     model_fe$model$logLik,
+#     model_mixed$model$logLik
+#   ),
+#   n_parameters = c(
+#     length(coef(model_basic$model)),
+#     length(coef(model_fe$model)),
+#     length(coef(model_mixed$model))
+#   )
+# )
 
-model_fit$AIC <- -2 * model_fit$log_likelihood + 2 * model_fit$n_parameters
-model_fit$BIC <- -2 * model_fit$log_likelihood + log(nrow(data_clean)) * model_fit$n_parameters
+# model_fit$AIC <- -2 * model_fit$log_likelihood + 2 * model_fit$n_parameters
+# model_fit$BIC <- -2 * model_fit$log_likelihood + log(nrow(data_clean)) * model_fit$n_parameters
 
-print(model_fit)
+# print(model_fit)
 
-# Save model fit table
-model_fit_path <- file.path(dirname(outputs$wtp_table), "model_fit.csv")
-write.csv(model_fit, model_fit_path, row.names = FALSE)
-message("Model fit statistics saved to: ", model_fit_path)
+# # Save model fit table
+# model_fit_path <- file.path(dirname(outputs$wtp_table), "model_fit.csv")
+# write.csv(model_fit, model_fit_path, row.names = FALSE)
+# message("Model fit statistics saved to: ", model_fit_path)
