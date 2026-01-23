@@ -219,11 +219,9 @@ for (scenario_name in names(scenarios)) {
   )
 }
 
-# Generate Summary Report
-message("\n======================================")
-message("Generating Summary Report")
-message("======================================\n")
 
+# Generate Summary Report
+message("Generating Summary Report...")
 quarto::quarto_render(
   input = here("summary_report.qmd"),
   execute_params = list(
@@ -231,47 +229,4 @@ quarto::quarto_render(
     output_dir = "scenarios"
   )
 )
-
 message("Summary report generated")
-
-# # List of scenario names
-# scenarios <- c(
-#   "A-5y_c5km_v5km_r5km_mInf",
-#   "A-5y_c5km_v5km_r5km_mInf_ERmonth",
-#   "A-5y_c5km_v5km_r5km_mInf_ERseason",
-#   "A-5y_c5km_v5km_r30km_mInf",
-#   "A-5y_c5km_v5km_r30km_mInf_ERmonth",
-#   "A-5y_c5km_v5km_r30km_mInf_ERseason",
-#   "BM-2y_c5km_v5km_r5km_mInf",
-#   "BM-2y_c5km_v5km_r5km_mInf_ERmonth",
-#   "BM-2y_c5km_v5km_r5km_mInf_ERseason",
-#   "BM-2y_c5km_v5km_r30km_mInf",
-#   "BM-2y_c5km_v5km_r30km_mInf_ERmonth",
-#   "BM-2y_c5km_v5km_r30km_mInf_ERseason",
-#   "Q-2y_c5km_v5km_r5km_mInf",
-#   "Q-2y_c5km_v5km_r5km_mInf_ERmonth",
-#   "Q-2y_c5km_v5km_r5km_mInf_ERseason",
-#   "Q-2y_c5km_v5km_r30km_mInf",
-#   "Q-2y_c5km_v5km_r30km_mInf_ERmonth",
-#   "Q-2y_c5km_v5km_r30km_mInf_ERseason"
-# )
-
-# output_dir <- "output/scenarios"
-
-# for (scenario in scenarios) {
-#   for (model_type in c("basic", "fe")) {
-#     model_path <- file.path(output_dir, scenario, "models", paste0("model_", model_type, ".rds"))
-#     wtp_path <- file.path(output_dir, scenario, "models", paste0("wtp_", model_type, ".rds"))
-#     if (file.exists(model_path)) {
-#       model_obj <- readRDS(model_path)
-#       if (!is.null(model_obj$wtp)) {
-#         saveRDS(model_obj$wtp, wtp_path)
-#         message("Saved WTP for ", model_type, " in scenario: ", scenario)
-#       } else {
-#         message("No WTP found in model for ", model_type, " in scenario: ", scenario)
-#       }
-#     } else {
-#       message("Model file not found for ", model_type, " in scenario: ", scenario)
-#     }
-#   }
-# }
