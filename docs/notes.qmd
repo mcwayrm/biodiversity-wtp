@@ -41,6 +41,41 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 02/20/2026
+
+> Raahil, Matt, Jovin
+
+## TODO: 
+
+1. Matt
+
+- Add distance to site, and choice set size, in the summary stats
+- Show only WTP estimates overall and by season. Drop monthly estimates
+- We can drop WTP for the other site attributes
+- Add shannon and simpson indices. The computation should already be there in my original code. If not, let me know and I will send it.
+- Count number of migrants and residents per trip. Also compute migrant species richness and resident species richness per trip
+- Add migrants and residents to conditional logit equation. Also try interacting each with seasonal dummies
+- Add site-by-season FEs
+- Important: pilot the mixed logit estimation on a subsample of users. Try a random 10% of users to keep sample size low
+
+2. Jovin
+
+- Double check travel cost. 3 Rs average seems too low
+- Have a look at this paper and see if we can use ES (equation 3) 
+
+3. Ryan
+
+- Meet with me regarding the theory
+
+
+
+
+
+:::
+
+
+
+::: {.callout-note collapse="true"}
 # 01/23/2026
 
 > Raahil, Matt, Jovin, Ryan
