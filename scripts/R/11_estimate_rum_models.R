@@ -195,11 +195,9 @@ saveRDS(list(
   model = ebird_basic,
   wtp = wtp_basic,
   summary = summary(ebird_basic)
-), outputs$model_basic)
+), outputs$model_rds)
 
-# Save WTP estimates separately
-wtp_basic_path <- sub("model_basic.rds$", "wtp_basic.rds", outputs$model_basic)
-saveRDS(wtp_basic, wtp_basic_path)
+saveRDS(wtp_basic, outputs$wtp_rds)
 
 message("Basic model and WTP saved")
 
@@ -240,11 +238,10 @@ if (!is.null(fe_vars) && !identical(fe_vars, "skip") && length(fe_vars) > 0) {
     model = ebird_fe,
     wtp = wtp_fe,
     summary = summary(ebird_fe)
-  ), outputs$model_fe)
+  ), outputs$model_rds)
 
   # Save WTP estimates separately
-  wtp_fe_path <- sub("model_fe.rds$", "wtp_fe.rds", outputs$model_fe)
-  saveRDS(wtp_fe, wtp_fe_path)
+  saveRDS(wtp_fe, outputs$wtp_rds)
 
   message("Fixed effects model and WTP saved")
 } else {
@@ -288,11 +285,10 @@ if (!is.null(mixed_vars) && !identical(mixed_vars, "skip") && length(mixed_vars)
     model = ebird_mixed,
     wtp = wtp_mixed,
     summary = summary(ebird_mixed)
-  ), outputs$model_mixed)
+  ), outputs$model_rds)
 
   # Save WTP estimates separately
-  wtp_mixed_path <- sub("model_mixed.rds$", "wtp_mixed.rds", outputs$model_mixed)
-  saveRDS(wtp_mixed, wtp_mixed_path)
+  saveRDS(wtp_mixed, outputs$wtp_rds)
 
   message("Mixed logit model and WTP saved")
 } else {

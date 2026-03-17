@@ -14,6 +14,9 @@ params:
   scenarios:
     value:
       - baseline
+  models:
+    value:
+      - Basic
   output_dir:
     value: "output/scenarios"
 execute:
@@ -33,9 +36,11 @@ library(htmltools)
 
 # Get parameters
 scenarios <- params$scenarios
+models <- params$models
 output_dir <- params$output_dir
 
 message("Scenarios: ", paste(scenarios, collapse = ", "))
+message("Models: ", paste(models, collapse = ", "))
 message("Output directory: ", output_dir)
 
 # Verify scenario directories exist
@@ -59,14 +64,18 @@ This report summarizes the Random Utility Model (RUM) analysis across **`r lengt
 
 ```{r voronoi-tabs, results='asis'}
 for (scenario in scenarios) {
-  rel_path <- file.path("output", "scenarios", scenario, "figures", "voronoi_map.png")
-  abs_path <- here::here(rel_path)
-
+  figures_dir <- file.path("output", "scenarios", scenario, "figures")
+  voronoi_files <- list.files(figures_dir, pattern = "^voronoi_map.*\\.png$", full.names = FALSE)
   cat('\n##', scenario, '\n\n')
-  if (file.exists(abs_path)) {
-    cat('![](', rel_path, '){ width=100% }\n\n', sep = '')
-  } else {
+  if (length(voronoi_files) == 0) {
     cat("Voronoi map not found for scenario:", scenario, "\n\n")
+  } else {
+    vf <- voronoi_files[1]
+    rel_path <- file.path("output", "scenarios", scenario, "figures", vf)
+    abs_path <- here::here(rel_path)
+    if (file.exists(abs_path)) {
+      cat('![](', rel_path, '){ width=100% }\n\n', sep = '')
+    }
   }
 }
 ```
@@ -78,24 +87,19 @@ for (scenario in scenarios) {
 # Data Summary
 
 ```{r data-summary-combined}
-# Load data summaries from all scenarios
+# Load only data_summary_ER.csv for each scenario, with debug prints
 summary_list <- list()
-
 for (scenario in scenarios) {
-  summary_path <- file.path("output", "scenarios", scenario, "tables", "data_summary.csv")
+  summary_path <- file.path(output_dir, scenario, "tables", "data_summary_basic_ER.csv")
   if (file.exists(summary_path)) {
     df <- read.csv(summary_path, stringsAsFactors = FALSE)
-    
-    # Keep only key variables and statistics
     key_vars <- c("Sample Size", "Number of Trips", "Number of Users",
                   "expected_richness", "expected_congestion", "precip", 
                   "temp", "trees", "travel_cost_combined", "dist_to_pa_km")
-    
+    found_vars <- intersect(key_vars, df$variable)
     df_filtered <- df %>%
       filter(variable %in% key_vars) %>%
       select(variable, mean, sd)
-    
-    # Create formatted column with SD side by side
     df_filtered <- df_filtered %>%
       mutate(
         formatted = ifelse(
@@ -109,10 +113,11 @@ for (scenario in scenarios) {
           )
         )
       )
-    
     summary_list[[scenario]] <- df_filtered %>%
       select(variable, formatted)
     names(summary_list[[scenario]])[2] <- scenario
+  } else {
+    cat("[DataSummary] NOT FOUND: ", summary_path)
   }
 }
 
@@ -169,69 +174,37 @@ if (length(summary_list) > 0) {
 # Willingness to Pay Estimates
 
 ```{r wtp-data-prep, echo=FALSE, message=FALSE}
-# Load WTP objects directly from all scenarios (not full models)
+models <- unique(models)
+
+# Dynamically find all wtp_*.rds files for each scenario
 wtp_list <- list()
-available_models <- c()  # Track which models exist across scenarios
-
+models <- c()
 message("\n=== Loading WTP Data ===")
-
 for (scenario in scenarios) {
-  message("\nScenario: ", scenario)
-  
-  # Define WTP RDS files for each model type
-  wtp_files <- list(
-    Basic = file.path("output", "scenarios", scenario, "models", "wtp_basic.rds"),
-    "Fixed Effects" = file.path("output", "scenarios", scenario, "models", "wtp_fe.rds"),
-    "Mixed Logit" = file.path("output", "scenarios", scenario, "models", "wtp_mixed.rds")
-  )
-  
-  for (model_name in names(wtp_files)) {
-    wtp_path <- wtp_files[[model_name]]
-    message("  Checking: ", wtp_path)
-    message("  Exists: ", file.exists(wtp_path))
-    
+  models_dir <- file.path(output_dir, scenario, "models")
+  wtp_files <- list.files(models_dir, pattern = "^wtp_.*\\.rds$", full.names = TRUE)
+  message("[WTP] Scenario ", scenario, ": Found ", length(wtp_files), " WTP files")
+  for (wtp_path in wtp_files) {
+    model_name <- sub("^wtp_(.*)\\.rds$", "\\1", basename(wtp_path))
+    message("[WTP]   ", basename(wtp_path), " (model: ", model_name, ")")
     if (file.exists(wtp_path)) {
-      available_models <- c(available_models, model_name)
+      models <- c(models, model_name)
       tryCatch({
         wtp_obj <- readRDS(wtp_path)
-        message("  Loaded successfully")
-        message("  Class: ", paste(class(wtp_obj), collapse = ", "))
-        message("  Is data.frame: ", is.data.frame(wtp_obj))
-        message("  Names: ", paste(names(wtp_obj), collapse = ", "))
-        
         wtp_df <- NULL
-        
-        # Check if it's a data.frame with Estimate column
         if (is.data.frame(wtp_obj) && "Estimate" %in% names(wtp_obj)) {
-          message("  Processing as data.frame")
-          message("  nrow: ", nrow(wtp_obj))
-          message("  Rownames: ", paste(head(rownames(wtp_obj)), collapse = ", "))
-          
-          # Get variable names - prefer rownames if they exist and aren't just numbers
-          if (!is.null(rownames(wtp_obj)) && 
-              !all(rownames(wtp_obj) %in% as.character(1:nrow(wtp_obj)))) {
+          if (!is.null(rownames(wtp_obj)) && !all(rownames(wtp_obj) %in% as.character(1:nrow(wtp_obj)))) {
             variable_names <- rownames(wtp_obj)
-            message("  Using rownames for variables")
           } else if ("variable" %in% names(wtp_obj)) {
             variable_names <- as.character(wtp_obj$variable)
-            message("  Using 'variable' column")
           } else {
             variable_names <- paste0("V", seq_len(nrow(wtp_obj)))
-            message("  Creating variable names V1, V2, ...")
           }
-          
-          message("  Variable names length: ", length(variable_names))
-          message("  Estimate length: ", length(wtp_obj$Estimate))
-          
-          # Check for Std. Error column
           if ("Std. Error" %in% names(wtp_obj)) {
             se_values <- as.numeric(wtp_obj[["Std. Error"]])
-            message("  SE length: ", length(se_values))
           } else {
             se_values <- rep(NA_real_, nrow(wtp_obj))
-            message("  No Std. Error column, using NA")
           }
-          
           wtp_df <- data.frame(
             variable = variable_names,
             estimate = as.numeric(wtp_obj$Estimate),
@@ -241,7 +214,6 @@ for (scenario in scenarios) {
             stringsAsFactors = FALSE
           )
         } else if (is.list(wtp_obj) && !is.null(wtp_obj$Estimate)) {
-          message("  Processing as list")
           wtp_df <- data.frame(
             variable = names(wtp_obj$Estimate),
             estimate = as.numeric(wtp_obj$Estimate),
@@ -251,7 +223,6 @@ for (scenario in scenarios) {
             stringsAsFactors = FALSE
           )
         } else if (is.matrix(wtp_obj)) {
-          message("  Processing as matrix")
           wtp_df <- data.frame(
             variable = rownames(wtp_obj),
             estimate = as.numeric(wtp_obj[, "Estimate"]),
@@ -261,27 +232,22 @@ for (scenario in scenarios) {
             stringsAsFactors = FALSE
           )
         }
-        
         if (!is.null(wtp_df)) {
-          message("  Initial rows: ", nrow(wtp_df))
-          wtp_df <- wtp_df %>%
-            filter(variable != "scalePar", !grepl("^sd_", variable))
-          message("  After filtering: ", nrow(wtp_df), " estimates")
+          wtp_df <- wtp_df %>% filter(variable != "scalePar", !grepl("^sd_", variable))
           wtp_list[[paste(scenario, model_name, sep = "_")]] <- wtp_df
+          message("[WTP]     Loaded: ", nrow(wtp_df), " rows")
         } else {
-          message("  ✖ Could not parse WTP object")
+          message("[WTP]     ✖ Could not parse WTP object")
         }
       }, error = function(e) {
-        message("  ✖ Error loading WTP: ", e$message)
+        message("[WTP]     ✖ Error loading WTP: ", e$message)
       })
     }
   }
 }
-
-available_models <- unique(available_models)
 message("\n=== WTP Loading Complete ===")
 message("Total WTP datasets loaded: ", length(wtp_list))
-message("Available models: ", paste(available_models, collapse = ", "))
+message("Available models: ", paste(models, collapse = ", "))
 ```
 
 ```{r wtp-prepare-plots}
@@ -342,8 +308,8 @@ if (length(wtp_list) > 0) {
     filter(variable_clean %in% valid_vars)
   
   wtp_combined <- wtp_combined %>% 
-    filter(model %in% available_models) %>% 
-    mutate(model = factor(model, levels = c("Basic", "Fixed Effects", "Mixed Logit")))
+    filter(model %in% models) %>% 
+    mutate(model = factor(model, levels = unique(models)))
   
   # Separate Expected Richness variables from others
   er_vars <- grep("^expected_richness", wtp_combined$variable, value = TRUE)
@@ -380,7 +346,7 @@ if (length(wtp_list) > 0) {
       title = "WTP for Expected Richness Variables", 
       subtitle = paste0(
         "Point estimates with 95% confidence intervals | Rows = Variables, Columns = Model Types\n",
-        "Models: ", paste(available_models, collapse = ", ")
+        "Models: ", paste(models, collapse = ", ")
       ),
       x = NULL, 
       y = "WTP (INR)", 
@@ -415,7 +381,7 @@ if (length(wtp_list) > 0) {
       title = "WTP for Other Variables", 
       subtitle = paste0(
         "Point estimates with 95% confidence intervals | Rows = Variables, Columns = Model Types\n",
-        "Models: ", paste(available_models, collapse = ", ")
+        "Models: ", paste(models, collapse = ", ")
       ),
       x = NULL, 
       y = "WTP (INR)", 

@@ -11,38 +11,37 @@
 
 # Load eBird trips
 ebird <- read_parquet(inputs$ebird_trips)
+setDT(ebird)
 
-# Define sample selection parameters
-interval_months <- params$interval_months    # 2 for bi-monthly, 3 for quarterly, 6 for semi-annual
-min_years_active <- params$min_years_active
+# Calculate number of unique months per user
+user_months <- ebird[, .(n_months = uniqueN(yearmonth)), by = user_id]
 
-# Compute time periods: month 1–3 = period 1, 4–6 = period 2, etc.
-monthly_activity <- ebird %>%
-  mutate(
-    year = year(date),
-    month = month(date),
-    period = ceiling(month / interval_months)
-  ) %>%
-  distinct(user_id, year, period)
+# Calculate activity rate (out of 24 months)
+user_months[, user_activity_rate := n_months / 24]
 
-# Filter users who are active in every period within a year
-# Total number of periods in a year
-n_periods <- ceiling(12 / interval_months)
+# Calculate the mean activity rate across all users
+mean_rate <- mean(user_months$user_activity_rate, na.rm = TRUE)
 
-# Count how many unique periods each user was active per year
-active_per_year <- monthly_activity %>%
-  group_by(user_id, year) %>%
-  summarize(n_periods_active = n_distinct(period), .groups = "drop") %>%
-  filter(n_periods_active == n_periods)
+# Get all user activity rates that are greater than or equal to the mean
+above_mean <- user_months$user_activity_rate[user_months$user_activity_rate >= mean_rate]
 
-# Keep users with at least N qualifying years
-active_users <- active_per_year %>%
-  count(user_id, name = "n_years") %>%
-  filter(n_years >= min_years_active)
+# Calculate the median of the above-mean activity rates
+med_above_mean <- median(above_mean, na.rm = TRUE)
+
+# Assign user_type:
+#   - "L" for users below the mean activity rate
+#   - "M" for users between the mean and the median of above-mean rates
+#   - "H" for users at or above the median of above-mean rates
+user_months[, user_type := fifelse(
+  user_activity_rate < mean_rate, "L",
+  fifelse(user_activity_rate < med_above_mean, "M", "H")
+)]
+
+# Merge user_type back to main data
+ebird <- merge(ebird, user_months[, .(user_id, user_activity_rate, user_type)], by = "user_id", all.x = TRUE)
 
 # Subset the main data
-ebird <- ebird %>%
-  semi_join(active_users, by = "user_id")
+ebird <- ebird[user_type == params$user_type]
 
 # Save filtered trips
 write_parquet(ebird, outputs$ebird_trips_filtered)

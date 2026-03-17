@@ -13,6 +13,9 @@ source(file.path("scripts", "R", "utils_config.R"))
 # Load scenarios
 source(file.path("scripts", "R", "utils_scenarios.R"))
 
+# Load models
+models <- yaml::read_yaml("models.yml")
+
 # Load task runner function
 source(file.path("scripts", "R", "utils_tasks.R"))
 
@@ -31,6 +34,7 @@ for (scenario_name in names(scenarios)) {
   scenario_dir <- here("data", "intermediate", "scenarios", scenario_name)
   if (!dir.exists(scenario_dir)) dir.create(scenario_dir, recursive = TRUE, showWarnings = FALSE)
 
+  # --- Data Preparation Tasks (1-8) ---
   # Task 1: Load and Clean eBird Data
   run_task(
     "01_load_ebird_data.R",
@@ -178,45 +182,44 @@ for (scenario_name in names(scenarios)) {
     scenario_name = scenario_name
   )
 
-  # Stage 10: Estimate RUM Models
-  run_task(
-    "10_estimate_rum_models.R",
-    input_paths = list(
-      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
-    ),
-    output_paths = list(
-      master_data_final = file.path(scenario_dir, "master_data_final.parquet"),
-      model_basic = file.path("output", "scenarios", scenario_name, "models", "model_basic.rds"),
-      wtp_basic = file.path("output", "scenarios", scenario_name, "models", "wtp_basic.rds"),
-      model_fe = file.path("output", "scenarios", scenario_name, "models", "model_fe.rds"),
-      wtp_fe = file.path("output", "scenarios", scenario_name, "models", "wtp_fe.rds")
-      # model_mixed = file.path("output", "scenarios", scenario_name, "models", "model_mixed.rds"),
-      # wtp_mixed = file.path("output", "scenarios", scenario_name, "models", "wtp_mixed.rds")
-    ),
-    params = params,
-    scenario_name = scenario_name
-  )
+  # --- Model Estimation & Output Tasks (10-11) ---
+  for (model_name in names(models)) {
+    model_cfg <- models[[model_name]]
+    message(paste0("  Running model: ", model_name))
 
-  # Stage 11: Generate Scenario Outputs
-  run_task(
-    "11_generate_scenario_outputs.R",
-    input_paths = list(
-      voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
-      hotspots_clustered = file.path(scenario_dir, "ebird_hotspots_clustered.parquet"),
-      master_data_final = file.path(scenario_dir, "master_data_final.parquet"),
-      district_shp = file.path(input_data_dir, "districts", "district-2011", "district-2011.shp"),
-      model_basic = file.path("output", "scenarios", scenario_name, "models", "model_basic.rds"),
-      model_fe = file.path("output", "scenarios", scenario_name, "models", "model_fe.rds"),
-      model_mixed = file.path("output", "scenarios", scenario_name, "models", "model_mixed.rds")
-    ),
-    output_paths = list(
-      # voronoi_plot = file.path("output", "scenarios", scenario_name, "figures", "voronoi_map.png"),
-      # wtp_table = file.path("output", "scenarios", scenario_name, "tables", "wtp_comparison.csv"),
-      data_summary = file.path("output", "scenarios", scenario_name, "tables", "data_summary.csv")
-    ),
-    params = params,
-    scenario_name = scenario_name
-  )
+    # Stage 10: Estimate RUM Models
+    run_task(
+      "10_estimate_rum_models.R",
+      input_paths = list(
+        master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
+      ),
+      output_paths = list(
+        master_data_final = file.path(scenario_dir, "master_data_final.parquet"),
+        model_rds = file.path("output", "scenarios", scenario_name, "models", paste0("model_", model_name, ".rds")),
+        wtp_rds = file.path("output", "scenarios", scenario_name, "models", paste0("wtp_", model_name, ".rds"))
+      ),
+      params = c(params, model_cfg),
+      scenario_name = scenario_name,
+    )
+
+    # Stage 11: Generate Scenario Outputs
+    run_task(
+      "11_generate_scenario_outputs.R",
+      input_paths = list(
+        voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
+        hotspots_clustered = file.path(scenario_dir, "ebird_hotspots_clustered.parquet"),
+        master_data_final = file.path(scenario_dir, "master_data_final.parquet"),
+        district_shp = file.path(input_data_dir, "districts", "district-2011", "district-2011.shp"),
+        model_rds = file.path("output", "scenarios", scenario_name, "models", paste0("model_", model_name, ".rds"))
+      ),
+      output_paths = list(
+        data_summary = file.path("output", "scenarios", scenario_name, "tables", paste0("data_summary_", model_name, ".csv")),
+        voronoi_plot = file.path("output", "scenarios", scenario_name, "figures", paste0("voronoi_map_", model_name, ".png"))
+      ),
+      params = c(params, model_cfg),
+      scenario_name = scenario_name,
+    )
+  }
 }
 
 
@@ -226,7 +229,8 @@ quarto::quarto_render(
   input = here("summary_report.qmd"),
   execute_params = list(
     scenarios = names(scenarios),
-    output_dir = "scenarios"
+    models = names(models),
+    output_dir = file.path("output", "scenarios")
   )
 )
 message("Summary report generated")

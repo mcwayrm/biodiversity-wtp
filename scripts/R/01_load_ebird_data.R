@@ -16,7 +16,7 @@ ebird <- fread(
     'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
     'PROTOCOL TYPE', 'DURATION MINUTES',
     'EFFORT DISTANCE KM', 'ALL SPECIES REPORTED',
-    'LOCALITY', 'LOCALITY TYPE'
+    'LOCALITY', 'LOCALITY TYPE', 'OBSERVATION COUNT'
   ),
   quote = ""
 )
@@ -34,7 +34,8 @@ ebird <- ebird %>%
     trip_id = sampling_event_identifier,
     duration = duration_minutes,
     distance = effort_distance_km,
-    complete = all_species_reported
+    complete = all_species_reported,
+    count = observation_count
   )
 
 # Set distance = 0 for stationary trips
