@@ -215,9 +215,19 @@ if (!file.exists(outputs$voronoi_plot)) {
 
 message("\n--- Creating data summary ---")
 
+
 # Variable list
-summary_vars <- c("expected_richness", "expected_congestion", "precip", "temp",
-                  "trees", "travel_cost_combined", "dist_to_pa_km", "geo_dist")
+summary_vars <- c(
+  "expected_richness", "migrant_richness", "resident_richness", "species_richness", "shannon_index", "simpson_index",
+  "expected_richness_Winter", "expected_richness_Spring", "expected_richness_Summer", "expected_richness_Fall",
+  "migrant_richness_Winter", "migrant_richness_Spring", "migrant_richness_Summer", "migrant_richness_Fall",
+  "resident_richness_Winter", "resident_richness_Spring", "resident_richness_Summer", "resident_richness_Fall",
+  "species_richness_Winter", "species_richness_Spring", "species_richness_Summer", "species_richness_Fall",
+  "shannon_index_Winter", "shannon_index_Spring", "shannon_index_Summer", "shannon_index_Fall",
+  "simpson_index_Winter", "simpson_index_Spring", "simpson_index_Summer", "simpson_index_Fall",
+  "expected_congestion", "precip", "temp",
+  "trees", "travel_cost_combined", "dist_to_pa_km", "geo_dist", "choice_set_size"
+)
 
 # Calculate summary statistics
 summary_stats <- data_clean[, lapply(.SD, function(x) {
