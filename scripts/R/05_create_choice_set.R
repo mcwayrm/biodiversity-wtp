@@ -122,6 +122,9 @@ create_trip_choice_stacks <- function(trip_data, choice_data) {
   md[, cluster_id := cluster_id_choice]
   md[, cluster_id_choice := NULL]
   md[, cluster_id_trip := NULL]
+
+  # Add choice set size: number of alternatives for each trip
+  md[, choice_set_size := .N, by = trip_id]
   
   return(md)
 }
