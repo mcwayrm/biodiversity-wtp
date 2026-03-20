@@ -21,12 +21,15 @@ ebird <- fread(
               'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
               'PROTOCOL TYPE', 'DURATION MINUTES',
               'EFFORT DISTANCE KM', 'ALL SPECIES REPORTED',
-              'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY'),
+              'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY',
+              'OBSERVATION COUNT'),
   quote = ""
 )
 
 # Clean column names
 setnames(ebird, gsub('\\.', '_', tolower(make.names(names(ebird)))))
+ebird[, observation_count := as.numeric(observation_count)]
+
 
 # Filter and clean data
 ebird[, observation_date := as.Date(observation_date)]
@@ -35,7 +38,7 @@ dt <- ebird[
     !is.na(observation_date) & !is.na(common_name),
   .(lat = latitude, lon = longitude, observation_date, common_name,
     sampling_event_identifier, observer_id, protocol_type,
-    duration_minutes, effort_distance_km, all_species_reported)
+    duration_minutes, effort_distance_km, all_species_reported, observation_count)
 ]
 
 message("Filtered eBird data: ", nrow(dt), " species observations")
@@ -44,14 +47,50 @@ message("Filtered eBird data: ", nrow(dt), " species observations")
 # Create Trip-Level Data
 # -----------------------------------------------------------------------------
 
-# Aggregate to trip level
+# Load species categorization for migrant/resident classification
+species_info <- fread(inputs$migrant_species)
+
+# Merge species info into dt
+dt <- merge(dt, species_info[, .(common_name = species, migratory_status)], by = "common_name", all.x = TRUE)
+
+# Compute indices and richness per trip
 trip_data <- dt[, .(
   species_richness = uniqueN(common_name),
+  migrant_richness = uniqueN(common_name[migratory_status %like% "migrant"]),
+  resident_richness = uniqueN(common_name[migratory_status %like% "resident"]),
+  shannon_index = {
+    counts <- as.numeric(tapply(observation_count, common_name, sum, na.rm = TRUE))
+    counts <- counts[!is.na(counts) & counts > 0]
+    if (length(counts) == 0) NA_real_ else {
+      p <- counts / sum(counts)
+      -sum(p * log(p))
+    }
+  },
+  simpson_index = {
+    counts <- as.numeric(tapply(observation_count, common_name, sum, na.rm = TRUE))
+    counts <- counts[!is.na(counts) & counts > 0]
+    if (length(counts) == 0) NA_real_ else {
+      p <- counts / sum(counts)
+      1 - sum(p^2)
+    }
+  },
+  # shannon_index = {
+  #   p <- table(common_name) / .N
+  #   -sum(p * log(p))
+  # },
+  # simpson_index = {
+  #   p <- table(common_name) / .N
+  #   1 - sum(p^2)
+  # },
   lat = first(lat),
   lon = first(lon)
 ), by = .(sampling_event_identifier, observation_date, observer_id, protocol_type, 
           duration_minutes, effort_distance_km, all_species_reported)]
 
+print("Rows with NA Shannon index: ")
+print(sum(is.na(trip_data$shannon_index)))
+print("Rows with NA Simpson index: ")
+print(sum(is.na(trip_data$simpson_index)))
 message("Created trip-level data: ", nrow(trip_data), " trips")
 
 # -----------------------------------------------------------------------------
@@ -132,6 +171,76 @@ seasonal_richness <- trip_richness[, .(
 write_parquet(seasonal_richness, outputs$seasonal_richness)
 message("Seasonal richness: ", nrow(seasonal_richness), " records")
 
+# -----------------------------------------------------------------------------
+# Compute Indices and Migrant/Resident Richness
+# -----------------------------------------------------------------------------
+message("\nComputing Shannon/Simpson indices and migrant/resident richness...")
+# Weekly
+weekly_shannon <- trip_richness[, .(
+  shannon_index = mean(shannon_index, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_week)]
+weekly_simpson <- trip_richness[, .(
+  simpson_index = mean(simpson_index, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_week)]
+weekly_migrant <- trip_richness[, .(
+  migrant_richness = mean(migrant_richness, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_week)]
+weekly_resident <- trip_richness[, .(
+  resident_richness = mean(resident_richness, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_week)]
+write_parquet(weekly_shannon, outputs$weekly_shannon)
+write_parquet(weekly_simpson, outputs$weekly_simpson)
+write_parquet(weekly_migrant, outputs$weekly_migrant)
+write_parquet(weekly_resident, outputs$weekly_resident)
+
+# Monthly
+monthly_shannon <- trip_richness[, .(
+  shannon_index = mean(shannon_index, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_month)]
+monthly_simpson <- trip_richness[, .(
+  simpson_index = mean(simpson_index, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_month)]
+monthly_migrant <- trip_richness[, .(
+  migrant_richness = mean(migrant_richness, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_month)]
+monthly_resident <- trip_richness[, .(
+  resident_richness = mean(resident_richness, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_month)]
+write_parquet(monthly_shannon, outputs$monthly_shannon)
+write_parquet(monthly_simpson, outputs$monthly_simpson)
+write_parquet(monthly_migrant, outputs$monthly_migrant)
+write_parquet(monthly_resident, outputs$monthly_resident)
+
+# Seasonal
+seasonal_shannon <- trip_richness[, .(
+  shannon_index = mean(shannon_index, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_season)]
+seasonal_simpson <- trip_richness[, .(
+  simpson_index = mean(simpson_index, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_season)]
+seasonal_migrant <- trip_richness[, .(
+  migrant_richness = mean(migrant_richness, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_season)]
+seasonal_resident <- trip_richness[, .(
+  resident_richness = mean(resident_richness, na.rm = TRUE),
+  n_trips = .N
+), by = .(cluster_id, year_season)]
+write_parquet(seasonal_shannon, outputs$seasonal_shannon)
+write_parquet(seasonal_simpson, outputs$seasonal_simpson)
+write_parquet(seasonal_migrant, outputs$seasonal_migrant)
+write_parquet(seasonal_resident, outputs$seasonal_resident)
+message("\nShannon/Simpson indices and migrant/resident richness computed.")
 # -----------------------------------------------------------------------------
 # Compute Congestion Metrics
 # -----------------------------------------------------------------------------
