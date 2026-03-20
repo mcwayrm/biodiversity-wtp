@@ -1,21 +1,27 @@
-basic_ER:
-  model_vars:
-    - expected_richness
-    - expected_congestion
-    - precip
-    - temp
-    - trees
-    - travel_cost_combined
-    - dist_to_pa_km
-  fe_vars:
-    - user_id
-    - year_month
-    - c_code_2011
-  mixed_vars:
-    - skip
+# basic_ER:
+#   model_vars:
+#     - expected_richness
+#     - migrant_richness
+#     - resident_richness
+#     - shannon_index
+#     - simpson_index
+#     - expected_congestion
+#     - precip
+#     - temp
+#     - trees
+#     - travel_cost_combined
+#     - dist_to_pa_km
+#   fe_vars: skip
+#   mixed_vars:
+#     - skip
+#   sample: 0.01
 fe_ER:
   model_vars:
     - expected_richness
+    - migrant_richness
+    - resident_richness
+    - shannon_index
+    - simpson_index
     - expected_congestion
     - precip
     - temp
@@ -23,25 +29,18 @@ fe_ER:
     - travel_cost_combined
     - dist_to_pa_km
   fe_vars:
-    - user_id
-    - year_month
-    - c_code_2011
+    - cluster_id
+    - season
   mixed_vars:
     - skip
-basic_ERmonth:
+  sample: 0.01
+mixed_ER:
   model_vars:
-    - expected_richness_Jan
-    - expected_richness_Feb
-    - expected_richness_Mar
-    - expected_richness_Apr
-    - expected_richness_May
-    - expected_richness_Jun
-    - expected_richness_Jul
-    - expected_richness_Aug
-    - expected_richness_Sep
-    - expected_richness_Oct
-    - expected_richness_Nov
-    - expected_richness_Dec
+    - expected_richness
+    - migrant_richness
+    - resident_richness
+    - shannon_index
+    - simpson_index
     - expected_congestion
     - precip
     - temp
@@ -49,58 +48,65 @@ basic_ERmonth:
     - travel_cost_combined
     - dist_to_pa_km
   fe_vars:
-    - user_id
-    - c_code_2011
+    - [user_id, year]
+    - [cluster_id, season]
   mixed_vars:
-    - skip
-fe_ERmonth:
-  model_vars:
-    - expected_richness_Jan
-    - expected_richness_Feb
-    - expected_richness_Mar
-    - expected_richness_Apr
-    - expected_richness_May
-    - expected_richness_Jun
-    - expected_richness_Jul
-    - expected_richness_Aug
-    - expected_richness_Sep
-    - expected_richness_Oct
-    - expected_richness_Nov
-    - expected_richness_Dec
-    - expected_congestion
-    - precip
-    - temp
-    - trees
-    - travel_cost_combined
-    - dist_to_pa_km
-  fe_vars:
-    - user_id
-    - c_code_2011
-  mixed_vars:
-    - skip
-basic_ERseason:
-  model_vars:
-    - expected_richness_Winter
-    - expected_richness_Spring
-    - expected_richness_Summer
-    - expected_richness_Fall
-    - expected_congestion
-    - precip
-    - temp
-    - trees
-    - travel_cost_combined
-    - dist_to_pa_km
-  fe_vars:
-    - user_id
-    - c_code_2011
-  mixed_vars:
-    - skip
+    - expected_richness
+  sample: 0.01
+# basic_ERseason:
+#   model_vars:
+#     - expected_richness_Winter
+#     - expected_richness_Spring
+#     - expected_richness_Summer
+#     - expected_richness_Fall
+#     - migrant_richness_Winter
+#     - migrant_richness_Spring
+#     - migrant_richness_Summer
+#     - migrant_richness_Fall
+#     - resident_richness_Winter
+#     - resident_richness_Spring
+#     - resident_richness_Summer
+#     - resident_richness_Fall
+#     - shannon_index_Winter
+#     - shannon_index_Spring
+#     - shannon_index_Summer
+#     - shannon_index_Fall
+#     - simpson_index_Winter
+#     - simpson_index_Spring
+#     - simpson_index_Summer
+#     - simpson_index_Fall
+#     - expected_congestion
+#     - precip
+#     - temp
+#     - trees
+#     - travel_cost_combined
+#     - dist_to_pa_km
+#   fe_vars: skip
+#   mixed_vars:
+#     - skip
+#   sample: 0.01
 fe_ERseason:
   model_vars:
     - expected_richness_Winter
     - expected_richness_Spring
     - expected_richness_Summer
     - expected_richness_Fall
+    - migrant_richness_Winter
+    - migrant_richness_Spring
+    - migrant_richness_Summer
+    - migrant_richness_Fall
+    - resident_richness_Winter
+    - resident_richness_Spring
+    - resident_richness_Summer
+    - resident_richness_Fall
+    - shannon_index_Winter
+    - shannon_index_Spring
+    - shannon_index_Summer
+    - shannon_index_Fall
+    - simpson_index_Winter
+    - simpson_index_Spring
+    - simpson_index_Summer
+    - simpson_index_Fall
     - expected_congestion
     - precip
     - temp
@@ -108,7 +114,45 @@ fe_ERseason:
     - travel_cost_combined
     - dist_to_pa_km
   fe_vars:
-    - user_id
-    - c_code_2011
+    - cluster_id
+    - season
   mixed_vars:
     - skip
+  sample: 0.01
+mixed_ERseason:
+  model_vars:
+    - expected_richness_Winter
+    - expected_richness_Spring
+    - expected_richness_Summer
+    - expected_richness_Fall
+    - migrant_richness_Winter
+    - migrant_richness_Spring
+    - migrant_richness_Summer
+    - migrant_richness_Fall
+    - resident_richness_Winter
+    - resident_richness_Spring
+    - resident_richness_Summer
+    - resident_richness_Fall
+    - shannon_index_Winter
+    - shannon_index_Spring
+    - shannon_index_Summer
+    - shannon_index_Fall
+    - simpson_index_Winter
+    - simpson_index_Spring
+    - simpson_index_Summer
+    - simpson_index_Fall
+    - expected_congestion
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+    - dist_to_pa_km
+  fe_vars:
+    - cluster_id
+    - season
+  mixed_vars:
+    - expected_richness_Winter
+    - expected_richness_Spring
+    - expected_richness_Summer
+    - expected_richness_Fall
+  sample: 0.01
