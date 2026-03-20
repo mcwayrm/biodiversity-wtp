@@ -183,6 +183,209 @@ message("Expected congestion available: ",
         choice_set[!is.na(expected_congestion), .N], " / ", nrow(choice_set))
 
 # -----------------------------------------------------------------------------
+# Load and Merge Migrant Richness (with fallback logic)
+# -----------------------------------------------------------------------------
+
+message("\n--- Merging Migrant Richness ---")
+monthly_migrant <- read_parquet(inputs$monthly_migrant)
+weekly_migrant <- read_parquet(inputs$weekly_migrant)
+seasonal_migrant <- read_parquet(inputs$seasonal_migrant)
+setDT(monthly_migrant)
+setDT(weekly_migrant)
+setDT(seasonal_migrant)
+monthly_migrant[, cluster_id := as.character(cluster_id)]
+weekly_migrant[, cluster_id := as.character(cluster_id)]
+seasonal_migrant[, cluster_id := as.character(cluster_id)]
+
+# Merge previous week migrant richness
+choice_set <- merge(
+  choice_set,
+  weekly_migrant[, .(cluster_id, year_week, prev_week_migrant_richness = migrant_richness)],
+  by.x = c("cluster_id", "prev_week"),
+  by.y = c("cluster_id", "year_week"),
+  all.x = TRUE
+)
+
+# Merge previous month migrant richness
+choice_set <- merge(
+  choice_set,
+  monthly_migrant[, .(cluster_id, year_month, prev_month_migrant_richness = migrant_richness)],
+  by.x = c("cluster_id", "prev_month"),
+  by.y = c("cluster_id", "year_month"),
+  all.x = TRUE
+)
+
+# Merge previous year season migrant richness
+choice_set <- merge(
+  choice_set,
+  seasonal_migrant[, .(cluster_id, year_season, prev_year_season_migrant_richness = migrant_richness)],
+  by.x = c("cluster_id", "prev_year_season"),
+  by.y = c("cluster_id", "year_season"),
+  all.x = TRUE
+)
+
+# Apply fallback logic: prev_week -> prev_month -> prev_year_season
+choice_set[, migrant_richness := fcoalesce(
+  prev_week_migrant_richness,
+  prev_month_migrant_richness,
+  prev_year_season_migrant_richness
+)]
+choice_set[, migrant_richness_source := fcase(
+  !is.na(prev_week_migrant_richness), "prev_week",
+  !is.na(prev_month_migrant_richness), "prev_month",
+  !is.na(prev_year_season_migrant_richness), "prev_year_season",
+  default = "missing"
+)]
+message("Migrant richness available: ",
+        choice_set[!is.na(migrant_richness), .N], " / ", nrow(choice_set))
+
+
+# -----------------------------------------------------------------------------
+# Load and Merge Resident Richness (with fallback logic)
+# -----------------------------------------------------------------------------
+message("\n--- Merging Resident Richness ---")
+monthly_resident <- read_parquet(inputs$monthly_resident)
+weekly_resident <- read_parquet(inputs$weekly_resident)
+seasonal_resident <- read_parquet(inputs$seasonal_resident)
+setDT(monthly_resident)
+setDT(weekly_resident)
+setDT(seasonal_resident)
+monthly_resident[, cluster_id := as.character(cluster_id)]
+weekly_resident[, cluster_id := as.character(cluster_id)]
+seasonal_resident[, cluster_id := as.character(cluster_id)]
+choice_set <- merge(
+  choice_set,
+  weekly_resident[, .(cluster_id, year_week, prev_week_resident_richness = resident_richness)],
+  by.x = c("cluster_id", "prev_week"),
+  by.y = c("cluster_id", "year_week"),
+  all.x = TRUE
+)
+choice_set <- merge(
+  choice_set,
+  monthly_resident[, .(cluster_id, year_month, prev_month_resident_richness = resident_richness)],
+  by.x = c("cluster_id", "prev_month"),
+  by.y = c("cluster_id", "year_month"),
+  all.x = TRUE
+)
+choice_set <- merge(
+  choice_set,
+  seasonal_resident[, .(cluster_id, year_season, prev_year_season_resident_richness = resident_richness)],
+  by.x = c("cluster_id", "prev_year_season"),
+  by.y = c("cluster_id", "year_season"),
+  all.x = TRUE
+)
+choice_set[, resident_richness := fcoalesce(
+  prev_week_resident_richness,
+  prev_month_resident_richness,
+  prev_year_season_resident_richness
+)]
+choice_set[, resident_richness_source := fcase(
+  !is.na(prev_week_resident_richness), "prev_week",
+  !is.na(prev_month_resident_richness), "prev_month",
+  !is.na(prev_year_season_resident_richness), "prev_year_season",
+  default = "missing"
+)]
+message("Resident richness available: ",
+        choice_set[!is.na(resident_richness), .N], " / ", nrow(choice_set))
+
+# -----------------------------------------------------------------------------
+# Load and Merge Shannon Index (with fallback logic)
+# -----------------------------------------------------------------------------
+message("\n--- Merging Shannon Index ---")
+monthly_shannon <- read_parquet(inputs$monthly_shannon)
+weekly_shannon <- read_parquet(inputs$weekly_shannon)
+seasonal_shannon <- read_parquet(inputs$seasonal_shannon)
+setDT(monthly_shannon)
+setDT(weekly_shannon)
+setDT(seasonal_shannon)
+monthly_shannon[, cluster_id := as.character(cluster_id)]
+weekly_shannon[, cluster_id := as.character(cluster_id)]
+seasonal_shannon[, cluster_id := as.character(cluster_id)]
+choice_set <- merge(
+  choice_set,
+  weekly_shannon[, .(cluster_id, year_week, prev_week_shannon = shannon_index)],
+  by.x = c("cluster_id", "prev_week"),
+  by.y = c("cluster_id", "year_week"),
+  all.x = TRUE
+)
+choice_set <- merge(
+  choice_set,
+  monthly_shannon[, .(cluster_id, year_month, prev_month_shannon = shannon_index)],
+  by.x = c("cluster_id", "prev_month"),
+  by.y = c("cluster_id", "year_month"),
+  all.x = TRUE
+)
+choice_set <- merge(
+  choice_set,
+  seasonal_shannon[, .(cluster_id, year_season, prev_year_season_shannon = shannon_index)],
+  by.x = c("cluster_id", "prev_year_season"),
+  by.y = c("cluster_id", "year_season"),
+  all.x = TRUE
+)
+choice_set[, shannon_index := fcoalesce(
+  prev_week_shannon,
+  prev_month_shannon,
+  prev_year_season_shannon
+)]
+choice_set[, shannon_index_source := fcase(
+  !is.na(prev_week_shannon), "prev_week",
+  !is.na(prev_month_shannon), "prev_month",
+  !is.na(prev_year_season_shannon), "prev_year_season",
+  default = "missing"
+)]
+message("Shannon index available: ",
+        choice_set[!is.na(shannon_index), .N], " / ", nrow(choice_set))
+
+# -----------------------------------------------------------------------------
+# Load and Merge Simpson Index (with fallback logic)
+# -----------------------------------------------------------------------------
+message("\n--- Merging Simpson Index ---")
+monthly_simpson <- read_parquet(inputs$monthly_simpson)
+weekly_simpson <- read_parquet(inputs$weekly_simpson)
+seasonal_simpson <- read_parquet(inputs$seasonal_simpson)
+setDT(monthly_simpson)
+setDT(weekly_simpson)
+setDT(seasonal_simpson)
+monthly_simpson[, cluster_id := as.character(cluster_id)]
+weekly_simpson[, cluster_id := as.character(cluster_id)]
+seasonal_simpson[, cluster_id := as.character(cluster_id)]
+choice_set <- merge(
+  choice_set,
+  weekly_simpson[, .(cluster_id, year_week, prev_week_simpson = simpson_index)],
+  by.x = c("cluster_id", "prev_week"),
+  by.y = c("cluster_id", "year_week"),
+  all.x = TRUE
+)
+choice_set <- merge(
+  choice_set,
+  monthly_simpson[, .(cluster_id, year_month, prev_month_simpson = simpson_index)],
+  by.x = c("cluster_id", "prev_month"),
+  by.y = c("cluster_id", "year_month"),
+  all.x = TRUE
+)
+choice_set <- merge(
+  choice_set,
+  seasonal_simpson[, .(cluster_id, year_season, prev_year_season_simpson = simpson_index)],
+  by.x = c("cluster_id", "prev_year_season"),
+  by.y = c("cluster_id", "year_season"),
+  all.x = TRUE
+)
+choice_set[, simpson_index := fcoalesce(
+  prev_week_simpson,
+  prev_month_simpson,
+  prev_year_season_simpson
+)]
+choice_set[, simpson_index_source := fcase(
+  !is.na(prev_week_simpson), "prev_week",
+  !is.na(prev_month_simpson), "prev_month",
+  !is.na(prev_year_season_simpson), "prev_year_season",
+  default = "missing"
+)]
+message("Simpson index available: ",
+        choice_set[!is.na(simpson_index), .N], " / ", nrow(choice_set))
+
+
+# -----------------------------------------------------------------------------
 # Merge Weather and Tree Cover
 # -----------------------------------------------------------------------------
 
