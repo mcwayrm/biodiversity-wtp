@@ -129,7 +129,8 @@ for (scenario_name in names(scenarios)) {
     "07_compute_biodiversity_metrics.R",
     input_paths = list(
       ebird_basic = file.path(input_data_dir, "ebird", "ebd_IN_201501_202412_relDec-2024", "ebd_IN_201501_202412_relDec-2024.txt"),
-      voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg")
+      voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
+      migrant_species = file.path(input_data_dir, "species", "species_list_categorized.csv")
     ),
     output_paths = list(
       monthly_richness = file.path(scenario_dir, "biodiv_monthly_richness.parquet"),
@@ -137,7 +138,19 @@ for (scenario_name in names(scenarios)) {
       seasonal_richness = file.path(scenario_dir, "biodiv_seasonal_richness.parquet"),
       monthly_congestion = file.path(scenario_dir, "biodiv_monthly_congestion.parquet"),
       weekly_congestion = file.path(scenario_dir, "biodiv_weekly_congestion.parquet"),
-      seasonal_congestion = file.path(scenario_dir, "biodiv_seasonal_congestion.parquet")
+      seasonal_congestion = file.path(scenario_dir, "biodiv_seasonal_congestion.parquet"),
+      monthly_shannon = file.path(scenario_dir, "biodiv_monthly_shannon.parquet"),
+      weekly_shannon = file.path(scenario_dir, "biodiv_weekly_shannon.parquet"),
+      seasonal_shannon = file.path(scenario_dir, "biodiv_seasonal_shannon.parquet"),
+      monthly_simpson = file.path(scenario_dir, "biodiv_monthly_simpson.parquet"),
+      weekly_simpson = file.path(scenario_dir, "biodiv_weekly_simpson.parquet"),
+      seasonal_simpson = file.path(scenario_dir, "biodiv_seasonal_simpson.parquet"),
+      monthly_migrant = file.path(scenario_dir, "biodiv_monthly_migrant.parquet"),
+      weekly_migrant = file.path(scenario_dir, "biodiv_weekly_migrant.parquet"),
+      seasonal_migrant = file.path(scenario_dir, "biodiv_seasonal_migrant.parquet"),
+      monthly_resident = file.path(scenario_dir, "biodiv_monthly_resident.parquet"),
+      weekly_resident = file.path(scenario_dir, "biodiv_weekly_resident.parquet"),
+      seasonal_resident = file.path(scenario_dir, "biodiv_seasonal_resident.parquet")
     ),
     params = params,
     scenario_name = scenario_name
@@ -158,6 +171,18 @@ for (scenario_name in names(scenarios)) {
       monthly_congestion = file.path(scenario_dir, "biodiv_monthly_congestion.parquet"),
       weekly_congestion = file.path(scenario_dir, "biodiv_weekly_congestion.parquet"),
       seasonal_congestion = file.path(scenario_dir, "biodiv_seasonal_congestion.parquet"),
+      monthly_shannon = file.path(scenario_dir, "biodiv_monthly_shannon.parquet"),
+      weekly_shannon = file.path(scenario_dir, "biodiv_weekly_shannon.parquet"),
+      seasonal_shannon = file.path(scenario_dir, "biodiv_seasonal_shannon.parquet"),
+      monthly_simpson = file.path(scenario_dir, "biodiv_monthly_simpson.parquet"),
+      weekly_simpson = file.path(scenario_dir, "biodiv_weekly_simpson.parquet"),
+      seasonal_simpson = file.path(scenario_dir, "biodiv_seasonal_simpson.parquet"),
+      monthly_migrant = file.path(scenario_dir, "biodiv_monthly_migrant.parquet"),
+      weekly_migrant = file.path(scenario_dir, "biodiv_weekly_migrant.parquet"),
+      seasonal_migrant = file.path(scenario_dir, "biodiv_seasonal_migrant.parquet"),
+      monthly_resident = file.path(scenario_dir, "biodiv_monthly_resident.parquet"),
+      weekly_resident = file.path(scenario_dir, "biodiv_weekly_resident.parquet"),
+      seasonal_resident = file.path(scenario_dir, "biodiv_seasonal_resident.parquet"),
       protected_areas_shp = file.path(input_data_dir, "protected_areas", "04_MainlandPAsShapefile")
     ),
     output_paths = list(
