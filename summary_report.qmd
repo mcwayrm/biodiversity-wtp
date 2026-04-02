@@ -90,7 +90,7 @@ for (scenario in scenarios) {
 # Load only data_summary_ER.csv for each scenario, with debug prints
 summary_list <- list()
 for (scenario in scenarios) {
-  summary_path <- file.path(output_dir, scenario, "tables", "data_summary_basic_ER.csv")
+  summary_path <- file.path(output_dir, scenario, "tables", "data_summary_fe_ER.csv")
   if (file.exists(summary_path)) {
     df <- read.csv(summary_path, stringsAsFactors = FALSE)
     # Add all variables used in WTP plots to the summary
@@ -103,10 +103,11 @@ for (scenario in scenarios) {
       "shannon_index_Winter", "shannon_index_Spring", "shannon_index_Summer", "shannon_index_Fall",
       "simpson_index_Winter", "simpson_index_Spring", "simpson_index_Summer", "simpson_index_Fall"
     )
-    key_vars <- c("Sample Size", "Number of Trips", "Number of Users",
-                  wtp_plot_vars,
-                  "expected_congestion", "precip", 
-                  "temp", "trees", "travel_cost_combined", "dist_to_pa_km")
+        key_vars <- c("Sample Size", "Number of Trips", "Number of Users",
+          wtp_plot_vars,
+          "expected_congestion", "precip", 
+          "temp", "trees", "travel_cost_combined", "dist_to_pa_km",
+          "distance_to_site", "geo_dist", "choice_set_size")
     found_vars <- intersect(key_vars, df$variable)
     df_filtered <- df %>%
       filter(variable %in% key_vars) %>%
@@ -147,7 +148,8 @@ if (length(summary_list) > 0) {
     "resident_richness_Winter", "resident_richness_Spring",   "resident_richness_Summer", "resident_richness_Fall",
     "shannon_index_Winter", "shannon_index_Spring", "shannon_index_Summer",   "shannon_index_Fall",
     "simpson_index_Winter", "simpson_index_Spring", "simpson_index_Summer",   "simpson_index_Fall",
-    "expected_congestion", "precip", "temp", "trees", "travel_cost_combined",   "dist_to_pa_km"
+    "expected_congestion", "precip", "temp", "trees", "travel_cost_combined",   "dist_to_pa_km",
+    "distance_to_site", "geo_dist", "choice_set_size"
   )
   
   summary_combined <- summary_combined %>%
@@ -170,6 +172,8 @@ if (length(summary_list) > 0) {
         variable == "trees" ~ "Tree Cover (%)",
         variable == "travel_cost_combined" ~ "Travel Cost (INR)",
         variable == "dist_to_pa_km" ~ "Distance to PA (km)",
+        variable %in% c("distance_to_site", "geo_dist") ~ "Distance to Site (km)",
+        variable == "choice_set_size" ~ "Choice Set Size",
           variable == "migrant_richness" ~ "Migrant Richness",
           variable == "resident_richness" ~ "Resident Richness",
           variable == "species_richness" ~ "Species Richness",
