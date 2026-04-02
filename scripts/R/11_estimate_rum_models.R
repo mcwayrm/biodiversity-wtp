@@ -348,6 +348,45 @@ if (model_type == "fe") {
 if (model_type == "mixed") {
   message("\n=== ESTIMATING MIXED LOGIT MODEL ===")
   message("Random parameters: ", paste(mixed_vars, collapse = ", "))
+
+  # Remove rows with NA in model_vars or mixed_vars
+  all_vars <- unique(c(model_vars, mixed_vars))
+  n_before <- nrow(cs)
+  cs <- cs[complete.cases(cs[, ..all_vars])]
+  n_after <- nrow(cs)
+  if (n_after < n_before) {
+    message(sprintf("Removed %d rows with NA in model_vars or mixed_vars before mixed logit.", n_before - n_after))
+  }
+
+  # Remove trips with no or multiple chosen alternatives
+  trip_choice_counts <- cs[, .(n_chosen = sum(choice == 1, na.rm = TRUE)), by = obs_id_num]
+  bad_trips <- trip_choice_counts[n_chosen != 1, obs_id_num]
+  n_bad <- length(bad_trips)
+  if (n_bad > 0) {
+    cs <- cs[!obs_id_num %in% bad_trips]
+    message(sprintf("Removed %d trips with no or multiple chosen alternatives before mixed logit.", n_bad))
+  }
+
+  # Diagnostics before mixed logit estimation
+  message(sprintf("Final data for mixed logit: %d rows, %d unique obs_id_num, %d unique trip_id", nrow(cs), length(unique(cs$obs_id_num)), length(unique(cs$trip_id))))
+  message("Alternatives per obs_id_num (first 10):")
+  print(head(table(cs$obs_id_num), 10))
+  message("Any NA in model_vars? ", any(is.na(cs[, ..model_vars])))
+  message("Any NA in mixed_vars? ", any(is.na(cs[, ..mixed_vars])))
+  message("Any NA in obs_id_num? ", any(is.na(cs$obs_id_num)))
+
+  alt_counts <- table(cs$obs_id_num)
+  high_alt_obs <- names(alt_counts[alt_counts > 100])
+  n_high <- length(high_alt_obs)
+  if (n_high > 0) {
+    cs <- cs[!obs_id_num %in% high_alt_obs]
+    message(sprintf("Removed %d choice sets with >100 alternatives before mixed logit.", n_high))
+  }
+  message(sprintf(
+    "Alternatives per obs_id_num: min=%d, max=%d, mean=%.2f",
+    min(alt_counts), max(alt_counts), mean(alt_counts)
+  ))
+
   # Create randPars specification
   rand_pars <- setNames(rep("n", length(mixed_vars)), mixed_vars)
   # Mixed Logit Model
@@ -372,7 +411,6 @@ if (model_type == "mixed") {
     message("\nWTP estimates (mixed logit):")
     print(wtp_mixed)
   }
-  # Save model
   saveRDS(list(
     model = ebird_mixed,
     wtp = wtp_mixed,
