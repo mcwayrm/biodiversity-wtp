@@ -137,26 +137,7 @@ if (file.exists(outputs$master_data_final)) {
   message("Cleaned data saved")
 }
 
-# -----------------------------------------------------------------------------
-# Estimate Basic Model
-# -----------------------------------------------------------------------------
 
-message("\n=== ESTIMATING BASIC MODEL ===")
-
-model_vars <- params$model_vars
-
-message("Model variables: ", paste(model_vars, collapse = ", "))
-
-# Basic Logit Model
-ebird_basic <- logitr(
-  data = as.data.frame(cs),
-  outcome = "choice",
-  obsID = "obs_id_num",
-  pars = model_vars,
-  robust = TRUE
-)
-message("Basic model estimated")
-print(summary(ebird_basic))
 # -----------------------------------------------------------------------------
 # Utility: Calculate WTP with error handling
 # -----------------------------------------------------------------------------
@@ -182,42 +163,158 @@ calc_wtp_with_error_handling <- function(model, scalePar, exclude_pattern = NULL
     return(list(Estimate = wtp_manual, method = "manual"))
   })
 }
-# Calculate WTP for basic model
-wtp_basic <- calc_wtp_with_error_handling(ebird_basic, scalePar = "travel_cost_combined")
 
-if (!is.null(wtp_basic)) {
-  message("\nWTP estimates (basic model):")
-  print(wtp_basic)
+# -----------------------------------------------------------------------------
+# Model selection logic: run only the model type(s) implied by config
+# -----------------------------------------------------------------------------
+model_vars <- params$model_vars
+fe_vars <- params$fe_vars
+mixed_vars <- params$mixed_vars
+
+
+# Helper to check if a variable is set (not skip/empty/NULL)
+is_set <- function(x) {
+  !is.null(x) && !identical(x, "skip") && length(x) > 0 && !(length(x) == 1 && x == "skip")
 }
 
-# Save model
-saveRDS(list(
-  model = ebird_basic,
-  wtp = wtp_basic,
-  summary = summary(ebird_basic)
-), outputs$model_rds)
+# Subsample data by trip_id if sample param is present and <1
+if (!is.null(params$sample) && is.numeric(params$sample) && params$sample < 1 && params$sample > 0) {
+  set.seed(42) # for reproducibility
+  trip_ids <- unique(cs$trip_id)
+  n_trips <- ceiling(length(trip_ids) * params$sample)
+  sampled_trips <- sample(trip_ids, n_trips)
+  cs <- cs[trip_id %in% sampled_trips]
+  message(sprintf("Subsampled data to %.2f%% of trips: %d trips, %d rows", params$sample * 100, length(sampled_trips), nrow(cs)))
+}
 
-saveRDS(wtp_basic, outputs$wtp_rds)
+model_type <- "basic"
+if (is_set(mixed_vars)) {
+  model_type <- "mixed"
+} else if (is_set(fe_vars)) {
+  model_type <- "fe"
+}
 
-message("Basic model and WTP saved")
+model_name <- if (!is.null(params$model_name)) params$model_name else "model"
+out_prefix <- paste0(model_name, "_", model_type)
 
-# -----------------------------------------------------------------------------
-# Estimate Fixed Effects Model (optional)
-# -----------------------------------------------------------------------------
-
-fe_vars <- params$fe_vars
-if (!is.null(fe_vars) && !identical(fe_vars, "skip") && length(fe_vars) > 0) {
-  message("\n=== ESTIMATING FIXED EFFECTS MODEL ===")
-  message("Fixed effects: ", paste(fe_vars, collapse = ", "))
-  # Demean variables
-  cs_demeaned <- demean(
-    X = cs[, ..model_vars],
-    f = cs[, ..fe_vars],
-    na.rm = FALSE
+if (model_type == "basic") {
+  message("\n=== ESTIMATING BASIC MODEL ===")
+  message("Model variables: ", paste(model_vars, collapse = ", "))
+  ebird_basic <- logitr(
+    data = as.data.frame(cs),
+    outcome = "choice",
+    obsID = "obs_id_num",
+    pars = model_vars,
+    robust = TRUE
   )
-  # Add demeaned variables to dataset
-  cs[, (paste0(model_vars, "_dm")) := as.data.table(cs_demeaned)]
-  # Estimate FE model
+  message("Basic model estimated")
+  print(summary(ebird_basic))
+  wtp_basic <- calc_wtp_with_error_handling(ebird_basic, scalePar = "travel_cost_combined")
+  if (!is.null(wtp_basic)) {
+    message("\nWTP estimates (basic model):")
+    print(wtp_basic)
+  }
+  saveRDS(list(
+    model = ebird_basic,
+    wtp = wtp_basic,
+    summary = summary(ebird_basic)
+  ), file = outputs$model_rds)
+  saveRDS(wtp_basic, file = outputs$wtp_rds)
+  message("Basic model and WTP saved with model name in filename")
+}
+
+# -----------------------------------------------------------------------------
+# Estimate Fixed Effects Model
+# -----------------------------------------------------------------------------
+
+if (model_type == "fe") {
+  # Print info about observation_date for debugging
+  message("\n--- observation_date variable info ---")
+  message("Class: ", paste(class(cs$date), collapse=", "))
+  message("First 5 values:")
+  print(head(cs$date, 5))
+  message("Summary:")
+  print(summary(cs$date))
+  message("\n=== ESTIMATING FIXED EFFECTS MODEL ===")
+  message("Fixed effects (raw): ", paste(capture.output(str(fe_vars)), collapse = " "))
+
+  # Helper to create interaction variables
+  create_interaction <- function(dt, vars) {
+    vname <- paste(vars, collapse = "_")
+    dt[, (vname) := do.call(paste, c(.SD, sep = "_")), .SDcols = vars]
+    return(vname)
+  }
+
+  # Parse and create all FE variables (single, interaction, hour_of_day)
+  fe_names <- c()
+  for (fe in fe_vars) {
+    if (is.list(fe) || (is.atomic(fe) && length(fe) > 1)) {
+      # Interaction FE (e.g., [user_id, year])
+      vname <- create_interaction(cs, unlist(fe))
+      fe_names <- c(fe_names, vname)
+    } else if (fe == "hour_of_day") {
+      # Extract hour from observation_date (assume POSIXct or character with time)
+      if (!"hour_of_day" %in% names(cs)) {
+        if (inherits(cs$observation_date, "POSIXct") || inherits(cs$observation_date, "POSIXt")) {
+          cs[, hour_of_day := as.integer(format(observation_date, "%H"))]
+        } else if (inherits(cs$observation_date, "IDate")) {
+          stop("observation_date does not contain time information for hour_of_day FE.")
+        } else {
+          # Try to parse as character
+          cs[, hour_of_day := as.integer(substr(format(observation_date), 12, 13))]
+        }
+      }
+      fe_names <- c(fe_names, "hour_of_day")
+    } else {
+      # Single FE
+      fe_names <- c(fe_names, as.character(fe))
+    }
+  }
+
+  message("Fixed effects (parsed): ", paste(fe_names, collapse = ", "))
+
+  # Check all FE columns exist
+  missing_fes <- setdiff(fe_names, names(cs))
+  if (length(missing_fes) > 0) {
+    stop(paste("ERROR: The following fixed effect variables are missing in the data:", paste(missing_fes, collapse = ", ")))
+  }
+
+  # Remove rows with NA in model_vars or fe_names
+  all_vars <- unique(c(model_vars, fe_names))
+  n_before <- nrow(cs)
+  cs <- cs[complete.cases(cs[, ..all_vars])]
+  n_after <- nrow(cs)
+  if (n_after < n_before) {
+    message(sprintf("Removed %d rows with NA in model_vars or FE vars before demean.", n_before - n_after))
+  }
+
+  # Remove trips with no or multiple chosen alternatives (must have exactly one choice==1 per obs_id_num)
+  trip_choice_counts <- cs[, .(n_chosen = sum(choice == 1, na.rm = TRUE)), by = obs_id_num]
+  bad_trips <- trip_choice_counts[n_chosen != 1, obs_id_num]
+  n_bad <- length(bad_trips)
+  if (n_bad > 0) {
+    cs <- cs[!obs_id_num %in% bad_trips]
+    message(sprintf("Removed %d trips with no or multiple chosen alternatives after filtering.", n_bad))
+  }
+
+  # Demean variables, stop on error
+  tryCatch({
+    cs_demeaned <- demean(
+      X = cs[, ..model_vars],
+      f = cs[, ..fe_names],
+      na.rm = FALSE
+    )
+    cs[, (paste0(model_vars, "_dm")) := as.data.table(cs_demeaned)]
+  }, error = function(e) {
+    stop(paste("ERROR during demean step:", e$message))
+  })
+
+  # Build FE spec string for filenames
+  fe_spec_str <- paste(fe_names, collapse = "-")
+  model_name <- if (!is.null(params$model_name)) params$model_name else "fe_model"
+  out_prefix <- paste0(model_name, "_fe_", fe_spec_str)
+
+  # Estimate FE model and save with FE spec in filename
   ebird_fe <- logitr(
     data = as.data.frame(cs),
     outcome = "choice",
@@ -227,23 +324,19 @@ if (!is.null(fe_vars) && !identical(fe_vars, "skip") && length(fe_vars) > 0) {
   )
   message("Fixed effects model estimated")
   print(summary(ebird_fe))
-  # Calculate WTP for FE model
   wtp_fe <- calc_wtp_with_error_handling(ebird_fe, scalePar = "travel_cost_combined_dm")
   if (!is.null(wtp_fe)) {
     message("\nWTP estimates (FE model):")
     print(wtp_fe)
   }
-  # Save model
   saveRDS(list(
     model = ebird_fe,
     wtp = wtp_fe,
     summary = summary(ebird_fe)
-  ), outputs$model_rds)
-
-  # Save WTP estimates separately
-  saveRDS(wtp_fe, outputs$wtp_rds)
-
-  message("Fixed effects model and WTP saved")
+  ), file = outputs$model_rds)
+  saveRDS(wtp_fe, file = outputs$wtp_rds)
+  message("Fixed effects model and WTP saved with model name in filename")
+  
 } else {
   message("\nSkipping fixed effects model estimation (fe_vars not provided or set to 'skip').")
 }
@@ -252,8 +345,7 @@ if (!is.null(fe_vars) && !identical(fe_vars, "skip") && length(fe_vars) > 0) {
 # Estimate Mixed Logit Model (optional)
 # -----------------------------------------------------------------------------
 
-mixed_vars <- params$mixed_vars
-if (!is.null(mixed_vars) && !identical(mixed_vars, "skip") && length(mixed_vars) > 0) {
+if (model_type == "mixed") {
   message("\n=== ESTIMATING MIXED LOGIT MODEL ===")
   message("Random parameters: ", paste(mixed_vars, collapse = ", "))
   # Create randPars specification
@@ -285,12 +377,9 @@ if (!is.null(mixed_vars) && !identical(mixed_vars, "skip") && length(mixed_vars)
     model = ebird_mixed,
     wtp = wtp_mixed,
     summary = summary(ebird_mixed)
-  ), outputs$model_rds)
-
-  # Save WTP estimates separately
-  saveRDS(wtp_mixed, outputs$wtp_rds)
-
-  message("Mixed logit model and WTP saved")
+  ), file = outputs$model_rds)
+  saveRDS(wtp_mixed, file = outputs$wtp_rds)
+  message("Mixed logit model and WTP saved with model name in filename")
 } else {
   message("\nSkipping mixed logit model estimation (mixed_vars not provided or set to 'skip').")
 }

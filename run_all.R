@@ -207,14 +207,16 @@ for (scenario_name in names(scenarios)) {
     scenario_name = scenario_name
   )
 
-  # --- Model Estimation & Output Tasks (10-11) ---
+  # Stage 10: Compute IV
+
+  # --- Model Estimation & Output Tasks (11-12) ---
   for (model_name in names(models)) {
     model_cfg <- models[[model_name]]
     message(paste0("  Running model: ", model_name))
 
-    # Stage 10: Estimate RUM Models
+    # Stage 11: Estimate RUM Models
     run_task(
-      "10_estimate_rum_models.R",
+      "11_estimate_rum_models.R",
       input_paths = list(
         master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
       ),
@@ -227,9 +229,9 @@ for (scenario_name in names(scenarios)) {
       scenario_name = scenario_name,
     )
 
-    # Stage 11: Generate Scenario Outputs
+    # Stage 12: Generate Scenario Outputs
     run_task(
-      "11_generate_scenario_outputs.R",
+      "12_generate_scenario_outputs.R",
       input_paths = list(
         voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
         hotspots_clustered = file.path(scenario_dir, "ebird_hotspots_clustered.parquet"),
