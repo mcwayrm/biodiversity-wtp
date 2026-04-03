@@ -41,6 +41,29 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 04/03/2026
+
+> Raahil, Matt, Jovin, Ryan
+
+## TODO: 
+
+* WTP estimates with standard errors (Matt)
+* Estimates with various FEs (Site-by-season, hour-of-day, etc) (Matt)
+* Mixed logit estimates (Matt, Ryan, Jovin)
+* Revised travel cost calculation (Jovin)
+* Identify main sample (I need this for DHS analysis)
+* Fill in the biodiversity data section in overleaf (Section 4.2.3)
+* Any updates on model organization (Ryan)
+* Land Economics special issue on rec demand with cellphone data (Ryan)
+  * https://le.uwpress.org/
+* Paper figures
+* Project management (note keeping, agenda, etc.)
+
+:::
+
+
+
+::: {.callout-note collapse="true"}
 # 02/20/2026
 
 > Raahil, Matt, Jovin
@@ -66,10 +89,6 @@ For notes, we present the most recent first so that notes are chronologically mo
 3. Ryan
 
 - Meet with me regarding the theory
-
-
-
-
 
 :::
 
