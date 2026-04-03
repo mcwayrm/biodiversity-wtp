@@ -258,8 +258,14 @@ Outputs:
 
 - `data/intermediate/scenarios/{scenario}/master_data_with_travel_cost.parquet`
 
-### Task 10: Estimate RUM Models
-Script: `10_estimate_rum_models.R`
+
+### Task 10: Compute Instrument Variable
+Script: `10_compute_iv.R`
+
+TODO: ... outputs
+
+### Task 11: Estimate RUM Models
+Script: `11_estimate_rum_models.R`
 
 Outputs:
 
@@ -268,8 +274,8 @@ Outputs:
 - `output/scenarios/{scenario}/models/model_fe.rds`
 - `output/scenarios/{scenario}/models/model_mixed.rds`
 
-### Task 11: Generate Scenario Outputs
-Script: `11_generate_scenario_outputs.R`
+### Task 12: Generate Scenario Outputs
+Script: `12_generate_scenario_outputs.R`
 
 Outputs:
 
