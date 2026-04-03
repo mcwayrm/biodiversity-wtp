@@ -30,6 +30,9 @@ generate_choice_sets <- function(clustered_hotspots, trip_df, radius_km, max_alt
   # Transform to projected coordinates for accurate distance calculations
   user_coords <- st_as_sf(users_in_radius, coords = c('lon_home', 'lat_home'), crs = 4326) %>%
     st_transform(params$projection_crs)
+  user_xy <- as.data.table(st_coordinates(user_coords))
+  users_projected <- copy(users_in_radius)
+  users_projected[, `:=`(x_home = user_xy$X, y_home = user_xy$Y)]
   
   hotspot_coords <- st_as_sf(hd, coords = c('lon', 'lat'), crs = 4326) %>%
     st_transform(params$projection_crs)
@@ -48,25 +51,23 @@ generate_choice_sets <- function(clustered_hotspots, trip_df, radius_km, max_alt
     lat = mean(lat, na.rm = TRUE),
     lon = mean(lon, na.rm = TRUE)
   ), by = cluster_id]
+  cluster_centroid_coords <- st_as_sf(cluster_centroids, coords = c('lon', 'lat'), crs = 4326) %>%
+    st_transform(params$projection_crs)
+  cluster_xy <- as.data.table(st_coordinates(cluster_centroid_coords))
+  cluster_centroids[, `:=`(x_cluster = cluster_xy$X, y_cluster = cluster_xy$Y)]
   
   # Add back the original coordinates
   choices_with_coords <- choices_within_buffer[
-    users_in_radius[, .(user_id, lon_home, lat_home)], 
+    users_projected[, .(user_id, lon_home, lat_home, x_home, y_home)], 
     on = "user_id"
   ][
     cluster_centroids, 
     on = "cluster_id"
   ]
   
-  # Calculate precise distances
-  choices_with_coords[, geo_dist := {
-    mapply(function(lon_h, lat_h, lon_c, lat_c) {
-      as.numeric(st_distance(
-        st_sfc(st_point(c(lon_h, lat_h)), crs = 4326) %>% st_transform(params$projection_crs),
-        st_sfc(st_point(c(lon_c, lat_c)), crs = 4326) %>% st_transform(params$projection_crs)
-      )) / 1000
-    }, lon_home, lat_home, lon, lat)
-  }]
+  # Calculate distances directly in projected coordinates.
+  choices_with_coords[, geo_dist := sqrt((x_home - x_cluster)^2 + (y_home - y_cluster)^2) / 1000]
+  choices_with_coords[, `:=`(x_home = NULL, y_home = NULL, x_cluster = NULL, y_cluster = NULL)]
   
   # Remove duplicates: keep the entry with smallest distance for each (user_id, cluster_id) pair
   choices_unique <- choices_with_coords[order(geo_dist)][
@@ -158,15 +159,16 @@ choice_sets <- generate_choice_sets(
 users_with_choices <- distinct(choice_sets, user_id)
 final_trips <- inner_join(trip_data, users_with_choices, by = 'user_id')
 
-# Add cluster IDs to trips by finding nearest cluster
+# Add cluster IDs to trips by finding nearest available cluster
 trip_coords <- st_as_sf(final_trips, coords = c('lon', 'lat'), crs = 4326) %>%
   st_transform(params$projection_crs)
 
-choice_coords <- st_as_sf(choice_sets, coords = c('lon', 'lat'), crs = 4326) %>%
+choice_clusters <- unique(as.data.table(choice_sets)[, .(cluster_id, lon, lat)])
+choice_coords <- st_as_sf(choice_clusters, coords = c('lon', 'lat'), crs = 4326) %>%
   st_transform(params$projection_crs)
 
 nearest_clusters <- st_nearest_feature(trip_coords, choice_coords)
-final_trips$cluster_id <- choice_sets$cluster_id[nearest_clusters]
+final_trips$cluster_id <- choice_clusters$cluster_id[nearest_clusters]
 
 # -----------------------------------------------------------------------------
 # Create Stacked Choice Table
