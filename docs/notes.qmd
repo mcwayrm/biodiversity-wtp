@@ -47,54 +47,89 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 ## TODO: 
 
-* WTP estimates with standard errors (Matt)
-* Estimates with various FEs (Site-by-season, hour-of-day, etc) (Matt)
-* Mixed logit estimates (Matt, Ryan, Jovin)
-* Revised travel cost calculation (Jovin)
-* Identify main sample (I need this for DHS analysis)
-* Fill in the biodiversity data section in overleaf (Section 4.2.3)
-* Any updates on model organization (Ryan)
-* Land Economics special issue on rec demand with cellphone data (Ryan)
-  * https://le.uwpress.org/
-  * "Evaluating Mobility Data for Recreation Monitoring: Diagnostics and Implications for Best Practice"
-    * https://le.uwpress.org/content/wple/early/2026/03/05/le.102.3.011626-0006.full.pdf
-    * Discusses data generating process for mobile data
-    * Identifies mediators for false negatives and false positives. 
-  * "Are mobile device location data a substitute for travel cost surveys?"
-    * https://le.uwpress.org/content/early/2026/03/05/le.102.3.012626-0015
-    * Compares mobile location data to survey data in national parks
-    * A very complicated measure of travel cost
-    * Sort of estimates MWTP over time. 
-    * Relatively consistent results
-  * "Causal Recreation Demand Estimation with Cellphone Mobility Data"
-    * https://le.uwpress.org/content/early/2026/02/13/le.102.3.013026-0020
-    * Estimating Bayes posterior mean
-      * Appears to be important to address "zero market share issue" e.g., sites in choice set with no observed visits within a given time frame -- a spare data issue
-      * Estimate with beta-binomial model to impute likelihood of site demand  proposed by Li (2019)
-    * Synthetic DID for choice set using beach closures
-  * "Quantifying Recreational Benefits from Fish Consumption Advisories"
-    * https://le.uwpress.org/content/early/2026/02/13/le.102.3.013026-0018
-    * Fish advisories as exogenous shock >> causal IV using toxic release inventory upstream/downsteam
-    * "We model recreational behavior based on a discrete-choice modeling approach following the framework of Berry (1994) and the two-step estimation technique outlined by Murdock (2006). In the first step, we use a random utility model to estimate recreation demand and recover the mean utility gain from visiting each recreational site across all visitors using site-specific alternative-specific constants (ASCs). In the second step, we regress ASCs estimated from the first step on site attributes, including the presence of FCAs, to estimate the impact of FCAs on recreation demand."
-    * Following the common assumption in the recreation demand literature (Palmquist et al., 2010; Lupi et al., 2020), $TC = 2 (gas cost + vehicle maintenance) * distance + 2/3 (median income/2080) * travel time$
-    * Includes seasonality
-  * "Estimating the Economic Value of Grassland Tourism Services Based on Mobile Phone Data"
-    * https://le.uwpress.org/content/early/2026/02/13/le.102.3.012726-0016
-    * Phone signal locations data
-    * Zonal travel cost 
-    * KNN regression to generate choice set.
-    * Estimate consumer surplus as integral of travel cost by population for origins
-    * Following Jaung & Carrasco (2020), the standard formula is: $TC = \sum_n (portion by method) * transportation cost + 1/3 hourly wage * travel time$
-  * "The Impact of Water Quality at the beach on disadvantaged communities in Rhode Island"
-    * https://le.uwpress.org/content/early/2026/02/13/le.102.3.013026-0019
-    * Cell phone locations
-    * Zonal travel costs with improved water clarity 
-    * Beach closure events as source of exogenous variation
-    * Reduced form estimates.
-    * "Following Merrill et al. (2020), we divide the number of visits by 3.58 to correct its overestimation in the cell phone data."
-    * "The travel cost is calculated using travel distance and travel time. These were calculated using the Open-Source Routing Machine (OSRM) which estimates travel time and distance through a road network (Luxen and Vetter, 2011)"
-* Paper figures
-* Project management (note keeping, agenda, etc.)
+1. Travel Cost attenuation (Jovin)
+2. Zero Market Share Issue (Jovin, Ryan)
+3. Continue to work on estimation (migrant merging) (Matt, Ryan)
+4. Set up a meeting with both the Jacobs (Raahil)
+5. Incorporating the IV (Ryan)
+
+## Agenda: 
+
+1. Estimation Updates
+   * WTP estimates with standard errors (Matt)
+     * Issue with saving summary object (Hulton Draw matrix)
+   * Estimates with various FEs (Site-by-season, hour-of-day, etc) (Matt)
+     * One of the controls (distance to PA) as no variation within some choice sets. 
+     * Some merge issues for migrant/resident richness. 
+   * Variation: 
+     * Endow variation by only picking choice set of 10 - 50
+     * Literature supports a random sample converging to true population distribution.  
+     * Jacob Gellman ([Wildfire smoke](https://www.journals.uchicago.edu/doi/abs/10.1086/732404)) could provide a meeting to discuss the issue. 
+   * Mixed logit estimates (Matt, Ryan, Jovin)
+     * Currently on a small sample (0.01)
+     * Could switch to python instead of R
+     * If computation is too expensive, will need to use MSI supercomputer.
+2. Travel Cost
+   * Revised travel cost calculation (Jovin)
+     * Estimating driving cost (before was static of 7.5 IND/km)
+     * Brings in petrol and travel data (2011 - 2021)
+     * Kaggle and PPCC data
+     * Use CPI deflator from World Bank 
+     * Bring in static values for maintence cost and fuel efficiency
+   * Issue: Current summary stats have travel cost of 3, not higher when including distance. (closer to a 100 times larger)
+     * Somewhere there is an error. 
+3. Sample
+   * Identify main sample (I need this for DHS analysis)
+     * Depends on results sensitivity to choice set selection. 
+     * Need to fix the main sample for description in the sample soon. 
+   * Fill in the biodiversity data section in overleaf (Section 4.2.3)
+     * Hierachical selection of imputing information for computing expected richness. 
+4. Writing
+   * Land Economics special issue on rec demand with cellphone data (Ryan)
+     * Need to summarize best practices and findings in the recreation demand literature (add to scratchpad)
+       * What are the gaps in the literature
+       * Address the zero market share issue (https://le.uwpress.org/content/early/2026/02/13/le.102.3.013026-0020)
+     * https://le.uwpress.org/
+     * "Evaluating Mobility Data for Recreation Monitoring: Diagnostics and Implications for Best Practice"
+       * https://le.uwpress.org/content/wple/early/2026/03/05/le.102.3.011626-0006.full.pdf
+       * Discusses data generating process for mobile data
+       * Identifies mediators for false negatives and false positives. 
+     * "Are mobile device location data a substitute for travel cost surveys?"
+       * https://le.uwpress.org/content/early/2026/03/05/le.102.3.012626-0015
+       * Compares mobile location data to survey data in national parks
+       * A very complicated measure of travel cost
+       * Sort of estimates MWTP over time. 
+       * Relatively consistent results
+     * "Causal Recreation Demand Estimation with Cellphone Mobility Data"
+       * https://le.uwpress.org/content/early/2026/02/13/le.102.3.013026-0020
+       * Estimating Bayes posterior mean
+         * Appears to be important to address "zero market share issue" e.g., sites in choice set with no observed visits within a given time frame -- a spare data issue
+         * Estimate with beta-binomial model to impute likelihood of site demand  proposed by Li (2019)
+       * Synthetic DID for choice set using beach closures
+     * "Quantifying Recreational Benefits from Fish Consumption Advisories"
+       * https://le.uwpress.org/content/early/2026/02/13/le.102.3.013026-0018
+       * Fish advisories as exogenous shock >> causal IV using toxic release inventory upstream/downsteam
+       * "We model recreational behavior based on a discrete-choice modeling approach following the framework of Berry (1994) and the two-step estimation technique outlined by Murdock (2006). In the first step, we use a random utility model to estimate recreation demand and recover the mean utility gain from visiting each recreational site across all visitors using site-specific alternative-specific constants (ASCs). In the second step, we regress ASCs estimated from the first step on site attributes, including the presence of FCAs, to estimate the impact of FCAs on recreation demand."
+       * Following the common assumption in the recreation demand literature (Palmquist et al., 2010; Lupi et al., 2020), $TC = 2 (gas cost + vehicle maintenance) * distance + 2/3 (median income/2080) * travel time$
+       * Includes seasonality
+     * "Estimating the Economic Value of Grassland Tourism Services Based on Mobile Phone Data"
+       * https://le.uwpress.org/content/early/2026/02/13/le.102.3.012726-0016
+       * Phone signal locations data
+       * Zonal travel cost 
+       * KNN regression to generate choice set.
+       * Estimate consumer surplus as integral of travel cost by population for origins
+       * Following Jaung & Carrasco (2020), the standard formula is: $TC = \sum_n (portion by method) * transportation cost + 1/3 hourly wage * travel time$
+     * "The Impact of Water Quality at the beach on disadvantaged communities in Rhode Island"
+       * https://le.uwpress.org/content/early/2026/02/13/le.102.3.013026-0019
+       * Cell phone locations
+       * Zonal travel costs with improved water clarity 
+       * Beach closure events as source of exogenous variation
+       * Reduced form estimates.
+       * "Following Merrill et al. (2020), we divide the number of visits by 3.58 to correct its overestimation in the cell phone data."
+       * "The travel cost is calculated using travel distance and travel time. These were calculated using the Open-Source Routing Machine (OSRM) which estimates travel time and distance through a road network (Luxen and Vetter, 2011)"
+   * Any updates on model organization (Ryan)
+   * Paper figures
+     * Currently we have placeholders
 
 :::
 
