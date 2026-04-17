@@ -41,17 +41,100 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 04/17/2026
+
+> Raahil, Matt, Jovin, Ryan
+
+## TODO: 
+
+1. Write up the current state of the analysis in the data section (Matt)
+2. Need to select a user group for the main paper (All users, above/below median)
+3. Travel cost update (Jovin/Matt)
+4. Zero market share thing (Ryan / Jovin)
+    1. Provide a step by step mapping of the problem and solution to our setting. 
+    2. Summarizing the issue and discussion in the literature
+5.  Incorporating the IV (Ryan)
+    1. Check the control function used in Wildfire paper
+    2. Or attempt boostrapping the two stages
+6. Explore how to estimate individual WTP from mixed logit
+    1. Similar to post-command in Stata
+    2. Kenneth Train textbook section on math and logic of this
+    3. We will have a user-year panel of WTP 
+
+
+
+## Agenda: 
+
+1. Estimation Updates
+    - Estimated mixed logit with python package
+        - xlogit
+        - What are the $\mu, \sigma$ from the model
+            - It is okay if $\sigma$ is negative: https://stats.stackexchange.com/questions/158260/mlogit-negative-value-for-sd
+        - Add expected richness, drop summer season, and only make expected richness as the random coefficient
+    - For migrant residents: 
+        - Do a version with # of unique species (richness) and a version with county of total species (abundance)
+    - Resident richness is dropping because colinear with total richness
+        - Try a version of the model that drops total richness and only keep resident and migrant richeness
+    - Some evidence that high users are trading off species richenss to seek out migrant richness. This is almost entirely happening during the winter season.
+    - Can attempt redefining the user frequency. 
+        - Have below/above the median. 
+    - For fixed effects, we are trying several 
+        - Currently, individual, individual-year, year, hour-of-day
+            - Think of hour FE as accounting for agglomeration of supply by species
+        - Could create an alternative control variable. 
+            - Cummulative experience by user as a fixed effect (total number of trips up to that trip in t)
+            - We want to detect if some users are better at detecting species and not necessarily higher demand for species
+2. Zero Market Share Issue: 
+    - For us: 
+        - Ensure that the choice set for an individual is consistent 
+        - We need to justify if this matters: We are not truncating nor are we aggregating. 
+        - Useful reference: https://le.uwpress.org/content/wple/early/2026/02/13/le.102.3.013026-0020.full.pdf
+        - This paper justifies that we can use our control variables as a control function to resolve this problem if it exists: https://www.theigc.org/sites/default/files/2016/06/READINGS-Levinsohn-Petrin.pdf
+    - "Esimtating Demand for differentiated products with zeros in market share data" Gandhi, Lu, Shi, Quantitative Economics [Link](https://onlinelibrary.wiley.com/doi/epdf/10.3982/QE1593)
+        - Zero demand is common in observed differentiated product markets
+        - Impact on the conditional expectation of the inverse demand
+        - Large data leads to sparsity in discrete choice. 80/20 rule 80% of consumption by 20% of the products
+        - Conditioning on a time window (i.e., week) a large majority of products are never selected. 
+        - This is directly related to Zipf's power law in patterns of demand.
+        - The issue arises in the model from equation 5 in the paper on the substitute parameter
+        - Section 3.2 describes the problem as $log(s_jt) \to -\infty$  when $s_jt = 0$
+        - This is selection on observables issue and leads to attenuation bias.
+    - "Random-coefficients logit demand estimation with zero-valued market shares" Dube, Hortacsu, Joo. 
+        - Many purchase data sets have high incidences of products with zero sales
+        - Berry 1994/1995 allows for endogenous discrete choice models assuming that consumers make non-zero choice probabilities over each product.
+        - Markets that observe zero market share for some products defies this assumption.
+        - This leads to adverse selection in the data
+            - Selection bias with sysetmatic modification or truncation of observations
+        - Resolve with 'considertation instruments'
+            - products that effecitvely considered by consumers, but are excluded from the consumption utilities.
+3. Travel cost estimations being too low
+    - Issue was that GDP in USD but cost measures in Ruppee. 
+    - So this conflated some problems
+    - So 2019 exchange rate for the GDP to ruppee
+    - Finally WTP should be in Rupees
+
+:::
+
+::: {.callout-note collapse="true"}
 # 04/03/2026
 
 > Raahil, Matt, Jovin, Ryan
 
 ## TODO: 
 
-1. Travel Cost attenuation (Jovin)
-2. Zero Market Share Issue (Jovin, Ryan)
-3. Continue to work on estimation (migrant merging) (Matt, Ryan)
-4. Set up a meeting with both the Jacobs (Raahil)
-5. Incorporating the IV (Ryan)
+1. Random sample of choice set (Matt)
+2. Decide which is the "main" sample (Matt)
+3. Play with different fixed effects (Matt). Too many FEs may absorb all the useful variation and lead to the standard error issue
+4. Final decision on mixed logit or conditional logit (Matt)
+5. Consolidate lessons from the Land Economics issue into a half page lit review + gaps (Ryan)
+6. Figure out why mean travel cost is so small - go through the code line by line (Jovin)
+    - Travel Cost attenuation (Jovin)
+7. Zero market share thing (Ryan / Jovin)
+8. Set up meeting with Jacob Gellman for help on mixed logit (Raahil)
+9. Continue writing (Raahil)
+1. Incorporating the IV (Ryan)
+
+
 
 ## Agenda: 
 
