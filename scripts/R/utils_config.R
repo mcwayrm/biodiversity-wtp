@@ -29,21 +29,34 @@ if (requireNamespace("pacman", quietly = TRUE)) {
   }))
 }
 
-# Set base data dir
 # Detect OS and set username
-os_type <- .Platform$OS.type  # "windows" or "unix"
+os_type <- .Platform$OS.type
 username <- if (os_type == "windows") Sys.getenv("USERNAME") else Sys.getenv("USER")
+
 if (username == "mbraaksma") {
+  
   message("Setting base data dir for user: ", username)
+  
   input_data_dir <- "/Users/mbraaksma/Files/base_data/biodiversity-wtp/raw"
+  
 } else if (username == "ryanm") {
+  
   message("Setting base data dir for user: ", username)
+  
   input_data_dir <- file.path("..", "base-data")
+  
+} else if (username == "laswa") {
+  
+  message("Setting base data dir for user: ", username)
+  
+  input_data_dir <- "C:/Users/laswa/OneDrive/Documents/GitHub/base-data"
+  
 } else {
+  
   message("Setting base data dir to default 'data/raw' folder")
+  
   input_data_dir <- here("data", "raw")
 }
-
 # Input dir must follow structure:
 # input_data_dir/
 # ├── districts/
