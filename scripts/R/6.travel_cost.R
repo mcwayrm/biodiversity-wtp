@@ -4,9 +4,10 @@
 
 
 ### SET-UP
-config_path <- here::here("scripts", "R", "utils_config.R")
-source(config_path)
+setwd("C:/Users/laswa/OneDrive/Documents/GitHub/biodiversity-wtp")
 
+config_path <- file.path("scripts", "R", "utils_config.R")
+source(config_path)
 
 # ----------------------------------------
 # Load district shapefile and extract centroids
@@ -276,8 +277,11 @@ summary(master_cs50km$travel_cost_combined)
 
 windows()
 
+x <- master_cs50km$travel_cost_combined
+x <- x[!is.na(x)]
+
 hist(
-  master_cs50km$travel_cost_combined,
+  x,
   breaks = 50,
   probability = TRUE,
   col = "grey85",
@@ -290,40 +294,26 @@ hist(
   cex.axis = 1.1
 )
 
-# Density object
-dens <- density(
-  master_cs50km$travel_cost_combined,
-  na.rm = TRUE,
-  bw = "nrd0"
-)
+dens <- density(x, bw = "nrd0")
 
-# Add smooth thin line
 lines(
   dens,
-  col = "#1F78B4",   # elegant blue
-  lwd = 2
+  col = "#1F78B4",
+  lwd = 1.5
 )
 
-# Optional rug plot at bottom
-rug(
-  master_cs50km$travel_cost_combined,
-  col = rgb(0, 0, 0, 0.15)
-)
-
-# Add mean line
 abline(
-  v = mean(master_cs50km$travel_cost_combined, na.rm = TRUE),
+  v = mean(x),
   col = "#E31A1C",
-  lwd = 2,
+  lwd = 1.5,
   lty = 2
 )
 
-# Legend
 legend(
   "topleft",
   legend = c("Kernel Density", "Mean"),
   col = c("#1F78B4", "#E31A1C"),
-  lwd = 2,
+  lwd = 1.5,
   lty = c(1, 2),
   bty = "n"
 )
