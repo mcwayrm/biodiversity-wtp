@@ -48,15 +48,15 @@ For notes, we present the most recent first so that notes are chronologically mo
 ## TODO: 
 
 1. Write up the current state of the analysis in the data section (Matt)
-2. Need to select a user group for the main paper (All users, above/below median)
-3. Travel cost update (Jovin/Matt)
+2. Need to select a user group for the main paper (All users, above/below median) --- DONE
+3. Travel cost update (Jovin/Matt) --- DONE
 4. Zero market share thing (Ryan / Jovin)
     1. Provide a step by step mapping of the problem and solution to our setting. 
     2. Summarizing the issue and discussion in the literature
 5.  Incorporating the IV (Ryan)
     1. Check the control function used in Wildfire paper
     2. Or attempt boostrapping the two stages
-6. Explore how to estimate individual WTP from mixed logit
+6. Explore how to estimate individual WTP from mixed logit (Raahil)
     1. Similar to post-command in Stata
     2. Kenneth Train textbook section on math and logic of this
     3. We will have a user-year panel of WTP 

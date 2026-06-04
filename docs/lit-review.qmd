@@ -40,8 +40,39 @@ An important critique in the literature of using e-bird data to estimate economi
 I also note that there are around 2,375 willingness to pay studies in "Ecological Economics" alone. These are all almost focused on protecting species and ecosystem values. So we place our work within this context. Here is where you can search ["willingness to pay"](https://www.sciencedirect.com/search?qs=willingness%20to%20pay&pub=Ecological%20Economics&cid=271867).
 Additionally, there are some critiques against the monetary valuation of biodiversity within economics as stated by [Nunes and Van den Bergh, 2001](https://www.sciencedirect.com/science/article/abs/pii/S0921800901002336/). The main argument is "the empirical literature fails to apply economic valuation to the entire range of biodiversity benefits. Therefore, available economic valuation estimates should generally be regarded as providing a very incomplete perspective on, and at best lower bounds, to the unknown value of biodiversity changes."
 
-- Here is a genearl critique on WTP measures being static and not accouting changes in wealth over time [article](https://www.science.org/stoken/author-tokens/ST-1741/full). We could speak empirically to this theoretical conjecture. 
+- Here is a general critique on WTP measures being static and not accouting changes in wealth over time [article](https://www.science.org/stoken/author-tokens/ST-1741/full). We could speak empirically to this theoretical conjecture. 
 
+
+
+## Recent similar articles
+::: {.callout-note  collapse="true"}
+--- 
+
+#### Causal Inference, High-Frequency Data, and the Recreational Value of Water Quality  
+*[JAERE (2026)](https://www.journals.uchicago.edu/doi/epdf/10.1086/741509)*  
+
+- Incorporates variation over time (panel recreation model)
+    - First, estimate site fixed effects -- the mean utility of site over time controlling for travel cost
+        - $\delta_{jt}$ = mean utilities = site by choice occasion fixed effects
+        - Follows from Murdock (2006) which applies Berry (1994) contraction mapping to minimize computational burden
+    - Second, linear causal estimates of site attributes using synthetic control
+        - Idea is to decompose the mean utilities
+- Causal identification from beach closures in Lake St. Clair Metropark
+- Travel cost using zip codes of visitors. 
+- Structural synthetic controls as counterfactuals for welfare loss estimates
+    - Welfare using compenstating varation (CV) measured through lost trips to closed beaches.
+- Identify stigma effect: delayed welfare loss from temporary beach closure
+- They do NOT estimate a dynamic model. Only consider contemperanous choice. 
+- They mention congestion from site closures, but do not address it directly. 
+- Zero market share get around: temporal aggregation. 
+    - "Dubé et al. introduce a selection function that removes alternatives from the choice set when they have a zero share, and Li applies an empirical Bayes procedure to estimate strictly positive shares using information from other markets."
+- We can gain efficiency if we apply the Berry contraction mapping. 
+    - Slide 26: https://jfhoude.econ.wisc.edu/wp-content/uploads/sites/769/2023/10/3.-Aggregate-demand.pdf
+    - Original Paper: https://www.its.caltech.edu/~mshum/gradio/papers/Berry1994.pdf
+
+
+
+:::
 
 ## WTP in developing countries using travel cost method
 ::: {.callout-note  collapse="true"}
