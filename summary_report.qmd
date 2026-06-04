@@ -64,18 +64,12 @@ This report summarizes the Random Utility Model (RUM) analysis across **`r lengt
 
 ```{r voronoi-tabs, results='asis'}
 for (scenario in scenarios) {
-  figures_dir <- file.path("output", "scenarios", scenario, "figures")
-  voronoi_files <- list.files(figures_dir, pattern = "^voronoi_map.*\\.png$", full.names = FALSE)
+  voronoi_file <- file.path("output", "figures", paste0("voronoi_map_", scenario, ".png"))
   cat('\n##', scenario, '\n\n')
-  if (length(voronoi_files) == 0) {
+  if (!file.exists(voronoi_file)) {
     cat("Voronoi map not found for scenario:", scenario, "\n\n")
   } else {
-    vf <- voronoi_files[1]
-    rel_path <- file.path("output", "scenarios", scenario, "figures", vf)
-    abs_path <- here::here(rel_path)
-    if (file.exists(abs_path)) {
-      cat('![](', rel_path, '){ width=100% }\n\n', sep = '')
-    }
+    cat('![](', voronoi_file, '){ width=100% }\n\n', sep = '')
   }
 }
 ```
@@ -87,10 +81,10 @@ for (scenario in scenarios) {
 # Data Summary
 
 ```{r data-summary-combined}
-# Load only data_summary_ER.csv for each scenario, with debug prints
+# Load data_summary.csv for each scenario
 summary_list <- list()
 for (scenario in scenarios) {
-  summary_path <- file.path(output_dir, scenario, "tables", "data_summary_fe_ER.csv")
+  summary_path <- file.path("output", "tables", paste0("data_summary_", scenario, ".csv"))
   if (file.exists(summary_path)) {
     df <- read.csv(summary_path, stringsAsFactors = FALSE)
     # Add all variables used in WTP plots to the summary
@@ -270,102 +264,60 @@ $p_i = \frac{n_i}{\sum_{j=1}^S n_j}$ is the proportion of total observed  indivi
 # Willingness to Pay Estimates
 
 ```{r wtp-data-prep, echo=FALSE, message=FALSE}
-models <- unique(models)
+# Load WTP data from CSV files created by 11b stage
+# File pattern: {model}_Mixed_{scenario}_wtp.csv in output/models/
 
 wtp_list <- list()
 models <- c()
-for (scenario in scenarios) {
-  models_dir <- file.path(output_dir, scenario, "models")
-  wtp_files <- list.files(models_dir, pattern = "^wtp_.*\\.rds$", full.names = TRUE)
+
+# List all WTP CSV files
+wtp_files <- list.files("output/models", pattern = "_Mixed_.*_wtp\\.csv$", full.names = TRUE)
+
+if (length(wtp_files) > 0) {
   for (wtp_path in wtp_files) {
-    model_name <- sub("^wtp_(.*)\\.rds$", "\\1", basename(wtp_path))
-    if (file.exists(wtp_path)) {
-      models <- c(models, model_name)
-      tryCatch({
-        wtp_obj <- readRDS(wtp_path)
-        wtp_df <- NULL
-        se_found <- FALSE
-        # Handle summary.logitr objects (with coefTable)
-        if (inherits(wtp_obj, "summary.logitr") && !is.null(wtp_obj$coefTable)) {
-          coef_table <- wtp_obj$coefTable
-          if ("Std. Error" %in% names(coef_table)) {
-            se_values <- as.numeric(coef_table$`Std. Error`)
-            se_found <- all(!is.na(se_values))
-          } else {
-            se_values <- rep(NA_real_, nrow(coef_table))
-          }
-          variable_names <- rownames(coef_table)
-          wtp_df <- data.frame(
-            variable = variable_names,
-            estimate = as.numeric(coef_table$Estimate),
-            se = se_values,
-            scenario = scenario,
-            model = model_name,
-            stringsAsFactors = FALSE
-          )
-        } else if (is.data.frame(wtp_obj) && "Estimate" %in% names(wtp_obj)) {
-          if (!is.null(rownames(wtp_obj)) && !all(rownames(wtp_obj) %in% as.character(1:nrow(wtp_obj)))) {
-            variable_names <- rownames(wtp_obj)
-          } else if ("variable" %in% names(wtp_obj)) {
-            variable_names <- as.character(wtp_obj$variable)
-          } else {
-            variable_names <- paste0("V", seq_len(nrow(wtp_obj)))
-          }
-          if ("Std. Error" %in% names(wtp_obj)) {
-            se_values <- as.numeric(wtp_obj[["Std. Error"]])
-            se_found <- all(!is.na(se_values))
-          } else {
-            se_values <- rep(NA_real_, nrow(wtp_obj))
-          }
-          wtp_df <- data.frame(
-            variable = variable_names,
-            estimate = as.numeric(wtp_obj$Estimate),
-            se = se_values,
-            scenario = scenario,
-            model = model_name,
-            stringsAsFactors = FALSE
-          )
-        } else if (is.list(wtp_obj) && !is.null(wtp_obj$Estimate)) {
-          wtp_df <- data.frame(
-            variable = names(wtp_obj$Estimate),
-            estimate = as.numeric(wtp_obj$Estimate),
-            se = NA_real_,
-            scenario = scenario,
-            model = model_name,
-            stringsAsFactors = FALSE
-          )
-        } else if (is.matrix(wtp_obj)) {
-          if ("Std. Error" %in% colnames(wtp_obj)) {
-            se_values <- as.numeric(wtp_obj[, "Std. Error"])
-            se_found <- all(!is.na(se_values))
-          } else {
-            se_values <- rep(NA_real_, nrow(wtp_obj))
-          }
-          wtp_df <- data.frame(
-            variable = rownames(wtp_obj),
-            estimate = as.numeric(wtp_obj[, "Estimate"]),
-            se = se_values,
-            scenario = scenario,
-            model = model_name,
-            stringsAsFactors = FALSE
-          )
-        }
-        # Throw error and print structure if SE not found
-        if (!se_found) {
-          cat("\n[ERROR] No standard errors found for scenario:", scenario, "model:", model_name, "\n")
-          print(str(wtp_obj))
-          stop("Standard errors missing in WTP object.")
-        }
-        if (!is.null(wtp_df)) {
-          wtp_df <- wtp_df %>% filter(variable != "scalePar", !grepl("^sd_", variable))
-          wtp_list[[paste(scenario, model_name, sep = "_")]] <- wtp_df
-        }
-      }, error = function(e) {
-        cat("\n[ERROR] Failed to load WTP for scenario:", scenario, "model:", model_name, "\n")
-        print(e)
-      })
-    }
+    tryCatch({
+      # Extract model and scenario from filename using base R regex
+      # Pattern: {model}_Mixed_{scenario}_wtp.csv
+      filename <- basename(wtp_path)
+      
+      # Use sub() to extract parts
+      # First, remove the trailing _wtp.csv
+      temp <- sub("_wtp\\.csv$", "", filename)
+      
+      # Split on _Mixed_ to get model and scenario
+      parts <- strsplit(temp, "_Mixed_")[[1]]
+      
+      if (length(parts) == 2) {
+        model_name <- parts[1]
+        scenario_name <- parts[2]
+        
+        # Add to models list
+        models <- c(models, model_name)
+        
+        # Read WTP CSV
+        wtp_df <- read.csv(wtp_path, stringsAsFactors = FALSE)
+        
+        # Rename columns to match expected format
+        wtp_df <- wtp_df %>%
+          rename(
+            variable = Variable,
+            estimate = WTP,
+            se = Std.Err,
+            scenario = Scenario,
+            model = Model
+          ) %>%
+          select(variable, estimate, se, scenario, model)
+        
+        # Store in list
+        wtp_list[[paste(scenario_name, model_name, sep = "_")]] <- wtp_df
+      }
+    }, error = function(e) {
+      cat("\n[WARNING] Failed to load WTP from:", basename(wtp_path), "\n")
+      cat("Error:", conditionMessage(e), "\n")
+    })
   }
+} else {
+  cat("\n[WARNING] No WTP CSV files found in output/models/\n")
 }
 ```
 
@@ -378,262 +330,128 @@ if (length(wtp_list) > 0) {
     ci_upper = estimate + 1.96 * se
   )
 
-  # ER overall + migrant richness + index vars
-  er_vars <- c("expected_richness", "migrant_richness", "resident_richness",  "shannon_index", "simpson_index")
-  er_labels <- c(
-    "expected_richness" = "Expected Richness (Overall)",
-    "migrant_richness"  = "Migrant Richness (Overall)",
-    "resident_richness" = "Resident Richness (Overall)",
-    "shannon_index"     = "Shannon Index (Overall)",
-    "simpson_index"     = "Simpson Index (Overall)"
-  )
-  wtp_er <- wtp_combined %>% filter(variable %in% er_vars) %>%
-    mutate(
-      variable_clean = er_labels[variable],
-      variable_clean = factor(variable_clean, levels = er_labels[er_vars])
-    )
-
-  # ERseason + migrant + index seasonal
-  erseason_vars <- c(
-    "expected_richness_Winter", "expected_richness_Spring",   "expected_richness_Summer", "expected_richness_Fall",
-    "migrant_richness_Winter",  "migrant_richness_Spring",    "migrant_richness_Summer",  "migrant_richness_Fall",
-    "resident_richness_Winter", "resident_richness_Spring",   "resident_richness_Summer", "resident_richness_Fall",
-    "shannon_index_Winter",     "shannon_index_Spring",       "shannon_index_Summer",     "shannon_index_Fall",
-    "simpson_index_Winter",     "simpson_index_Spring",       "simpson_index_Summer",     "simpson_index_Fall"
-  )
-  erseason_labels <- c(
-    "expected_richness_Winter" = "Expected Richness (Winter)",
-    "expected_richness_Spring" = "Expected Richness (Spring)",
-    "expected_richness_Summer" = "Expected Richness (Summer)",
-    "expected_richness_Fall"   = "Expected Richness (Fall)",
-    "migrant_richness_Winter"  = "Migrant Richness (Winter)",
-    "migrant_richness_Spring"  = "Migrant Richness (Spring)",
-    "migrant_richness_Summer"  = "Migrant Richness (Summer)",
-    "migrant_richness_Fall"    = "Migrant Richness (Fall)",
-    "resident_richness_Winter" = "Resident Richness (Winter)",
-    "resident_richness_Spring" = "Resident Richness (Spring)",
-    "resident_richness_Summer" = "Resident Richness (Summer)",
-    "resident_richness_Fall"   = "Resident Richness (Fall)",
-    "shannon_index_Winter"     = "Shannon Index (Winter)",
-    "shannon_index_Spring"     = "Shannon Index (Spring)",
-    "shannon_index_Summer"     = "Shannon Index (Summer)",
-    "shannon_index_Fall"       = "Shannon Index (Fall)",
-    "simpson_index_Winter"     = "Simpson Index (Winter)",
-    "simpson_index_Spring"     = "Simpson Index (Spring)",
-    "simpson_index_Summer"     = "Simpson Index (Summer)",
-    "simpson_index_Fall"       = "Simpson Index (Fall)"
-  )
-  wtp_erseason <- wtp_combined %>% filter(variable %in% erseason_vars) %>%
-    mutate(
-      variable_clean = erseason_labels[variable],
-      variable_clean = factor(variable_clean, levels = erseason_labels[erseason_vars])
-    )
+  # Get unique models and prepare grouped data
+  unique_models <- unique(wtp_combined$model)
   
-  # Biodiversity indices overall
-  index_vars <- c("resident_richness", "shannon_index", "simpson_index")
-  index_labels <- c(
-    "resident_richness" = "Resident Richness",
-    "shannon_index"     = "Shannon Index",
-    "simpson_index"     = "Simpson Index"
-  )
-  wtp_index <- wtp_combined %>% filter(variable %in% index_vars) %>%
-    mutate(
-      variable_clean = index_labels[variable],
-      variable_clean = factor(variable_clean, levels = index_labels[index_vars])
+  # Create list to store plots
+  model_plots <- list()
+  
+  # For each model, combine ALL its variables (overall + seasonal)
+  for (curr_model in unique_models) {
+    # model_data <- wtp_combined %>% 
+    #   filter(model == curr_model) %>%
+    #   mutate(
+    #     variable_clean = case_when(
+    #       grepl("Winter", variable) ~ paste(sub("_Winter", "", variable), "(Winter)"),
+    #       grepl("Spring", variable) ~ paste(sub("_Spring", "", variable), "(Spring)"),
+    #       grepl("Summer", variable) ~ paste(sub("_Summer", "", variable), "(Summer)"),
+    #       grepl("Fall", variable) ~ paste(sub("_Fall", "", variable), "(Fall)"),
+    #       TRUE ~ paste(variable, "(Overall)")
+    #     )
+    #   )
+    model_data <- wtp_combined %>% 
+      filter(model == curr_model) %>%
+      mutate(
+        variable_clean = case_when(
+          grepl("Winter", variable) ~ paste(sub   ("_Winter", "", variable), "(Winter)"),
+          grepl("Spring", variable) ~ paste(sub   ("_Spring", "", variable), "(Spring)"),
+          grepl("Summer", variable) ~ paste(sub   ("_Summer", "", variable), "(Summer)"),
+          grepl("Fall", variable) ~ paste(sub("_Fall",    "", variable), "(Fall)"),
+          TRUE ~ paste(variable, "(Overall)")
+        )
+      )
+
+    # ---- SELECT + ORDER VARIABLES ----
+    desired_order <- c(
+      # Expected richness
+      "expected_richness (Overall)",
+      "expected_richness (Winter)",
+      "expected_richness (Spring)",
+      "expected_richness (Summer)",
+      
+      # Migrant richness
+      "migrant_richness (Overall)",
+      "migrant_richness (Winter)",
+      "migrant_richness (Spring)",
+      "migrant_richness (Summer)",
+      
+      # Resident richness
+      "resident_richness (Overall)",
+      "resident_richness (Winter)",
+      "resident_richness (Spring)",
+      "resident_richness (Summer)"
     )
-
-  # Biodiversity indices seasonal
-  index_season_vars <- c(
-    "resident_richness_Winter", "resident_richness_Spring",   "resident_richness_Summer", "resident_richness_Fall",
-    "shannon_index_Winter", "shannon_index_Spring", "shannon_index_Summer",   "shannon_index_Fall",
-    "simpson_index_Winter", "simpson_index_Spring", "simpson_index_Summer",   "simpson_index_Fall"
-  )
-  index_season_labels <- c(
-    "resident_richness_Winter" = "Resident Richness (Winter)",
-    "resident_richness_Spring" = "Resident Richness (Spring)",
-    "resident_richness_Summer" = "Resident Richness (Summer)",
-    "resident_richness_Fall"   = "Resident Richness (Fall)",
-    "shannon_index_Winter"     = "Shannon Index (Winter)",
-    "shannon_index_Spring"     = "Shannon Index (Spring)",
-    "shannon_index_Summer"     = "Shannon Index (Summer)",
-    "shannon_index_Fall"       = "Shannon Index (Fall)",
-    "simpson_index_Winter"     = "Simpson Index (Winter)",
-    "simpson_index_Spring"     = "Simpson Index (Spring)",
-    "simpson_index_Summer"     = "Simpson Index (Summer)",
-    "simpson_index_Fall"       = "Simpson Index (Fall)"
-  )
-  wtp_index_seasonal <- wtp_combined %>% filter(variable %in% index_season_vars) %>%
-    mutate(
-      variable_clean = index_season_labels[variable],
-      variable_clean = factor(variable_clean, levels = index_season_labels  [index_season_vars])
-  )
-
-  # Color map
-  scenario_names <- unique(wtp_combined$scenario)
-  n_scenarios <- length(scenario_names)
-  if (n_scenarios <= 8) {
-    palette <- RColorBrewer::brewer.pal(n_scenarios, "Set1")
-  } else {
-    palette <- colorRampPalette(RColorBrewer::brewer.pal(8, "Set1"))(n_scenarios)
+    
+    model_data <- model_data %>%
+      filter(variable_clean %in% desired_order) %>%   # keep only these
+      mutate(variable_clean = factor(variable_clean, levels = desired_order))
+    
+    if (nrow(model_data) > 0) {
+      model_plots[[curr_model]] <- model_data
+    }
   }
-  scenario_color_map <- setNames(palette, scenario_names)
+} else {
+  cat("\n[WARNING] No WTP data found\n")
+  model_plots <- list()
+}
+```
 
-  # Plot ER overall
-  p_er <- ggplot(wtp_er, aes(x = scenario, y = estimate, color = scenario, group = scenario)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
-                  width = 0.3, linewidth = 0.9, position = position_dodge(width = 0.6)) +
-    geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
-    facet_grid(variable_clean ~ model, scales = "free_y") +
-    labs(
-      title = "WTP for Expected Richness (Overall)", 
-      subtitle = paste0(
-        "Point estimates with 95% confidence intervals | Models: ", paste(models, collapse = ", ")
-      ),
-      x = NULL, 
-      y = "WTP (INR)", 
+```{r wtp-plot-build}
+# Color map
+scenario_names <- unique(wtp_combined$scenario)
+n_scenarios <- length(scenario_names)
+
+if (n_scenarios <= 8) {
+  palette <- RColorBrewer::brewer.pal(n_scenarios, "Set1")
+} else {
+  palette <- colorRampPalette(RColorBrewer::brewer.pal(8, "Set1"))(n_scenarios)
+}
+
+scenario_color_map <- setNames(palette, scenario_names)
+
+# Create ONE plot per model with ALL variables together
+model_plots_list <- list()
+
+for (curr_model in unique(wtp_combined$model)) {
+  model_data <- model_plots[[curr_model]] %>%
+    mutate(variable_clean = factor(variable_clean, levels = unique(variable_clean)))
+
+  if (nrow(model_data) > 0) {
+    p <- ggplot(model_data, aes(x = variable_clean, y = estimate, color = scenario, group = scenario)) +
+      geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
+      geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
+                    width = 0.2, linewidth = 0.8,
+                    position = position_dodge(width = 0.6)) +
+      geom_point(size = 3, position = position_dodge(width = 0.6)) +
+      labs(
+        title = paste0("WTP - ", gsub("_", " ", curr_model)),
+        subtitle = "Point estimates with 95% confidence intervals",
+        x = "Variables",
+        y = "WTP (INR)",
         color = "Scenario"
       ) +
       theme_minimal() +
       theme(
-        plot.title = element_text(size = 15, face = "bold"), 
-        plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)), 
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 9), 
-        axis.text.y = element_text(size = 9), 
-        strip.text.x = element_text(size = 11, face = "bold"), 
-        strip.text.y = element_text(size = 10, face = "bold", angle = 0, hjust = 0), 
-        strip.background = element_rect(fill = "gray95", color = "gray80"), 
-        panel.grid.minor = element_blank(), 
-        panel.spacing.x = unit(1.2, "lines"), 
-        panel.spacing.y = unit(1.5, "lines"), 
-        legend.position = "bottom", 
-        legend.title = element_text(face = "bold", size = 10), 
-        legend.text = element_text(size = 9)
+        axis.text.x = element_text(angle = 45, hjust = 1)
       ) +
       scale_color_manual(values = scenario_color_map)
 
-  # Plot biodiversity indices overall
-  p_index <- ggplot(wtp_index, aes(x = scenario, y = estimate, color = scenario, group = scenario)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
-                  width = 0.3, linewidth = 0.9, position = position_dodge(width = 0.6)) +
-    geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
-    facet_grid(variable_clean ~ model, scales = "free_y") +
-    labs(
-      title = "WTP for Biodiversity Indices (Overall)", 
-      subtitle = paste0(
-        "Point estimates with 95% confidence intervals | Models: ", paste(models, collapse = ", ")
-      ),
-      x = NULL, 
-      y = "WTP (INR)", 
-      color = "Scenario"
-    ) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(size = 15, face = "bold"), 
-      plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)), 
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 9), 
-      axis.text.y = element_text(size = 9), 
-      strip.text.x = element_text(size = 11, face = "bold"), 
-      strip.text.y = element_text(size = 10, face = "bold", angle = 0, hjust = 0), 
-      strip.background = element_rect(fill = "gray95", color = "gray80"), 
-      panel.grid.minor = element_blank(), 
-      panel.spacing.x = unit(1.2, "lines"), 
-      panel.spacing.y = unit(1.5, "lines"), 
-      legend.position = "bottom", 
-      legend.title = element_text(face = "bold", size = 10), 
-      legend.text = element_text(size = 9)
-    ) +
-    scale_color_manual(values = scenario_color_map)
-
-  # Plot biodiversity indices seasonal
-  p_index_seasonal <- ggplot(wtp_index_seasonal, aes(x = scenario, y = estimate, color = scenario, group = scenario)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
-                  width = 0.3, linewidth = 0.9, position = position_dodge(width = 0.6)) +
-    geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
-    facet_grid(variable_clean ~ model, scales = "free_y") +
-    labs(
-      title = "WTP for Biodiversity Indices (Seasonal)", 
-      subtitle = paste0(
-        "Point estimates with 95% confidence intervals | Models: ", paste(models, collapse = ", ")
-      ),
-      x = NULL, 
-      y = "WTP (INR)", 
-      color = "Scenario"
-    ) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(size = 15, face = "bold"), 
-      plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)), 
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 9), 
-      axis.text.y = element_text(size = 9), 
-      strip.text.x = element_text(size = 11, face = "bold"), 
-      strip.text.y = element_text(size = 10, face = "bold", angle = 0, hjust = 0), 
-      strip.background = element_rect(fill = "gray95", color = "gray80"), 
-      panel.grid.minor = element_blank(), 
-      panel.spacing.x = unit(1.2, "lines"), 
-      panel.spacing.y = unit(1.5, "lines"), 
-      legend.position = "bottom", 
-      legend.title = element_text(face = "bold", size = 10), 
-      legend.text = element_text(size = 9)
-    ) +
-    scale_color_manual(values = scenario_color_map)
-
-  # Plot ER seasonal
-  p_erseason <- ggplot(wtp_erseason, aes(x = scenario, y = estimate, color = scenario, group = scenario)) +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
-    geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), 
-                  width = 0.3, linewidth = 0.9, position = position_dodge(width = 0.6)) +
-    geom_point(size = 3.5, position = position_dodge(width = 0.6)) +
-    facet_grid(variable_clean ~ model, scales = "free_y") +
-    labs(
-      title = "WTP for Expected Richness (Seasonal)", 
-      subtitle = paste0(
-        "Point estimates with 95% confidence intervals | Models: ", paste(models, collapse = ", ")
-      ),
-      x = NULL, 
-      y = "WTP (INR)", 
-      color = "Scenario"
-    ) +
-    theme_minimal() +
-    theme(
-      plot.title = element_text(size = 15, face = "bold"), 
-      plot.subtitle = element_text(size = 11, color = "gray30", margin = margin(b = 15)), 
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 9), 
-      axis.text.y = element_text(size = 9), 
-      strip.text.x = element_text(size = 11, face = "bold"), 
-      strip.text.y = element_text(size = 10, face = "bold", angle = 0, hjust = 0), 
-      strip.background = element_rect(fill = "gray95", color = "gray80"), 
-      panel.grid.minor = element_blank(), 
-      panel.spacing.x = unit(1.2, "lines"), 
-      panel.spacing.y = unit(1.5, "lines"), 
-      legend.position = "bottom", 
-      legend.title = element_text(face = "bold", size = 10), 
-      legend.text = element_text(size = 9)
-    ) +
-    scale_color_manual(values = scenario_color_map)
+    model_plots_list[[curr_model]] <- p
+  }
 }
 ```
 
+```{r wtp-model-plots}
+#| fig-height: !expr if(exists("model_plots_list") && length(model_plots_list) > 0) 8 else 2
+#| results: asis
 
-```{r wtp-er-plot}
-#| fig-height: !expr if(exists("fig_height_er")) fig_height_er else 20
-
-if (exists("p_er")) {
-  print(p_er)
+if (exists("model_plots_list") && length(model_plots_list) > 0) {
+  for (model_name in names(model_plots_list)) {
+    cat("\n### ", gsub("_", " ", model_name), " {.unnumbered}\n\n")
+    print(model_plots_list[[model_name]])
+    cat("\n\n")
+  }
 } else {
-  cat("No Expected Richness WTP estimates available\n")
-}
-```
-
-
-```{r wtp-er-season-plot}
-#| fig-height: !expr if(exists("fig_height_er")) fig_height_er else 60
-
-if (exists("p_erseason")) {
-  print(p_erseason)
-} else {
-  cat("No Expected Richness (Seasonal) WTP estimates available\n")
+  cat("No WTP estimates available\n")
 }
 ```

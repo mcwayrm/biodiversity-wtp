@@ -19,6 +19,9 @@ models <- yaml::read_yaml("models.yml")
 # Load task runner function
 source(file.path("scripts", "R", "utils_tasks.R"))
 
+library(processx)
+library(jsonlite)
+
 
 # -----------------------------------------------------------------------------
 # Run All Scenarios
@@ -150,7 +153,8 @@ for (scenario_name in names(scenarios)) {
       seasonal_migrant = file.path(scenario_dir, "biodiv_seasonal_migrant.parquet"),
       monthly_resident = file.path(scenario_dir, "biodiv_monthly_resident.parquet"),
       weekly_resident = file.path(scenario_dir, "biodiv_weekly_resident.parquet"),
-      seasonal_resident = file.path(scenario_dir, "biodiv_seasonal_resident.parquet")
+      seasonal_resident = file.path(scenario_dir, "biodiv_seasonal_resident.parquet"),
+      species_matching_log = file.path(scenario_dir, "species_matching_log.csv")
     ),
     params = params,
     scenario_name = scenario_name
@@ -198,6 +202,8 @@ for (scenario_name in names(scenarios)) {
     input_paths = list(
       master_data_with_attributes = file.path(scenario_dir, "master_data_with_attributes.parquet"),
       district_shp = file.path(input_data_dir, "districts", "district-2011"),
+      cpi_csv = file.path(input_data_dir, "cpi", "INDCPIALLAINMEI.csv"),
+      driving_cost_rds = file.path(input_data_dir, "driving_cost", "driving_cost.rds"),
       gdp = file.path(input_data_dir, "gdp", "final_GDP_0_25deg_postadjust_pop_density.csv")
     ),
     output_paths = list(
@@ -210,43 +216,71 @@ for (scenario_name in names(scenarios)) {
   # Stage 10: Compute IV
 
   # --- Model Estimation & Output Tasks (11-12) ---
-  for (model_name in names(models)) {
-    model_cfg <- models[[model_name]]
-    message(paste0("  Running model: ", model_name))
-
-    # Stage 11: Estimate RUM Models
-    run_task(
-      "11_estimate_rum_models.R",
-      input_paths = list(
-        master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
-      ),
-      output_paths = list(
-        master_data_final = file.path(scenario_dir, "master_data_final.parquet"),
-        model_rds = file.path("output", "scenarios", scenario_name, "models", paste0("model_", model_name, ".rds")),
-        wtp_rds = file.path("output", "scenarios", scenario_name, "models", paste0("wtp_", model_name, ".rds"))
-      ),
-      params = c(params, model_cfg),
-      scenario_name = scenario_name,
-    )
-
-    # Stage 12: Generate Scenario Outputs
-    run_task(
-      "12_generate_scenario_outputs.R",
-      input_paths = list(
-        voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
-        hotspots_clustered = file.path(scenario_dir, "ebird_hotspots_clustered.parquet"),
-        master_data_final = file.path(scenario_dir, "master_data_final.parquet"),
-        district_shp = file.path(input_data_dir, "districts", "district-2011", "district-2011.shp"),
-        model_rds = file.path("output", "scenarios", scenario_name, "models", paste0("model_", model_name, ".rds"))
-      ),
-      output_paths = list(
-        data_summary = file.path("output", "scenarios", scenario_name, "tables", paste0("data_summary_", model_name, ".csv")),
-        voronoi_plot = file.path("output", "scenarios", scenario_name, "figures", paste0("voronoi_map_", model_name, ".png"))
-      ),
-      params = c(params, model_cfg),
-      scenario_name = scenario_name,
-    )
+  
+  # Stage 11: Estimate RUM Models via Python (one call per scenario)
+  # ===================================================================
+  # Stage 11a: Prepare model data (filtering, temporal vars, means)
+  run_task(
+    "11a_model_data_prep.R",
+    input_paths = list(
+      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
+    ),
+    output_paths = list(
+      model_data = file.path("output", "models", sprintf("model_data_%s.parquet", scenario_name))
+    ),
+    params = params,
+    scenario_name = scenario_name
+  )
+  
+  # Load subprocess helper function
+  source(file.path("scripts", "R", "utils_xlogit_subprocess.R"))
+  
+  # Construct paths for Python script (uses PREPPED data from 11a, not raw)
+  input_data_prepped <- file.path("output", "models", sprintf("model_data_%s.parquet", scenario_name))
+  output_dir_models <- file.path("output", "models")
+  
+  if (!dir.exists(output_dir_models)) {
+    dir.create(output_dir_models, recursive = TRUE, showWarnings = FALSE)
   }
+
+  # Call Python subprocess to estimate all models for this scenario
+  python_result <- call_xlogit_estimation(
+    scenario_name = scenario_name,
+    scenario_dir = scenario_dir,
+    input_data_path = input_data_prepped,
+    output_dir = output_dir_models,
+    conda_env_name = "wtp01",
+    models_config = "models.yml",
+    verbose = TRUE
+  )
+  
+  if (!python_result$success) {
+    stop(paste0("Python XLogit estimation failed for scenario ", scenario_name, 
+                ". Check log: ", python_result$log_file))
+  }
+  
+  message(paste0("  ✓ Python estimation complete for ", scenario_name))
+  
+  # Stage 12: Generate Scenario Outputs (once per scenario)
+  # ===================================================================
+  # Generate Voronoi map and data summary (model results already saved by Python)
+  
+  run_task(
+    "12_generate_scenario_outputs.R",
+    input_paths = list(
+      voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
+      hotspots_clustered = file.path(scenario_dir, "ebird_hotspots_clustered.parquet"),
+      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet"),
+      district_shp = file.path(input_data_dir, "districts", "district-2011", "district-2011.shp"),
+      models_output_dir = output_dir_models
+    ),
+    output_paths = list(
+      voronoi_plot = file.path("output", "figures", paste0("voronoi_map_", scenario_name, ".png")),
+      data_summary = file.path("output", "tables", paste0("data_summary_", scenario_name, ".csv"))
+    ),
+    params = params,
+    scenario_name = scenario_name
+  )
 }
 
 
