@@ -50,7 +50,30 @@ message("Filtered eBird data: ", nrow(dt), " species observations")
 # Load species categorization for migrant/resident classification
 species_info <- fread(inputs$migrant_species)
 
-# Merge species info into dt
+# Clean and standardize migratory_status and species names
+# 1. Recode migratory_status to standardized labels
+species_info[, migratory_status := fifelse(
+  grepl("resident|local|india|altitudinal|nomadic", migratory_status, ignore.case = TRUE), "resident",
+  fifelse(grepl("passage migrant|winter migrant|summer migrant", migratory_status, ignore.case = TRUE), "migrant", migratory_status)
+)]
+# 2. Clean species name: remove extra spaces, lowercase, capitalize genus
+species_info[, species := gsub("\\s+", " ", trimws(tolower(species)))]
+species_info[, genus := tools::toTitleCase(sub(" .*", "", species))]
+species_info[, species_epithet := sub("^[^ ]+ ", "", species)]
+species_info[, species := paste(genus, species_epithet)]
+# 3. Deduplicate by species name
+species_info <- species_info[!duplicated(species)]
+
+# Lowercase common_name for consistency
+dt[, common_name := tolower(common_name)]
+species_info[, species := tolower(species)]
+
+# Create a species matching log: for each species in species_info, indicate if it matched any dt$common_name
+species_info[, match := ifelse(species %in% dt$common_name, TRUE, FALSE)]
+species_matching_log <- species_info[, .(species, migratory_status, match)]
+write.csv(species_matching_log, outputs$species_matching_log, row.names = FALSE)
+message("Species matching log written to: ", outputs$species_matching_log)
+
 dt <- merge(dt, species_info[, .(common_name = species, migratory_status)], by = "common_name", all.x = TRUE)
 
 # Compute indices and richness per trip
