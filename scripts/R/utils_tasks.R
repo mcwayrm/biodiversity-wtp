@@ -4,16 +4,16 @@
 ##########################################
 # Core function to run each task
 run_task <- function(script,
-                      input_paths = list(),
-                      output_paths = list(),
+                      inputs = list(),
+                      outputs = list(),
                       params = list(),
                       scenario_name = NULL,
                       skip_if_exists = TRUE,
                       log_file = "logs/processing_times.csv") {
   
   # normalize declared outputs to character vector
-  out_paths_char <- unlist(lapply(output_paths, function(x) as.character(x)))
-  out_names <- names(output_paths)
+  out_paths_char <- unlist(lapply(outputs, function(x) as.character(x)))
+  out_names <- names(outputs)
   if (is.null(out_names)) out_names <- paste0("out_", seq_along(out_paths_char))
   
   # check existence of each declared output
@@ -41,8 +41,8 @@ run_task <- function(script,
   
   # read environmental setup
   env <- new.env(parent = globalenv())
-  env$inputs        <- input_paths
-  env$outputs       <- output_paths
+  env$inputs        <- inputs
+  env$outputs       <- outputs
   env$params        <- params
   env$scenario_name <- scenario_name
   
