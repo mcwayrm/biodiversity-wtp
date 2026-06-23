@@ -24,62 +24,62 @@ if (!file.exists(inputs$master_data_with_travel_cost)) {
 
 cat(sprintf("Loading: %s\n", basename(inputs$master_data_with_travel_cost)))
 cs <- read_parquet(inputs$master_data_with_travel_cost)
+setDT(cs)
 cat(sprintf("  %.0fM rows\n", nrow(cs) / 1e6))
 
 # Stage 1: Filter by year and basic criteria
-cs <- cs %>%
-  filter(!is.na(choice), !is.na(trip_id)) %>%
-  mutate(year = as.numeric(year)) %>%
-  filter(!is.na(year), year >= params$analysis_start_year, year <= params$analysis_end_year)
+cs <- cs[!is.na(choice) & !is.na(trip_id)]
+cs[, year := suppressWarnings(as.numeric(year))]
+cs <- cs[
+  !is.na(year) &
+    year >= params$analysis_start_year &
+    year <= params$analysis_end_year
+]
 
 # Stage 2: Temporal variables
-cs <- cs %>%
-  mutate(
-    observation_date = as.Date(observation_date),
-    month = month(observation_date),
-    season = case_when(
-      month %in% c(12, 1, 2) ~ "Winter",
-      month %in% c(3, 4, 5) ~ "Spring",
-      month %in% c(6, 7, 8) ~ "Summer",
-      TRUE ~ "Fall"
-    ),
-    hour_of_day = as.numeric(str_sub(as.character(time_observations_started), 1, 2)),
-    hour_of_day = replace_na(hour_of_day, 12)
+cs[, observation_date := as.Date(observation_date)]
+cs[, month := lubridate::month(observation_date)]
+cs[, season := fifelse(
+  month %in% c(12, 1, 2), "Winter",
+  fifelse(
+    month %in% c(3, 4, 5), "Spring",
+    fifelse(month %in% c(6, 7, 8), "Summer", "Fall")
   )
+)]
+cs[, hour_of_day := suppressWarnings(as.numeric(substr(as.character(time_observations_started), 1, 2)))]
+cs[is.na(hour_of_day), hour_of_day := 12]
 
 # Stage 3: Log travel cost
 if ("travel_cost_combined" %in% colnames(cs)) {
-  cs <- cs %>% mutate(log_travel_cost = log(pmax(travel_cost_combined, 0.01)))
+  cs[, log_travel_cost := log(pmax(travel_cost_combined, 0.01))]
 }
 
 # Stage 4: Clean richness data
-chosen_missing <- cs %>%
-  filter(choice == 1) %>%
-  group_by(trip_id) %>%
-  filter(any(is.na(expected_richness))) %>%
-  distinct(trip_id) %>% pull(trip_id)
-
-cs <- cs %>%
-  filter(!(trip_id %in% chosen_missing)) %>%
-  filter(!(choice == 0 & is.na(expected_richness)))
+missing_chosen_trips <- unique(cs[choice == 1 & is.na(expected_richness), .(trip_id)])
+if (nrow(missing_chosen_trips) > 0) {
+  setkey(missing_chosen_trips, trip_id)
+  setkey(cs, trip_id)
+  cs <- cs[!missing_chosen_trips]
+}
+cs <- cs[!(choice == 0 & is.na(expected_richness))]
 
 # Stage 5: Validate choice structure
-trip_stats <- cs %>%
-  group_by(trip_id) %>%
-  summarise(n_chosen = sum(choice), n_alts = n(), .groups = "drop")
+trip_stats <- cs[, .(n_chosen = sum(choice), n_alts = .N), by = trip_id]
+bad_trips <- trip_stats[n_chosen != 1 | n_alts < 2, .(trip_id)]
+if (nrow(bad_trips) > 0) {
+  setkey(bad_trips, trip_id)
+  setkey(cs, trip_id)
+  cs <- cs[!bad_trips]
+}
 
-bad_trips <- trip_stats %>% filter(n_chosen != 1 | n_alts < 2) %>% pull(trip_id)
-cs <- cs %>% filter(!(trip_id %in% bad_trips))
-
-cat(sprintf("After cleaning: %.1fM rows, %.0fK trips\n", nrow(cs) / 1e6, n_distinct(cs$trip_id) / 1000))
+cat(sprintf("After cleaning: %.1fM rows, %.0fK trips\n", nrow(cs) / 1e6, uniqueN(cs$trip_id) / 1000))
 
 # Stage 6: Create seasonal richness variants
 for (richness_var in c("expected_richness", "migrant_richness", "resident_richness")) {
   if (richness_var %in% colnames(cs)) {
-    for (season in c("Winter", "Spring", "Summer")) {
-      new_var <- sprintf("%s_%s", richness_var, season)
-      cs <- cs %>%
-        mutate(!!sym(new_var) := ifelse(season == !!season, !!sym(richness_var), 0))
+    for (season_name in c("Winter", "Spring", "Summer")) {
+      new_var <- sprintf("%s_%s", richness_var, season_name)
+      cs[, (new_var) := fifelse(season == season_name, .SD[[1]], 0), .SDcols = richness_var]
     }
   }
 }
@@ -107,12 +107,15 @@ for (fe_spec in fe_structures) {
   
   fe_key <- paste(sort(fe_spec), collapse = "-")
   cat(sprintf("  FE: %s\n", paste(fe_spec, collapse = ", ")))
+  mean_vars <- intersect(all_vars, colnames(cs))
   
-  global_means <- cs %>%
-    group_by(across(all_of(fe_spec))) %>%
-    summarise(across(all_of(intersect(all_vars, colnames(cs))),
-                     list(mean = ~mean(., na.rm = TRUE))),
-              .groups = "drop")
+  global_means <- cs[
+    ,
+    lapply(.SD, function(x) mean(x, na.rm = TRUE)),
+    by = fe_spec,
+    .SDcols = mean_vars
+  ]
+  setnames(global_means, mean_vars, paste0(mean_vars, "_mean"))
   
   means_file <- file.path(dirname(outputs$model_data), 
                           sprintf("global_means_%s_%s.json", fe_key, scenario_name))
@@ -120,9 +123,14 @@ for (fe_spec in fe_structures) {
 }
 
 # Stage 8: Save prepared data
-cs <- cs %>% mutate(obs_id_num = as.integer(factor(trip_id)) - 1, .before = 1)
+trip_lookup <- unique(cs[, .(trip_id)])
+trip_lookup[, obs_id_num := .I - 1L]
+setkey(trip_lookup, trip_id)
+setkey(cs, trip_id)
+cs <- trip_lookup[cs]
+setcolorder(cs, c("obs_id_num", setdiff(names(cs), "obs_id_num")))
 write_parquet(cs, outputs$model_data)
 
 cat(sprintf("\nSaved: %s\n", basename(outputs$model_data)))
-cat(sprintf("  %.1fM rows, %.0fK trips\n", nrow(cs) / 1e6, n_distinct(cs$trip_id) / 1000))
+cat(sprintf("  %.1fM rows, %.0fK trips\n", nrow(cs) / 1e6, uniqueN(cs$trip_id) / 1000))
 cat(paste0("=", strrep("=", 70), "\n"))

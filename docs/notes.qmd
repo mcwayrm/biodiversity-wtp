@@ -40,6 +40,87 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 
+
+::: {.callout-note collapse="true"}
+# 06/05/2026
+
+> Raahil, Matt, Jovin, Ryan
+
+## TODO: 
+
+1. Updating travel cost data (expand to 2024 and average cost across the four cities) (Jovin)
+2. Think through the story of the results (All)
+3. Updating the results with expanded years and updated travel cost (Matt)
+4. Incorporating the IV in the regression output (Ryan)
+
+## Current Story of the Results: 
+
+1. Postive WTP overall (ecosystem is valuable)
+2. This is suprisingly low. This is because willing to forgo overall species richness to seek out specific species. 
+3. If we decompose by season x migratory species, we observe this.  
+4. One explanation of the issue, is the supply and demand issue. In winter, there is an increase in supply of species. Currently working on examining shift in demand curve by looking at season user activities. 
+5. This motivates holding demand constant through a supply shifter. E.g., \beta is endogenous. 
+6. Bird flu only affects migratory species (e.g., LATE is only for migrants)
+
+## Agenda: 
+
+1. Write up the current state of the analysis in the data section (Matt)
+    1. Mainly completed. Some numbers are missing. 
+    2. Hotspot clusters (rename) recreation areas. 
+    3. Mostly completed the variable construction write up. 
+    4. Added some basic plots
+2. Need to select a user group for the main paper (All users, above/below median) --- DONE
+    1. Full sample 
+    2. Counterfactual is 10 alternative sites randomly sampled within X KM hotspot clusters
+3. Travel cost update (Jovin/Matt) --- DONE
+    1. Has been updated in the code and the overleaf. 
+        1. Issue before was a currency exchange issue. 
+    2. We have travel cost info through 2021. 
+    3. So need to update 2015 - 2024. 
+    4. Will require extending the MODIS data through 2024 (currently limited to 2023)
+    5. Currently the petrol prices using only Delhi. Will need to average across the prices. 
+    6. Add disclaimer that petrol prices are averaged across 4 major cities in India. 
+4. Updated Results: 
+    1. The coefficient size is still very, very small. 
+    2. Seasonality matters. In winter, visitors sacrifice diversity to seek out specific species. 
+    3. Make a graph of users by season and year. So does winter migrants drive a growth in consumer demand. 
+        1. And number of users going to hotspots with migratory species specifically. 
+        2. Can be done as a regression as well. # of users on dummy for seasons and interaction with migratory species exposure. 
+        3. Explain why we observe decreased WTP in winter. 
+    4. For now, we can stick to just the full sample (above/below for the appendix)
+    5. Can try individual and year FE instead of individual x year FE. 
+5. Zero market share thing (Ryan / Jovin)
+    1. Our study problem: 
+        1. Do we have any site-time observations where noone selects the site (e.g., no visits)
+        2. We need to remove these choices from the choice set. 
+        3. https://users.ssc.wisc.edu/~xshi28/research/gandhi_lu_shi.pdf
+        4. https://www.econstor.eu/bitstream/10419/316152/1/1922854557.pdf
+    2. Methods: 
+        1. Earle and Kim aggregate until no zero market. 
+        2. Dubé et al. introduce a selection function that removes alternatives from the choice set when they have a zero share
+        3. Li applies an empirical Bayes procedure to estimate strictly positive shares using information from other markets.
+    3. Resolution: 
+        1. This is not an issue for us. 
+        2. Our counterfactual hotspots are consumer driven. So this is never zero (by definition) 
+6.  Incorporating the IV (Ryan)
+    1. Check the control function used in Wildfire paper
+    2. Or attempt boostrapping the two stages
+7. Explore how to estimate individual WTP from mixed logit (Raahil)
+    1. mlogit allows for this. 
+    2. `individual_params <- fitted(mx, type='parameters')`
+    3. `mx` stands for mixed logit. 
+    4. $g(\beta | \theta)$ = population distribution of WTP by dispersion paramter. 
+    5. We can use the extra moment of the distribution to assign individuals to a place in the distribution given other characteristics of the individual. 
+    6. X creates a class of individuals which create a sub-distribution within the \theta distribution. 
+    7. Use observed behavior to determine where you are in the distribution given the dispersion parameter. 
+    8. g() is the prior belief. Then we update the belief given observation X to construct posterior belief.  
+    9. A cross-section of individuals demand across all their trips to create individual WTP. $h(\beta_i, \theta, X) = \underbrace{Pr(y_i|\beta, X)}_{Likelihood} \times \underbrace{g(\beta | \theta)}_{Prior}$
+    10. Add $t$ to $i$ to create the panel. 
+    11. The more $X$ data the better -- better characterizes the individual. 
+
+:::
+
+
 ::: {.callout-note collapse="true"}
 # 04/17/2026
 
