@@ -30,9 +30,16 @@ import argparse
 from pathlib import Path
 import warnings
 import traceback
-import scipy.stats
 
-from xlogit import MixedLogit
+from xlogit_utils import (
+    add_choice_identifiers,
+    calculate_wtp,
+    estimate_mixed_logit,
+    extract_results,
+    flatten_fe_columns,
+    normalize_model_vars_for_demean,
+    sample_trip_group,
+)
 
 warnings.filterwarnings('ignore')
 
@@ -57,149 +64,6 @@ def parse_arguments():
                         help='Comma-separated list of models to run')
     
     return parser.parse_args()
-
-
-# ============================================================================
-# UTILITY FUNCTIONS
-# ============================================================================
-
-def standardize_data(X_data, eps=1e-10):
-    """Robust standardization: normalize to mean=0, std=1"""
-    scaler = {}
-    X_scaled = X_data.copy()
-    
-    for col in X_data.columns:
-        mean_val = X_data[col].mean()
-        std_val = X_data[col].std()
-        
-        scaler[col] = {'mean': mean_val, 'std': std_val}
-        
-        if std_val > eps:
-            X_scaled[col] = (X_data[col] - mean_val) / std_val
-    
-    return X_scaled, scaler
-
-
-def estimate_model(X_data, y_data, ids_data, alts_data, avail_data, model_vars_for_model,
-                   scale_factor_data, unused_panels, model_type, randvars, init_coeff=None, verbose=True):
-    """Estimate xlogit model with standardization"""
-    try:
-        if verbose:
-            print(f"    Data validation:")
-            print(f"      X shape: {X_data.shape}")
-            print(f"      X NaN: {X_data.isna().sum().sum()}")
-            print(f"      X std range: [{X_data.std().min():.6f}, {X_data.std().max():.6f}]")
-        
-        if isinstance(X_data, pd.DataFrame):
-            X_scaled, scaler = standardize_data(X_data)
-            X_data = X_scaled
-        
-        if verbose:
-            print(f"    ✓ Standardized (mean=0, std=1)")
-            print(f"      y choices: {y_data.sum()}/{len(y_data)}")
-            print(f"      Choice situations: {ids_data.nunique()}")
-        
-        start_time = time.time()
-        
-        if model_type == 'mixed':
-            print(f"    Fitting MixedLogit (random coeff on richness, 10 Halton draws):")
-            print(f"      Random vars: {list(randvars.keys())}")
-            
-            model = MixedLogit()
-            model.fit(X=X_data, y=y_data, varnames=model_vars_for_model,
-                     ids=ids_data, alts=alts_data, avail=avail_data,
-                     randvars=randvars, n_draws=10,
-                     optim_method='L-BFGS-B',
-                     skip_std_errs=False, mnl_init=False)
-        
-        elapsed = time.time() - start_time
-        if verbose:
-            print(f"    Estimation complete in {elapsed:.1f}s")
-        
-        return model, elapsed, True
-    
-    except Exception as e:
-        print(f"    ERROR: {type(e).__name__}: {str(e)}")
-        traceback.print_exc()
-        return None, 0, False
-
-
-def extract_results(model, model_vars_for_model, y_data, ids_data, alts_data, model_type):
-    """Extract coefficients and statistics"""
-    try:
-        coeff_names = model.coeff_names
-        coeff_values = model.coeff_
-        coeff_stde = model.stderr
-        pvalues = model.pvalues
-        ll = model.loglikelihood
-        aic = model.aic
-        bic = model.bic
-        
-        coef_df = pd.DataFrame({
-            'Estimate': coeff_values,
-            'Std.Err': coeff_stde,
-            'p-value': pvalues,
-        }, index=coeff_names)
-        
-        coef_df['t-stat'] = coef_df['Estimate'] / coef_df['Std.Err']
-        
-        results = {
-            'LL': ll, 'AIC': aic, 'BIC': bic,
-            'N_obs': len(y_data),
-            'N_cov': ids_data.nunique(),
-            'N_alts': alts_data.max(),
-        }
-        
-        return coef_df, results, True
-    except Exception as e:
-        print(f"    ERROR extracting results: {e}")
-        return None, {}, False
-
-
-def calculate_wtp(coef_df, model=None):
-    """Calculate WTP using delta method"""
-    try:
-        price_coeff_idx = None
-        for idx, name in enumerate(coef_df.index):
-            if 'log_travel_cost' in name.lower() or 'travel_cost' in name.lower():
-                price_coeff_idx = idx
-                break
-        
-        if price_coeff_idx is None:
-            return None
-        
-        price_name = coef_df.index[price_coeff_idx]
-        beta_price = coef_df.iloc[price_coeff_idx]['Estimate']
-        se_price = coef_df.iloc[price_coeff_idx]['Std.Err']
-        
-        wtp_data = []
-        
-        for idx, var in enumerate(coef_df.index):
-            if idx == price_coeff_idx:
-                continue
-            
-            beta_attr = coef_df.iloc[idx]['Estimate']
-            se_attr = coef_df.iloc[idx]['Std.Err']
-            
-            wtp_val = beta_attr / (-beta_price)
-            se_wtp = np.sqrt((se_attr / (-beta_price))**2 + (beta_attr * se_price / (beta_price**2))**2)
-            
-            t_stat = wtp_val / (se_wtp + 1e-10)
-            p_val = 2 * (1 - scipy.stats.t.cdf(np.abs(t_stat), df=len(coef_df)))
-            
-            wtp_data.append({
-                'Variable': var,
-                'WTP': wtp_val,
-                'Std.Err': se_wtp,
-                't-stat': t_stat,
-                'p-value': p_val,
-            })
-        
-        wtp_df = pd.DataFrame(wtp_data).set_index('Variable')
-        return wtp_df
-    except Exception as e:
-        print(f"    Error calculating WTP: {e}")
-        return None
 
 
 # ============================================================================
@@ -284,13 +148,7 @@ def main():
             mixed_vars = model_config.get('mixed_vars', [])
             
             # Extract FE column names
-            fe_cols = []
-            for fe_spec in fe_vars:
-                if isinstance(fe_spec, list):
-                    fe_cols.extend(fe_spec)
-                else:
-                    fe_cols.append(fe_spec)
-            fe_cols = [c for c in fe_cols if c in cs.columns]
+            fe_cols = flatten_fe_columns(fe_vars, cs.columns)
             
             # Create FE key for loading means
             fe_key = "-".join(sorted(fe_cols)) if fe_cols else "no_fe"
@@ -335,10 +193,7 @@ def main():
             
             print(f"    Sampling and demeaning (batch processing)...")
             
-            if 'travel_cost_combined' in model_vars:
-                model_vars_for_demean = [v if v != 'travel_cost_combined' else 'log_travel_cost' for v in model_vars]
-            else:
-                model_vars_for_demean = model_vars.copy()
+            model_vars_for_demean = normalize_model_vars_for_demean(model_vars)
             
             choice_set_sample_size = 10
             seed = 12345
@@ -351,28 +206,8 @@ def main():
             for trip_id, group in cs.groupby('trip_id', sort=False):
                 trip_count += 1
                 
-                chosen = group[group['choice'] == 1]
-                not_chosen = group[group['choice'] == 0]
-                
-                n_to_sample = max(0, choice_set_sample_size - len(chosen))
                 trip_seed = seed + (hash(trip_id) % 10000)
-                
-                if n_to_sample > 0 and len(not_chosen) > 0:
-                    not_chosen_sampled = not_chosen.sample(n=min(n_to_sample, len(not_chosen)), random_state=trip_seed)
-                    sampled_group = pd.concat([chosen, not_chosen_sampled], ignore_index=True)
-                else:
-                    sampled_group = group.copy()
-                
-                # Pad to exactly choice_set_sample_size
-                n_current = len(sampled_group)
-                if n_current < choice_set_sample_size:
-                    n_pad = choice_set_sample_size - n_current
-                    pad_rows = sampled_group.iloc[[0] * n_pad].copy()
-                    pad_rows['choice'] = 0
-                    pad_rows['avail'] = 0
-                    sampled_group = pd.concat([sampled_group, pad_rows], ignore_index=True)
-                elif n_current > choice_set_sample_size:
-                    sampled_group = sampled_group.iloc[:choice_set_sample_size].copy()
+                sampled_group = sample_trip_group(group, choice_set_sample_size, trip_seed)
                 
                 # Apply demeaning
                 for var in model_vars_for_demean + mixed_vars:
@@ -419,8 +254,7 @@ def main():
             # PREPARE DATA ARRAYS
             # ===================================================================
             
-            cs_model['obs_id_num_seq'] = cs_model.groupby('obs_id_num', sort=False).ngroup()
-            cs_model['alt_id'] = cs_model.groupby('obs_id_num_seq', sort=False).cumcount() + 1
+            cs_model = add_choice_identifiers(cs_model)
             
             model_vars_for_mixed_dm = [f"{v}_dm" for v in model_vars_for_demean]
             randvars_available = {f"{var}_dm": 'n' for var in mixed_vars if f"{var}_dm" in model_vars_for_mixed_dm}
@@ -444,10 +278,15 @@ def main():
             # ===================================================================
             
             print(f"    Estimating mixed model...")
-            model_mixed, elapsed_mixed, success_mixed = estimate_model(
-                X_data, y_data, ids_data, alts_data, avail_data,
-                model_vars_for_mixed_dm, None, None,
-                'mixed', randvars_available, init_coeff=None, verbose=True
+            model_mixed, elapsed_mixed, success_mixed = estimate_mixed_logit(
+                X_data,
+                y_data,
+                ids_data,
+                alts_data,
+                avail_data,
+                model_vars_for_mixed_dm,
+                randvars_available,
+                verbose=True,
             )
             
             if not success_mixed or model_mixed is None:
@@ -456,9 +295,7 @@ def main():
                 continue
             
             # Extract results
-            coef_df_mixed, results_mixed, success = extract_results(
-                model_mixed, model_vars_for_mixed_dm, y_data, ids_data, alts_data, 'mixed'
-            )
+            coef_df_mixed, results_mixed, success = extract_results(model_mixed, y_data, ids_data, alts_data)
             
             if not success or coef_df_mixed is None:
                 print(f"  ✗ Results extraction failed")

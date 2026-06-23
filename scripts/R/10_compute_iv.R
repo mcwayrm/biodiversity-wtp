@@ -291,3 +291,6 @@ if (!is.null(outputs$iv_panel) && nzchar(outputs$iv_panel)) {
 message("Saved IV-enriched data: ", basename(outputs$master_data_with_iv))
 message("IV availability: ", master_data[!is.na(IV_dt), .N], " / ", nrow(master_data), " rows")
 cat(paste0("=", strrep("=", 70), "\n"))
+
+
+stops

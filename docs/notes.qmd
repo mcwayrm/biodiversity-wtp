@@ -40,6 +40,84 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 
+::: {.callout-note collapse="true"}
+# 06/23/2026
+
+> Raahil, Matt, Jovin, Ryan
+
+## TODO: 
+- Re-running the script 10 (Ryan)
+- Expand on how to do the control funciton efficently (Ryan)
+- Updated travel cost transfer (Jovin/Matt)
+- Histogram of biodiversity over choice sets (Matt)
+- Line graph of user visits by month and migrant hotspots (Jovin)
+- MODIS 2024 data transfer (Raahil/Matt)
+- Continue writing (Raahil)
+- Incoporating species level appearance index (Jovin)
+- Map specific tests to each explanation (Ryan)
+
+## AGENDA:
+
+1. Updating travel cost data (expand to 2024 and average cost across the four cities) (Jovin)
+    - We should be finalized on this. 
+    - 3 cities: Delhi, Chennai, Mumbai
+    - Average travel cost decreased to 140.49 rupees on average
+    - Range: 2015 - 2024
+2. Updating the results with expanded years and updated travel cost (Matt)
+    - No complete run with the new cost data. 
+        - Code is updated, but need the updated input data for travel cost measures. 
+        - Need to re-download. 
+    - Need to updated MODIS data for 2024 (Raahil)
+        - % Tree cover. 
+        - Already have other 2 ERA variables for the full time frame. 
+        - Can currently update for 2023.
+3. Incorporating the IV in the regression output (Ryan)
+    - Successfully ran the whole pipeline through. 
+    - Incorporated script 10 for the compute IV
+    - Will need to bootstrap the IV to get the correct standard errors. 
+    - Need an effecient way to do this given the long run time for the xlogit.
+4. Need to add a graphic of the demand changes by month over time (Jovin)   
+    - Explains one of the explanations for the WTP measures
+    - Could be the demand changes with time also
+    - Will make a line graph of user visits by month and migrant/resident. 
+5. Think through the story of the results (All)
+    - Potential explanations: 
+        - Supply and demand are off setting each other. 
+            - What is exactly is the variation we are identifying off considering the controls and FE?
+            - A version of model with / without the site-season FE. 
+            - But even with FE you can violate parallel trends in other ways (motivates IV)
+        - Demand during migration months 
+            - Can we hold the demand curve constant. 
+            - Site-Season FE should have already accounted for this
+            - Congestion is another control that should hold demand constant
+        - IV creates exogenous variation in expectation
+            - So, an outside variation in exected utility. 
+            - Can use the IV because we cannot unbundle WTP from other unobserved determinates (in the epsilon)
+        - Perhaps WTP is actually low
+            - Potential issue: we impute wealth so we don't observe it direlty. 
+            - This would be consistent with envriodevonomics literature that envrionmental quality is a luxury good. 
+            - But perhaps recreation is not culturally desriable. So closer to an inferior good relative to the outside option (staying at home to watch TV). 
+        - Folks do not actually care about biodiversity but rather just charasmatic species. 
+            - So, only seeking out places with very attractive species. 
+            - Could make an index of the fancy bird vistations by hotspot. 
+            - Sort of already observed by seasonality of WTP
+            - Could try to do a physical apperance index from e-bird
+                - Can consult with Colleen on ornothology
+                - https://opentraits.org/datasets/avonet.html
+        - Perhaps artificial biodiversity is avaliable at home
+            - At low cost, can see diverse species with a documentary instead of searching with hit/miss at hotspots. 
+        - We may have too little identifying variation
+            - All the fixed effects are soaking up all the variation. So very little to identify off of. 
+            - If different sites are very similar within states, then very little to identify off of. 
+            - Solution, successively add in FE to see what changes. 
+            - Would like to see the variation/distribution of biodiversity
+                - Summary Stat figure which is SD of biodiversity within choice sets (histogram). 
+                - Historam of expeceted diversity within an individual across choice sets.
+6. Plan for the remainder of the summer (All) 
+    - Potentially doing working sessions this summer. 
+    - 
+
+:::
 
 ::: {.callout-note collapse="true"}
 # 06/05/2026
