@@ -48,9 +48,10 @@ master_cs50km <- readRDS(master_cs50km_path)
 master_cs50km <- master_cs50km %>%
   left_join(dist_centroids, by = "c_code_2011") %>%
   mutate(year = as.integer(year)) %>%
-  filter(year >= 2011 & year <= 2021)
+  filter(year >= 2011 & year <= 2024)
 
-
+min(master_cs50km$year, na.rm = TRUE)
+max(master_cs50km$year, na.rm = TRUE)
 # ----------------------------------------
 # Load and process GDP data
 # ----------------------------------------
@@ -64,34 +65,40 @@ gdp_path <- file.path(
 gdp_all <- read_csv(gdp_path)
 
 gdp_india <- gdp_all %>%
-  filter(iso == "IND", year >= 2011, year <= 2021) %>%
+  filter(iso == "IND", year >= 2011, year <= 2024) %>%
   mutate(year = as.integer(year))
 
 range(master_cs50km$year, na.rm = TRUE)
 range(gdp_india$year, na.rm = TRUE)
 
-gdp_india <- gdp_india %>%filter(year >= 2015 & year <= 2021) # Conditioning to match choice set data time range
+gdp_india <- gdp_india %>%filter(year >= 2015 & year <= 2024) # Conditioning to match choice set data time range
 
 # ---- 3. CPI DEFLATOR  (FRED — INDCPIALLAINMEI, base 2015=100) ---------------
 #
-# We deflate nominal GDP per capita to real 2021 INR so that income/wages are
+# We deflate nominal GDP per capita to real 2015 INR so that income/wages are
 # comparable in constant-purchasing-power terms across the panel.
-# Deflation formula: real_t = nominal_t × (CPI_2021 / CPI_t)
+# Since the CPI series is already indexed to 2015 = 100, the anchor is CPI_2015.
+# Deflation formula: real_t = nominal_t * (CPI_2015 / CPI_t)
 
 cpi_path <- file.path(
   input_data_dir,
   "CPI",
-  "INDCPIALLAINMEI.csv"
+  "INDCPIALLAINMEI.xlsx"
 )
 
-cpi_raw <- read_csv(cpi_path)
+cpi_raw <- readxl::read_excel(
+  cpi_path,
+  sheet = "Annual"
+)
 
 cpi_df <- cpi_raw %>%
   mutate(year = lubridate::year(as.Date(observation_date))) %>%
   rename(cpi = INDCPIALLAINMEI) %>%
-  select(year, cpi)
+  dplyr::select(year, cpi) %>%
+  group_by(year) %>%
+  summarise(cpi = mean(cpi, na.rm = TRUE), .groups = "drop")
 
-cpi_2021 <- cpi_df$cpi[cpi_df$year == 2021]
+cpi_2015 <- cpi_df$cpi[cpi_df$year == 2015]
 
 
 # ---- 4. EXCHANGE RATE  (USD to INR) ------------------------------------------
@@ -100,18 +107,20 @@ cpi_2021 <- cpi_df$cpi[cpi_df$year == 2021]
 # to nominal INR using year-specific INR/USD exchange rates.
 
 exchange_df <- tibble(
-  year = 2015:2021,
+  year = 2015:2024,
   usd_to_inr = c(
-    64.15,
-    67.19,
-    65.12,
-    68.43,
-    70.41,
-    74.10,
-    73.93
+    64.15,  # 2015
+    67.19,  # 2016
+    65.12,  # 2017
+    68.43,  # 2018
+    70.41,  # 2019
+    74.10,  # 2020
+    73.93,  # 2021
+    77.44,  # 2022
+    82.57,  # 2023
+    83.50   # 2024
   )
 )
-
 
 # ---- 5. CONVERT GDP TO NOMINAL INR -------------------------------------------
 #
@@ -124,15 +133,15 @@ gdp_india <- gdp_india %>%
   )
 
 
-# ---- 6. DEFLATE TO REAL 2021 INR ---------------------------------------------
+# ---- 6. DEFLATE TO REAL 2015 INR ---------------------------------------------
 #
-# Convert nominal INR GDP per capita into real 2021 INR.
+# Convert nominal INR GDP per capita into real 2015 INR.
 
 gdp_india <- gdp_india %>%
   left_join(cpi_df, by = "year") %>%
   mutate(
-    gdppc_real_2021_INR =
-      round(gdppc_nominal_INR * (cpi_2021 / cpi), 2)
+    gdppc_real_2015_INR =
+      round(gdppc_nominal_INR * (cpi_2015 / cpi), 2)
   )
 
 
@@ -174,14 +183,13 @@ matched_list <- lapply(names(master_cs50km_list), function(yr) {
   
   master_year %>%
     mutate(
-      gdppc_real_2021_INR =
-        gdp_year$gdppc_real_2021_INR[nearest_indices]
+      gdppc_real_2015_INR =
+        gdp_year$gdppc_real_2015_INR[nearest_indices]
     )
 })
 
 master_cs50km <- bind_rows(matched_list) %>%
   st_drop_geometry()
-
 
 # --------------------------------------------------------
 # ASSUMPTIONS
@@ -215,8 +223,7 @@ driving_cost_df <- readRDS(driving_cost_path) %>%
     year = as.integer(year),
     driving_cost = as.numeric(driving_cost)
   ) %>%
-  filter(year >= 2015 & year <= 2021)
-
+  filter(year >= 2015 & year <= 2024)
 
 # --------------------------------------------------------
 # Calculate travel cost
@@ -227,28 +234,21 @@ master_cs50km <- master_cs50km %>%
     geo_dist_cluster = as.numeric(geo_dist_cluster),
     
     # GDP per capita at home location converted to hourly wage
-    hourly_wage = gdppc_real_2021_INR / work_hours
+    hourly_wage = gdppc_real_2015_INR / work_hours
   ) %>%
   left_join(driving_cost_df, by = "year") %>%
   mutate(
+    travel_time_hours = geo_dist_cluster / travel_speed_kmph,
     
-    # One-way travel time = distance / speed
-    travel_time_hours =
-      geo_dist_cluster / travel_speed_kmph,
-    
-    # Round-trip time cost = 2 x value-of-time fraction x hourly wage x travel time
     time_cost =
       2 * time_value_fraction * hourly_wage * travel_time_hours,
     
-    # One-way driving cost = distance x year-specific INR/km
     fuel_cost =
       geo_dist_cluster * driving_cost,
     
-    # Total travel cost
     travel_cost_combined =
       time_cost + fuel_cost,
     
-    # Log travel cost
     log_travel_cost_combined =
       log1p(travel_cost_combined)
   )
@@ -269,16 +269,31 @@ master_cs50km %>%
   count(year)
 
 master_cs50km %>%
-  filter(is.na(gdppc_real_2021_INR)) %>%
+  filter(is.na(gdppc_real_2015_INR)) %>%
   count(year)
 
-summary(master_cs50km$gdppc_real_2021_INR)
+summary(master_cs50km$gdppc_real_2015_INR)
 summary(master_cs50km$travel_cost_combined)
 
-windows()
+
+
+# --------------------------------------------------------
+# Plot and save travel cost distribution
+# --------------------------------------------------------
 
 x <- master_cs50km$travel_cost_combined
 x <- x[!is.na(x)]
+
+png(
+  filename = file.path(
+    input_data_dir,
+    "driving_cost",
+    "travel_cost_distribution.png"
+  ),
+  width = 2400,
+  height = 1800,
+  res = 300
+)
 
 hist(
   x,
@@ -286,34 +301,52 @@ hist(
   probability = TRUE,
   col = "grey85",
   border = "white",
-  main = "Travel Cost Distribution",
-  xlab = "Travel Cost (real 2021 INR)",
+  main = "",
+  xlab = "Travel Cost (real 2015 INR)",
   ylab = "Density",
-  cex.main = 1.8,
-  cex.lab = 1.3,
-  cex.axis = 1.1
+  cex.lab = 1.4,
+  cex.axis = 1.2
 )
 
-dens <- density(x, bw = "nrd0")
+dens <- density(
+  x,
+  bw = "nrd0"
+)
 
 lines(
   dens,
   col = "#1F78B4",
-  lwd = 1.5
+  lwd = 2
 )
 
 abline(
   v = mean(x),
   col = "#E31A1C",
-  lwd = 1.5,
+  lwd = 2,
   lty = 2
 )
 
 legend(
   "topleft",
-  legend = c("Kernel Density", "Mean"),
+  legend = c(
+    "Kernel Density",
+    paste0("Mean = ", round(mean(x), 2))
+  ),
   col = c("#1F78B4", "#E31A1C"),
-  lwd = 1.5,
+  lwd = 2,
   lty = c(1, 2),
-  bty = "n"
+  bty = "n",
+  cex = 1.1
+)
+
+dev.off()
+
+cat(
+  "Figure saved to:\n",
+  file.path(
+    input_data_dir,
+    "driving_cost",
+    "travel_cost_distribution.png"
+  ),
+  "\n"
 )
