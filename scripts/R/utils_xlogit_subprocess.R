@@ -53,36 +53,65 @@ call_xlogit_estimation <- function(
     message(paste0("\n[XLOGIT] Starting Python subprocess for scenario: ", scenario_name))
     message(paste0("[XLOGIT] Log file: ", log_file))
   }
-  
-  # Build command - use bash -l to initialize conda properly
-  cmd_string <- paste(
-    "export PYTHONUNBUFFERED=1;",
-    "cd", shQuote(getwd()), ";",
-    "conda run -n", conda_env_name,
-    "python", shQuote(python_script),
-    "--scenario", scenario_name,
-    "--input-data", shQuote(input_data_path),
-    "--output-dir", shQuote(output_dir),
-    "--models-config", models_config
-  )
-  
-  # Wrap in bash -l for login shell (initializes conda)
-  full_cmd <- paste("bash -l -c", shQuote(cmd_string))
-  
+
   if (verbose) {
     message(paste0("[XLOGIT] Executing command..."))
   }
-  
-  # Run with bash login shell - output streams to console in real-time
-  exit_code <- system(full_cmd)
+
+  # Run conda subprocess in a cross-platform way and capture output to log file.
+  env_vars <- c("PYTHONUNBUFFERED=1")
+  cmd_args <- c(
+    "run", "-n", conda_env_name,
+    "python", python_script,
+    "--scenario", scenario_name,
+    "--input-data", input_data_path,
+    "--output-dir", output_dir,
+    "--models-config", models_config
+  )
+  conda_candidates <- if (.Platform$OS.type == "windows") {
+    c("conda", "conda.bat", "conda.exe")
+  } else {
+    c("conda")
+  }
+
+  exit_code <- 127L
+  launch_error <- NULL
+  for (conda_cmd in conda_candidates) {
+    attempt <- tryCatch(
+      system2(
+        command = conda_cmd,
+        args = cmd_args,
+        stdout = log_file,
+        stderr = log_file,
+        wait = TRUE,
+        env = env_vars
+      ),
+      error = function(e) {
+        launch_error <<- e$message
+        NULL
+      }
+    )
+
+    if (!is.null(attempt)) {
+      exit_code <- attempt
+      break
+    }
+  }
+
+  if (is.null(attempt) && !is.null(launch_error)) {
+    warning(paste0("Failed to launch conda subprocess: ", launch_error))
+  }
   
   # After completion, try to read any log files that were created
   log_files <- list.files(file.path(output_dir, "logs"), pattern = scenario_name, full.names = TRUE)
   stdout_text <- ""
   stderr_text <- ""
-  
-  if (length(log_files) > 0) {
-    # Try to read the most recent log file
+
+  if (file.exists(log_file)) {
+    log_content <- readLines(log_file, warn = FALSE)
+    stdout_text <- paste(log_content, collapse = "\n")
+  } else if (length(log_files) > 0) {
+    # Fallback: try to read the most recent matching log file
     latest_log <- log_files[which.max(file.info(log_files)$mtime)]
     if (file.exists(latest_log)) {
       log_content <- readLines(latest_log, warn = FALSE)
