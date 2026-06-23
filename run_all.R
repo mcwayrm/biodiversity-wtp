@@ -214,7 +214,24 @@ for (scenario_name in names(scenarios)) {
   )
 
   # Stage 10: Compute IV
-
+  run_task(
+    "10_compute_iv.R",
+    inputs = list(
+      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet"),
+      district_shp = file.path(input_data_dir, "districts", "district-2011"),
+      species_ranges = file.path(input_data_dir, "species", "BOTW_2024_2.gpkg"),
+      migratory_status = file.path(input_data_dir, "migratory_status", "species_list_categorized.csv"),
+      missing_migration = file.path(input_data_dir, "migratory_status", "missing_migration.csv"),
+      flu_outbreaks = file.path(input_data_dir, "flu_outbreaks", "flu_outbreaks_with_country.csv"),
+      voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg")
+    ),
+    outputs = list(
+      master_data_with_iv = file.path(scenario_dir, "master_data_with_iv.parquet"),
+      iv_panel = file.path(scenario_dir, "iv_panel.parquet")
+    ),
+    params = params,
+    scenario_name = scenario_name
+  )
   # --- Model Estimation & Output Tasks (11-12) ---
   
   # Stage 11: Estimate RUM Models via Python (one call per scenario)
@@ -223,7 +240,7 @@ for (scenario_name in names(scenarios)) {
   run_task(
     "11a_model_data_prep.R",
     inputs = list(
-      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
+      master_data_with_iv = file.path(scenario_dir, "master_data_with_iv.parquet")
     ),
     outputs = list(
       model_data = file.path("output", "models", sprintf("model_data_%s.parquet", scenario_name))

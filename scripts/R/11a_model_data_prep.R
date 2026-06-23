@@ -6,7 +6,8 @@
 # Computes global means by FE structure for later demeaning
 #
 # Expected inputs:
-#   inputs$master_data_with_travel_cost - Raw choice set parquet
+#   inputs$master_data_with_iv - IV-enriched choice set parquet
+#   inputs$master_data_with_travel_cost - Fallback raw choice set parquet
 #
 # Expected outputs:
 #   outputs$model_data - Filtered/prepped parquet
@@ -18,12 +19,18 @@ cat(paste0("=", strrep("=", 70), "\n"))
 cat(sprintf("Scenario: %s\n", scenario_name))
 
 # Load raw data
-if (!file.exists(inputs$master_data_with_travel_cost)) {
-  stop(sprintf("Input file not found: %s", inputs$master_data_with_travel_cost))
+input_data_path <- if (!is.null(inputs$master_data_with_iv)) {
+  inputs$master_data_with_iv
+} else {
+  inputs$master_data_with_travel_cost
 }
 
-cat(sprintf("Loading: %s\n", basename(inputs$master_data_with_travel_cost)))
-cs <- read_parquet(inputs$master_data_with_travel_cost)
+if (!file.exists(input_data_path)) {
+  stop(sprintf("Input file not found: %s", input_data_path))
+}
+
+cat(sprintf("Loading: %s\n", basename(input_data_path)))
+cs <- read_parquet(input_data_path)
 setDT(cs)
 cat(sprintf("  %.0fM rows\n", nrow(cs) / 1e6))
 
