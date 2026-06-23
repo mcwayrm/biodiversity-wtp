@@ -39,10 +39,8 @@ call_xlogit_estimation <- function(
   timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   log_file <- file.path(log_dir, paste0(scenario_name, "_", timestamp, ".log"))
   
-  # Build Python command with all arguments
-  cmd <- c(
-    "conda", "run", "-n", conda_env_name,
-    "python", python_script,
+  # Build Python script arguments
+  script_args <- c(
     "--scenario", scenario_name,
     "--input-data", input_data_path,
     "--output-dir", output_dir,
@@ -58,33 +56,63 @@ call_xlogit_estimation <- function(
     message(paste0("[XLOGIT] Executing command..."))
   }
 
-  # Run conda subprocess in a cross-platform way and capture output to log file.
-  env_vars <- c("PYTHONUNBUFFERED=1")
-  cmd_args <- c(
-    "run", "-n", conda_env_name,
-    "python", python_script,
-    "--scenario", scenario_name,
-    "--input-data", input_data_path,
-    "--output-dir", output_dir,
-    "--models-config", models_config
-  )
-  conda_candidates <- if (.Platform$OS.type == "windows") {
-    c("conda", "conda.bat", "conda.exe")
-  } else {
-    c("conda")
+  # Resolve launcher: prefer direct env python (most reliable on Windows),
+  # then fall back to conda run.
+  is_windows <- .Platform$OS.type == "windows"
+  home_dir <- path.expand("~")
+  candidate_bases <- unique(c(
+    normalizePath(Sys.getenv("CONDA_PREFIX", unset = ""), winslash = "/", mustWork = FALSE),
+    file.path(home_dir, "miniforge3"),
+    file.path(home_dir, "miniconda3"),
+    file.path(home_dir, "anaconda3"),
+    "C:/ProgramData/miniforge3",
+    "C:/ProgramData/miniconda3",
+    "C:/ProgramData/anaconda3"
+  ))
+  candidate_bases <- candidate_bases[nzchar(candidate_bases)]
+
+  py_rel <- if (is_windows) "python.exe" else file.path("bin", "python")
+  python_candidates <- file.path(candidate_bases, "envs", conda_env_name, py_rel)
+  python_candidates <- python_candidates[file.exists(python_candidates)]
+
+  launch_plan <- list()
+  if (length(python_candidates) > 0) {
+    launch_plan[[1]] <- list(
+      command = python_candidates[[1]],
+      args = c(python_script, script_args)
+    )
+  }
+
+  conda_candidates <- unique(c(
+    if (is_windows) {
+      c(
+        file.path(candidate_bases, "condabin", "conda.bat"),
+        file.path(candidate_bases, "Scripts", "conda.exe"),
+        "conda", "conda.bat", "conda.exe"
+      )
+    } else {
+      c(file.path(candidate_bases, "bin", "conda"), "conda")
+    }
+  ))
+  conda_candidates <- conda_candidates[file.exists(conda_candidates) | conda_candidates %in% c("conda", "conda.bat", "conda.exe")]
+  for (conda_cmd in conda_candidates) {
+    launch_plan[[length(launch_plan) + 1]] <- list(
+      command = conda_cmd,
+      args = c("run", "-n", conda_env_name, "python", python_script, script_args)
+    )
   }
 
   exit_code <- 127L
   launch_error <- NULL
-  for (conda_cmd in conda_candidates) {
+  executed_cmd <- NULL
+  for (plan in launch_plan) {
     attempt <- tryCatch(
       system2(
-        command = conda_cmd,
-        args = cmd_args,
+        command = plan$command,
+        args = plan$args,
         stdout = log_file,
         stderr = log_file,
-        wait = TRUE,
-        env = env_vars
+        wait = TRUE
       ),
       error = function(e) {
         launch_error <<- e$message
@@ -94,12 +122,13 @@ call_xlogit_estimation <- function(
 
     if (!is.null(attempt)) {
       exit_code <- attempt
+      executed_cmd <- c(plan$command, plan$args)
       break
     }
   }
 
-  if (is.null(attempt) && !is.null(launch_error)) {
-    warning(paste0("Failed to launch conda subprocess: ", launch_error))
+  if (is.null(executed_cmd) && !is.null(launch_error)) {
+    warning(paste0("Failed to launch Python subprocess: ", launch_error))
   }
   
   # After completion, try to read any log files that were created
@@ -129,7 +158,7 @@ call_xlogit_estimation <- function(
   log_content <- c(
     paste0("XLOGIT Subprocess Log - ", Sys.time()),
     paste0("Scenario: ", scenario_name),
-    paste0("Command: ", paste(cmd, collapse = " ")),
+    paste0("Command: ", paste(if (!is.null(executed_cmd)) executed_cmd else c("<not launched>"), collapse = " ")),
     paste0("Exit Code: ", exit_code),
     "",
     "=== STDOUT ===",
