@@ -39,6 +39,79 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
+::: {.callout-note collapse="true"}
+# 07/07/2026
+
+> Jovin, Ryan
+
+## Updates: 
+- Map specific tests to each explanation (Ryan)
+    - Supply and demand offsetting (compensating differential) 
+        - Logic: high-biodiversity sites already have offsetting costs (congestion, crowding, access restrictions, entrance fees) baked in, so coefficient understates true WTP because biodiversity is already "priced" through other channels.
+        - A version of model with / without the site-season FE
+        - Can use the IV because we cannot unbundle WTP from other unobserved determinates (in the epsilon)
+        - Counterargument: Site-season FE should have already accounted for this. Show model with successively adding FE (show a big difference in coefficient). 
+    - Seasonal Migration Demand
+        - Logic: Users trade off overall biodiversity to seek out rarer species (migrants) with seasonal inflow of supply  
+        - Site-Season FE should have already accounted for this
+        - Congestion is another control that should hold demand constant
+        - A historgram of relative migratory species captured should spike during winter while resident species visits are relatively flat. 
+        - If the average preference for residence is constant over time. And the sites that have migratory species should spike in migratory months. 
+            - Line graph with three lines: migrants at migrant sites, residents at migrant sites, residents at resident sites.
+    - WTP is actually low
+        - Logic: Envirodevonomics explantion of environmental goods as luxury goods.
+        - If we get individual WTP, then we can map this back to the gridded data. 
+        - Can observe does high WTP map onto the income. 
+        - Could try to show this with an Engle curve
+    - Charasmatic species instead of biodiversity. 
+        - Logic: Biodiversity is the nature attribute driving demand. This is omitted variable bias.
+        - An index of the fancy bird vistations by hotspot. 
+            - Could try to do a physical apperance index from e-bird
+                - Can consult with Colleen on ornothology
+                - https://opentraits.org/datasets/avonet.html
+            - Since data driven, is it actually rare or just undesirable.
+            - Should look up species rarity index. 
+        - Additionally, we can create a rarity index for each species. What are the least likley species to be observed in India. So hotspots with the highest likelihood of observing a rare species may drive specific users. 
+        - Add this into the model as an attribute. This may absorb the biodiversity effect.
+            - Will need to have counteracting effects. 
+            - So will rarity/charasmatic species postive or negatively correlated to biodiversity (does biodiversity crowd out)
+    - Insufficient identifying variation
+        - Logic: Too little variation to identify the effect of biodiversity on WTP attenutating effect size.
+        - Solution, successively add in FE to see what changes. 
+            - Empirically, what is the within R^2 at each point. 
+        - Would like to see the variation/distribution of biodiversity
+            - Summary Stat figure which is SD of biodiversity within choice sets (histogram). 
+            - Historam of expeceted diversity within an individual across choice sets.
+    - Artificial biodiversity Substitues (TV documentaries) -- Leave this one. 
+        - Logic: Subsistution effects drive down WTP
+        - The data starts in 2015 so we cannot do internet/TV expansion (also correlated with our measure of income)
+        - The closest we could speak to this would be some measure of nature documentary viewership.
+        - We could control for distance to nearest zoo 
+    - Sample selection on the extensive margin
+        - Logic: eBird users who already selected into birding — a group that plausibly has near-maximal WTP for biodiversity already baked into their choice to be birders at all.
+        - Untestable unless we get a different set of users for comparison.
+        - DROP THIS. The identifying variation comes from switching between sites, not the extensive margin.
+    - Reference dependence/novelty decay.
+        - Logic: Users may have a reference point for biodiversity and may not value additional biodiversity beyond that reference point.
+        - Test by restricting the sample of observations with first time a user visits a given site. 
+        - How many unique hotspots does a user visit? Histogram.
+- MODIS 2024 data transfer (Raahil/Matt)
+    - DONE. 
+- Stylized Facts section motivating the model (Ryan)
+    - Stylized Fact 1: Who are these users?
+    - Stylized Fact 2: Hotspot visitation fluctuate seasonally.
+    - Stylized Fact 3: Biodiversity varies across a user's choice set.
+- Updated travel cost transfer (Jovin/Matt)
+    - DONE. 
+    - Matt re-running pipeline to incorporate it.
+- Line graph of user visits by month and migrant hotspots (Jovin)
+    - Comparing number of user visist seasonally by sights that only see residents compared to sites that ever see migrants. 
+        - Comparing above and below median of migratory or resident species.
+    - Steps:  
+        - 1. Limit to the winter months. Classify sites by number of migrant species observations. This creates migrant/resident hotspots.
+        - 2. Then create the count of resident and migrant species observations by month for each hotspot. 
+        - 3. Then create a line graph for the four groups of hotspot type (resident/migrant) and species observation (resident/migrant).
+:::
 
 ::: {.callout-note collapse="true"}
 # 06/23/2026
@@ -115,7 +188,6 @@ For notes, we present the most recent first so that notes are chronologically mo
                 - Historam of expeceted diversity within an individual across choice sets.
 6. Plan for the remainder of the summer (All) 
     - Potentially doing working sessions this summer. 
-    - 
 
 :::
 
