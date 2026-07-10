@@ -1,0 +1,1209 @@
+---
+title: "Untitled"
+author: "Jovin Lasway"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls()); gc()
+
+library(arrow)
+
+master_data <- read_parquet(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+# Check it loaded
+dim(master_data)
+names(master_data)
+head(master_data)
+```
+
+
+```{r cars}
+library(arrow)
+library(dplyr)
+
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+# check columns
+names(master_ds)
+
+# see first rows without loading everything
+master_ds %>%
+  head(10) %>%
+  collect()
+
+# load only selected columns
+master_small <- master_ds %>%
+  select(species, season, travel_cost, everything()) %>%
+  collect()
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r}
+library(arrow)
+library(dplyr)
+library(ggplot2)
+
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+monthly_demand <- master_ds %>%
+  mutate(
+    month_date = as.Date(paste0(year_month, "-01"))
+  ) %>%
+  group_by(month_date) %>%
+  summarise(
+    total_visits = n(),
+    migrant_richness = mean(migrant_richness, na.rm = TRUE),
+    resident_richness = mean(resident_richness, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect()
+
+ggplot(monthly_demand, aes(x = month_date, y = total_visits)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "User Visits by Month Over Time",
+    x = "Month",
+    y = "Number of User Visits"
+  ) +
+  theme_minimal()
+```
+```{r}
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# Open full parquet without loading it into memory
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+# Summarize full data by month first
+monthly_demand <- master_ds %>%
+  group_by(year_month) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    avg_migrant_richness = mean(migrant_richness, na.rm = TRUE),
+    avg_resident_richness = mean(resident_richness, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    month_date = as.Date(paste0(as.character(year_month), "-01"))
+  ) %>%
+  arrange(month_date)
+
+# Graph 1: total visits over time
+ggplot(monthly_demand, aes(x = month_date, y = total_visits)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "User Visits by Month Over Time",
+    x = "Month",
+    y = "Number of User Visits"
+  ) +
+  theme_minimal()
+
+# Graph 2: migrant vs resident visits
+monthly_visits_long <- monthly_demand %>%
+  select(month_date, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  )
+
+ggplot(monthly_visits_long, aes(x = month_date, y = visits, color = bird_type)) +
+  geom_line(linewidth = 1) +
+  labs(
+    title = "User Visits by Month: Migrant vs Resident Birds",
+    x = "Month",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_minimal()
+```
+```{r}
+rm(list = ls())
+gc()
+
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# ------------------------------------------------------------
+# 1. Open full parquet file
+# ------------------------------------------------------------
+
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+names (master_ds)
+
+# First 50 rows
+master_50 <- master_ds %>%
+  head(50) %>%
+  collect()
+
+View(master_50)
+# ------------------------------------------------------------
+# 2. Seasonal demand: full data summarized by year-season
+# ------------------------------------------------------------
+
+seasonal_demand <- master_ds %>%
+  filter(!is.na(year), !is.na(season)) %>%
+  group_by(year, season) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    avg_migrant_richness = mean(migrant_richness, na.rm = TRUE),
+    avg_resident_richness = mean(resident_richness, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    ),
+    year_season = paste(year, season, sep = "-")
+  ) %>%
+  arrange(year, season)
+
+# ------------------------------------------------------------
+# 3. Figure 1: total visits by season over time
+# ------------------------------------------------------------
+
+ggplot(seasonal_demand,
+       aes(x = year_season, y = total_visits, group = 1)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    title = "Birdwatching Demand by Season Over Time",
+    x = "Year-Season",
+    y = "Number of User Visits"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 4. Figure 2: migrant vs resident visits by season over time
+# ------------------------------------------------------------
+
+seasonal_visits_long <- seasonal_demand %>%
+  select(year, season, year_season, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    bird_type = recode(
+      bird_type,
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+ggplot(seasonal_visits_long,
+       aes(x = year_season, y = visits,
+           color = bird_type, group = bird_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    title = "User Visits by Season: Migrant vs Resident Birds",
+    x = "Year-Season",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 5. Cleaner paper-style figure: average seasonal demand
+# ------------------------------------------------------------
+
+seasonal_avg <- master_ds %>%
+  filter(!is.na(season)) %>%
+  group_by(season) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    avg_migrant_richness = mean(migrant_richness, na.rm = TRUE),
+    avg_resident_richness = mean(resident_richness, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    )
+  ) %>%
+  arrange(season)
+
+seasonal_avg_long <- seasonal_avg %>%
+  select(season, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    bird_type = recode(
+      bird_type,
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+ggplot(seasonal_visits_long,
+       aes(x = year_season, y = visits,
+           color = bird_type, group = bird_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(
+    breaks = seasonal_demand$year_season[
+      seasonal_demand$year %in% c(2015, 2017, 2019, 2021)
+    ]
+  ) +
+  labs(
+    title = "User Visits by Season: Migrant vs Resident Birds",
+    x = "Year-Season",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+
+```{r}
+rm(list = ls())
+gc()
+
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# ------------------------------------------------------------
+# 1. Open full parquet file
+# ------------------------------------------------------------
+
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+names(master_ds)
+
+# First 50 rows
+master_50 <- master_ds %>%
+  head(50) %>%
+  collect()
+
+View(master_50)
+
+# ------------------------------------------------------------
+# 2. Seasonal demand: full data summarized by year-season
+# ------------------------------------------------------------
+
+seasonal_demand <- master_ds %>%
+  filter(!is.na(year), !is.na(season)) %>%
+  group_by(year, season) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    avg_migrant_richness = mean(migrant_richness, na.rm = TRUE),
+    avg_resident_richness = mean(resident_richness, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    ),
+    year_season = paste(year, season, sep = "-")
+  ) %>%
+  arrange(year, season)
+
+# ------------------------------------------------------------
+# 3. Figure 1: total visits by season over time
+# ------------------------------------------------------------
+
+ggplot(seasonal_demand,
+       aes(x = year_season, y = total_visits, group = 1)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Year-Season",
+    y = "Number of User Visits"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 4. Figure 2: migrant vs resident visits by season over time
+# ------------------------------------------------------------
+
+seasonal_visits_long <- seasonal_demand %>%
+  select(year, season, year_season, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    bird_type = recode(
+      bird_type,
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+ggplot(seasonal_visits_long,
+       aes(x = year_season, y = visits,
+           color = bird_type, group = bird_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Year-Season",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 5. Paper-style figure with Total + Migrant + Resident
+# ------------------------------------------------------------
+
+seasonal_avg <- master_ds %>%
+  filter(!is.na(season)) %>%
+  group_by(season) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    avg_migrant_richness = mean(migrant_richness, na.rm = TRUE),
+    avg_resident_richness = mean(resident_richness, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    )
+  ) %>%
+  arrange(season)
+
+seasonal_visits_long <- seasonal_demand %>%
+  select(year, season, year_season, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    bird_type = recode(
+      bird_type,
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+# Add total visits
+total_visits_long <- seasonal_demand %>%
+  select(year, season, year_season, total_visits) %>%
+  rename(visits = total_visits) %>%
+  mutate(bird_type = "Total")
+
+seasonal_visits_long <- bind_rows(
+  seasonal_visits_long,
+  total_visits_long
+)
+
+ggplot(seasonal_visits_long,
+       aes(x = year_season,
+           y = visits,
+           color = bird_type,
+           group = bird_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(
+    breaks = seasonal_demand$year_season[
+      seasonal_demand$year %in% c(2015, 2017, 2019, 2021)
+    ]
+  ) +
+  labs(
+    x = "Year-Season",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 6. Difference between migrant and resident visits
+# ------------------------------------------------------------
+
+seasonal_difference <- seasonal_demand %>%
+  mutate(
+    migrant_resident_diff = migrant_visits - resident_visits
+  )
+
+ggplot(seasonal_difference,
+       aes(x = year_season,
+           y = migrant_resident_diff,
+           group = 1)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(
+    breaks = seasonal_demand$year_season[
+      seasonal_demand$year %in% c(2015, 2017, 2019, 2021)
+    ]
+  ) +
+  labs(
+    x = "Year-Season",
+    y = "Migrant Visits - Resident Visits"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+```{r}
+rm(list = ls())
+gc()
+
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+# ------------------------------------------------------------
+# 1. Open full parquet file
+# ------------------------------------------------------------
+
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+names(master_ds)
+
+# First 50 rows
+master_50 <- master_ds %>%
+  head(50) %>%
+  collect()
+
+View(master_50)
+
+# ------------------------------------------------------------
+# 2. Seasonal demand: full data summarized by year-season
+# ------------------------------------------------------------
+
+seasonal_demand <- master_ds %>%
+  filter(!is.na(year), !is.na(season)) %>%
+  group_by(year, season) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    avg_migrant_richness = mean(migrant_richness, na.rm = TRUE),
+    avg_resident_richness = mean(resident_richness, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    ),
+    year_season = paste(year, season, sep = "-")
+  ) %>%
+  arrange(year, season)
+
+# ------------------------------------------------------------
+# 3. Figure 1: total visits by season over time
+# ------------------------------------------------------------
+
+ggplot(seasonal_demand,
+       aes(x = year_season, y = total_visits, group = 1)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Year-Season",
+    y = "Number of User Visits"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 4. Figure 2: migrant vs resident visits by season over time
+# ------------------------------------------------------------
+
+seasonal_visits_long <- seasonal_demand %>%
+  select(year, season, year_season, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    bird_type = recode(
+      bird_type,
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+ggplot(seasonal_visits_long,
+       aes(x = year_season, y = visits,
+           color = bird_type, group = bird_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  labs(
+    x = "Year-Season",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 5. Paper-style figure with Total + Migrant + Resident
+# ------------------------------------------------------------
+
+total_visits_long <- seasonal_demand %>%
+  select(year, season, year_season, total_visits) %>%
+  rename(visits = total_visits) %>%
+  mutate(bird_type = "Total")
+
+seasonal_visits_total_long <- bind_rows(
+  seasonal_visits_long,
+  total_visits_long
+)
+
+ggplot(seasonal_visits_total_long,
+       aes(x = year_season,
+           y = visits,
+           color = bird_type,
+           group = bird_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(
+    breaks = seasonal_demand$year_season[
+      seasonal_demand$year %in% c(2015, 2017, 2019, 2021)
+    ]
+  ) +
+  labs(
+    x = "Year-Season",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 6. Figure 4: difference between migrant and resident visits
+# ------------------------------------------------------------
+
+seasonal_difference <- seasonal_demand %>%
+  mutate(
+    migrant_resident_difference = migrant_visits - resident_visits
+  )
+
+ggplot(seasonal_difference,
+       aes(x = year_season,
+           y = migrant_resident_difference,
+           group = 1)) +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(
+    breaks = seasonal_demand$year_season[
+      seasonal_demand$year %in% c(2015, 2017, 2019, 2021)
+    ]
+  ) +
+  labs(
+    x = "Year-Season",
+    y = "Migrant Visits - Resident Visits"
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+
+# ------------------------------------------------------------
+# 7. Figure 5: migrant share of visits
+# ------------------------------------------------------------
+
+seasonal_share <- seasonal_demand %>%
+  mutate(
+    migrant_share_total = migrant_visits / total_visits,
+    migrant_share_migrant_resident =
+      migrant_visits / (migrant_visits + resident_visits)
+  )
+
+seasonal_share_long <- seasonal_share %>%
+  select(
+    year,
+    season,
+    year_season,
+    migrant_share_total,
+    migrant_share_migrant_resident
+  ) %>%
+  pivot_longer(
+    cols = c(migrant_share_total, migrant_share_migrant_resident),
+    names_to = "share_type",
+    values_to = "share"
+  ) %>%
+  mutate(
+    share_type = recode(
+      share_type,
+      migrant_share_total = "Migrant / Total Visits",
+      migrant_share_migrant_resident = "Migrant / (Migrant + Resident)"
+    )
+  )
+
+ggplot(seasonal_share_long,
+       aes(x = year_season,
+           y = share,
+           color = share_type,
+           group = share_type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(
+    breaks = seasonal_demand$year_season[
+      seasonal_demand$year %in% c(2015, 2017, 2019, 2021)
+    ]
+  ) +
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  labs(
+    x = "Year-Season",
+    y = "Migrant Share of Visits",
+    color = ""
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+```{r}
+rm(list = ls())
+gc()
+
+library(arrow)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# ------------------------------------------------------------
+# 1. Open full parquet file
+# ------------------------------------------------------------
+
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+names(master_ds)
+
+# First 50 rows
+master_50 <- master_ds %>%
+  head(50) %>%
+  collect()
+
+View(master_50)
+
+# ------------------------------------------------------------
+# 2. Seasonal demand summary
+# ------------------------------------------------------------
+
+seasonal_demand <- master_ds %>%
+  filter(!is.na(year), !is.na(season)) %>%
+  group_by(year, season) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    ),
+    year_season = paste(year, season, sep = "-")
+  ) %>%
+  arrange(year, season)
+
+# ------------------------------------------------------------
+# 3. Common x-axis breaks
+# ------------------------------------------------------------
+
+x_breaks <- seasonal_demand$year_season[
+  seasonal_demand$year %in% c(2015, 2017, 2019, 2021)
+]
+
+# ------------------------------------------------------------
+# 4. Figure 1: Total, Migrant, and Resident Visits
+# ------------------------------------------------------------
+
+visits_long <- seasonal_demand %>%
+  select(
+    year,
+    season,
+    year_season,
+    total_visits,
+    migrant_visits,
+    resident_visits
+  ) %>%
+  pivot_longer(
+    cols = c(
+      total_visits,
+      migrant_visits,
+      resident_visits
+    ),
+    names_to = "type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    type = recode(
+      type,
+      total_visits = "Total",
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+ggplot(visits_long,
+       aes(x = year_season,
+           y = visits,
+           color = type,
+           group = type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(breaks = x_breaks) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Seasonal Birdwatching Demand",
+    x = "Year-Season",
+    y = "Number of User Visits",
+    color = ""
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+
+# ------------------------------------------------------------
+# 5. Figure 2: Migrant Visit Share
+# ------------------------------------------------------------
+
+seasonal_share <- seasonal_demand %>%
+  mutate(
+    migrant_share =
+      migrant_visits / (migrant_visits + resident_visits)
+  )
+
+ggplot(seasonal_share,
+       aes(x = year_season,
+           y = migrant_share,
+           group = 1)) +
+  geom_line(linewidth = 1, color = "#D55E00") +
+  geom_point(size = 2, color = "#D55E00") +
+  scale_x_discrete(breaks = x_breaks) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Seasonal Migrant Visit Share",
+    x = "Year-Season",
+    y = "Migrant Visit Share"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+
+# ------------------------------------------------------------
+# 6. Figure 3: Difference in Visits (Migrant - Resident)
+# ------------------------------------------------------------
+
+seasonal_difference <- seasonal_demand %>%
+  mutate(
+    difference = migrant_visits - resident_visits
+  )
+
+ggplot(seasonal_difference,
+       aes(x = year_season,
+           y = difference,
+           group = 1)) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed",
+    color = "grey50"
+  ) +
+  geom_line(
+    linewidth = 1,
+    color = "#7B3294"
+  ) +
+  geom_point(
+    size = 2,
+    color = "#7B3294"
+  ) +
+  scale_x_discrete(breaks = x_breaks) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Difference in Birdwatching Visits",
+    x = "Year-Season",
+    y = "Migrant Visits - Resident Visits"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+```
+
+```{r}
+# ------------------------------------------------------------
+# Average visits per hotspot by year-season
+# ------------------------------------------------------------
+
+hotspot_avg <- master_ds %>%
+  filter(
+    !is.na(cluster_id),
+    !is.na(year),
+    !is.na(season)
+  ) %>%
+  group_by(year, season, cluster_id) %>%
+  summarise(
+    visits = n(),
+    .groups = "drop"
+  ) %>%
+  group_by(year, season) %>%
+  summarise(
+    avg_visits = mean(visits),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    ),
+    year_season = paste(year, season, sep = "-")
+  ) %>%
+  arrange(year, season)
+
+ggplot(hotspot_avg,
+       aes(x = year_season,
+           y = avg_visits,
+           group = 1)) +
+  geom_line(linewidth = 1, color = "#0072B2") +
+  geom_point(size = 2, color = "#0072B2") +
+  scale_x_discrete(
+    breaks = hotspot_avg$year_season[
+      hotspot_avg$year %in% c(2015, 2017, 2019, 2021)
+    ]
+  ) +
+  labs(
+    title = "Average Birdwatching Visits per Hotspot",
+    x = "Year-Season",
+    y = "Average User Visits"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+```
+
+```{r}
+rm(list = ls())
+gc()
+
+library(arrow)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# ------------------------------------------------------------
+# 1. Open full parquet file
+# ------------------------------------------------------------
+
+master_ds <- open_dataset(
+  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+)
+
+names(master_ds)
+
+# First 50 rows
+#master_50 <- master_ds %>%
+#  head(50) %>%
+#  collect()
+
+#View(master_50)
+
+# ------------------------------------------------------------
+# 2. Hotspot-season summary
+# ------------------------------------------------------------
+
+hotspot_season <- master_ds %>%
+  filter(
+    !is.na(cluster_id),
+    !is.na(year),
+    !is.na(season)
+  ) %>%
+  group_by(cluster_id, year, season) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(
+    season = factor(
+      season,
+      levels = c("Winter", "Spring", "Summer", "Fall")
+    ),
+    year_season = paste(year, season, sep = "-"),
+    migrant_share =
+      migrant_visits / (migrant_visits + resident_visits),
+    difference =
+      migrant_visits - resident_visits
+  ) %>%
+  arrange(cluster_id, year, season)
+
+# ------------------------------------------------------------
+# 3. Average across hotspots by year-season
+# ------------------------------------------------------------
+
+hotspot_avg <- hotspot_season %>%
+  group_by(year, season, year_season) %>%
+  summarise(
+    avg_total_visits = mean(total_visits, na.rm = TRUE),
+    avg_migrant_visits = mean(migrant_visits, na.rm = TRUE),
+    avg_resident_visits = mean(resident_visits, na.rm = TRUE),
+    avg_migrant_share = mean(migrant_share, na.rm = TRUE),
+    avg_difference = mean(difference, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(year, season)
+
+# ------------------------------------------------------------
+# 4. Common x-axis breaks
+# ------------------------------------------------------------
+
+x_breaks <- hotspot_avg$year_season[
+  hotspot_avg$year %in% c(2015, 2017, 2019, 2021)
+]
+
+# ------------------------------------------------------------
+# 5. Figure 1: Average Seasonal Birdwatching Demand per Hotspot
+# ------------------------------------------------------------
+
+hotspot_avg_long <- hotspot_avg %>%
+  select(
+    year,
+    season,
+    year_season,
+    avg_total_visits,
+    avg_migrant_visits,
+    avg_resident_visits
+  ) %>%
+  pivot_longer(
+    cols = c(
+      avg_total_visits,
+      avg_migrant_visits,
+      avg_resident_visits
+    ),
+    names_to = "type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    type = recode(
+      type,
+      avg_total_visits = "Total",
+      avg_migrant_visits = "Migrant",
+      avg_resident_visits = "Resident"
+    )
+  )
+
+ggplot(hotspot_avg_long,
+       aes(x = year_season,
+           y = visits,
+           color = type,
+           group = type)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_discrete(breaks = x_breaks) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Average Seasonal Birdwatching Demand per Hotspot",
+    x = "Year-Season",
+    y = "Average User Visits per Hotspot",
+    color = ""
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+
+# ------------------------------------------------------------
+# 6. Figure 2: Average Seasonal Migrant Visit Share per Hotspot
+# ------------------------------------------------------------
+
+ggplot(hotspot_avg,
+       aes(x = year_season,
+           y = avg_migrant_share,
+           group = 1)) +
+  geom_line(linewidth = 1, color = "#D55E00") +
+  geom_point(size = 2, color = "#D55E00") +
+  scale_x_discrete(breaks = x_breaks) +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Average Seasonal Migrant Visit Share per Hotspot",
+    x = "Year-Season",
+    y = "Average Migrant Visit Share"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+
+# ------------------------------------------------------------
+# 7. Figure 3: Average Difference in Visits per Hotspot
+# ------------------------------------------------------------
+
+ggplot(hotspot_avg,
+       aes(x = year_season,
+           y = avg_difference,
+           group = 1)) +
+  geom_hline(
+    yintercept = 0,
+    linetype = "dashed",
+    color = "grey50"
+  ) +
+  geom_line(
+    linewidth = 1,
+    color = "#7B3294"
+  ) +
+  geom_point(
+    size = 2,
+    color = "#7B3294"
+  ) +
+  scale_x_discrete(breaks = x_breaks) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title = "Average Difference in Birdwatching Visits per Hotspot",
+    x = "Year-Season",
+    y = "Average Migrant Visits - Resident Visits"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      hjust = 0.5,
+      face = "bold",
+      size = 14
+    ),
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+
+- Steps: 
+        - 1. Limit to the winter months. Classify sites by number of migrant species observations. This creates migrant/resident hotspots.
+        - 2. Then create the count of resident and migrant species observations by month for each hotspot. 
+        - 3. Then create a line graph for the four groups of hotspot type (resident/migrant) and species observation (resident/migrant).
+```

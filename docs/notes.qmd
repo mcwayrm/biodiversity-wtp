@@ -40,9 +40,76 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 ::: {.callout-note collapse="true"}
+# 07/10/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## TODO: 
+- Create the main 3 panel figure displaying the core WTP results (Matt)
+- Try an estimate without site-season FE (Matt)
+- Read about concerns with static income variable (GDP) -- all we need is time-varying travel cost & finish theory section (Raahil)
+- Change the reference season to summer (Matt)
+- Potentially control for group size since that may be conflated with congestion (Matt)
+- For historgram of species richness should be within individual IDs (Matt)
+- We also want to report the within R2 for the regressions as indicator of variation after accounting for FE (Matt) --- Later
+- Add as stylized fact that individuals are choosing from a variety of hotspots. E.g., the SD of species richness across choice sets is large (Ryan)
+    - Two sets: Motivational facts and discussion of what is going in the results. 
+- Need to add a rarity index for species and popularity index (Ryan/Jovin/Matt)
+- Need to come up with how the results are presented (Ryan)
+- As a group, we need to do an e-bird field trip to understand this better (All)
+
+## Agenda: 
+- Updated results (Matt)
+    - De-standadrize coefficients make WTP bigger
+    - Fall is the higher (This is good. We expect this now.)
+- Updated travel cost transfer (Jovin/Matt)
+    - We have updated GDP data now. Part is only updated through 2022
+    - Still don't go through 2024.
+    - Can use GDP inflation to forward fill static income variable
+    - We have individual fixed effects, so we can use the individual fixed effects to account for income differences across individuals/regions.
+        - Probably site-season fixed effects will also account for income differences across regions.
+- Results presentation: 
+    - First WTP overall.
+        - This is small. Likely because they care about specific species (migrants). So they discount overall biodiversity to seek out specific species.
+    - Then migrant vs. resident species richness. 
+        - Ideally positive on migrant and zero on resident. 
+        - All the demand is being driven by the migrant species. Demand is driven by scarce natural amenity. 
+    - Then open it up to seasonal effects. 
+        - Migrants should be most abundant in winter. 
+        - Actually, the influx of migrant birds come in Sept. - Nov. Then they stay for 4 - 5 months. This is the nesting ground so the birds are hard to see in the winter while protecting babies.
+        - So, the scarce ameniety becomes abundant in a specific window in the fall. This is the time for consumers to purchase when abundant in the market.
+    - Figure 1: 
+        - Panel A: Value of species (average overall)
+        - Panel B: Species Types (migrant vs. resident)
+        - Panel C: Seasonal Effects (Each season with two points for migrant vs. resident)
+- Histogram of biodiversity over choice sets (Matt)
+    - What variation we are working with. 
+    - Currently have across choice sets rather than within individual
+    - We want the histogram of the SD for each individual. 
+        - For each person, what is distribution of species richness across choice sets
+        - Save the SD for each individual
+        - Plot the distribution of SD. 
+- Line graph of user visits by month and migrant hotspots (Jovin)
+- Continue writing (Raahil)
+- Incoporating species level appearance index (Jovin)
+    - AVONET data to match on species. But probably not good for looking at attractiveness of the bird.
+    - Jovin found a new e-bird driven visual aesthitic attractiveness index rated by humans
+    - We want at hotspot level, Max, SD, and max attractiveness by migrant and resident. 
+- Expand on how to do the control funciton efficently (Ryan)
+
+- Styilized Facts: 
+    - Fact 1: Demand fluctuates with seasonal supply. And the spikes get larger as bird watching increases (demand is increasing)
+    - Fact 2: Supply fluctations are specific to migratory species in migratory hotspots. 
+    - Fact 3: For individuals, they are selecting over diverse set of choices rather than a specific favorite hotspot. 
+    - Fact 4: Are individuals selecting hotspot locations on species richness, rarity of species, or charismatic species.
+    - Fact 5: We have heterogeneous preferences. E.g,. why the controls matter and result in variation in WTP on these attributes. 
+
+:::
+
+::: {.callout-note collapse="true"}
 # 07/07/2026
 
-> Jovin, Ryan
+> Jovin, Ryan, Raahil, Matt
 
 ## Updates: 
 - Map specific tests to each explanation (Ryan)
