@@ -13,8 +13,9 @@
 #  Required inputs:
 #    - master_data_with_attributes: Output from stage 8
 #    - district_shp: District boundaries for home location centroids
-#    - gdp_csv: GDP data file (panel 2015-2021; predicted_GCP_current_USD in billions USD)
-#    - cpi_csv: FRED INDCPIALLAINMEI CPI index (base 2015=100), for deflating to real 2021 INR
+#    - gdp_csv: GDP data file (panel 2015-2024; predicted_GCP_current_USD in billions USD)
+#    - cpi_xlsx: FRED INDCPIALLAINMEI CPI index, "Annual" sheet (base 2015=100),
+#                for deflating to real 2021 INR
 #    - driving_cost_rds: Year-specific driving cost in real 2021 INR/km
 #############################################
 
@@ -44,10 +45,10 @@ travel_speed_kmph <- if (!is.null(params$travel_speed_kmph)) {
 }
 
 # Year-specific exchange rates (USD to INR), used to convert nominal USD GDP to nominal INR
-# Driving cost is now loaded from driving_cost.rds (year-specific, real 2021 INR/km)
+# Driving cost is loaded from driving_cost.rds (year-specific, real 2021 INR/km)
 exchange_df <- tibble(
-  year = 2015:2021,
-  usd_to_inr = c(64.15, 67.19, 65.12, 68.43, 70.41, 74.10, 73.93)
+  year = 2015:2024,
+  usd_to_inr = c(64.15, 67.19, 65.12, 68.43, 70.41, 74.10, 73.93, 77.44, 82.57, 83.50)
 )
 
 message("Travel cost parameters:")
@@ -89,23 +90,37 @@ if (!all(c("lon_home", "lat_home") %in% names(master_data))) {
 }
 
 # -----------------------------------------------------------------------------
-# Load CPI Data  (FRED — INDCPIALLAINMEI, base 2015=100)
+# Load CPI Data  (FRED — INDCPIALLAINMEI, "Annual" sheet, base 2015=100)
 # -----------------------------------------------------------------------------
 #
 # Used to deflate nominal INR GDP per capita to real 2021 INR so that wages are
 # comparable in constant-purchasing-power terms across the panel.
 # Deflation formula: real_t = nominal_t x (CPI_2021 / CPI_t)
+#
+# Source switched from the FRED CSV export to the "Annual" sheet of an xlsx
+# workbook (matches the source your colleague is using). The "Annual" sheet
+# is not guaranteed to have exactly one row per year, so we aggregate
+# defensively with mean() -- if it already has one row per year this is a
+# no-op, but it protects against cpi_2021 silently becoming a length>1 vector
+# (which would recycle incorrectly in the deflation formula below, with no
+# error or warning).
 
 message("Loading CPI data...")
-cpi_raw <- read_csv(inputs$cpi_csv, show_col_types = FALSE)
+cpi_raw <- readxl::read_excel(
+  inputs$cpi_xlsx,
+  sheet = "Annual"
+)
 
 cpi_df <- cpi_raw %>%
   mutate(year = lubridate::year(as.Date(observation_date))) %>%
   rename(cpi = INDCPIALLAINMEI) %>%
-  select(year, cpi)
+  select(year, cpi) %>%
+  group_by(year) %>%
+  summarise(cpi = mean(cpi, na.rm = TRUE), .groups = "drop")
 
 cpi_2021 <- cpi_df$cpi[cpi_df$year == 2021]
 if (length(cpi_2021) == 0) stop("ERROR: CPI value for 2021 not found — cannot deflate to real 2021 INR!")
+if (length(cpi_2021) > 1) stop("ERROR: Multiple CPI values found for 2021 after aggregation — check the Annual sheet for duplicate years!")
 message("CPI base value (2021): ", cpi_2021)
 
 # -----------------------------------------------------------------------------
@@ -121,12 +136,12 @@ driving_cost_df <- readRDS(inputs$driving_cost_rds) %>%
     year = as.integer(year),
     driving_cost = as.numeric(driving_cost)
   ) %>%
-  filter(year >= 2015 & year <= 2021)
+  filter(year >= 2015 & year <= 2024)
 
 message("Driving cost years available: ", paste(sort(driving_cost_df$year), collapse = ", "))
 
 # -----------------------------------------------------------------------------
-# Load and Process GDP Data (panel: 2015-2021)
+# Load and Process GDP Data (panel: 2015-2024)
 # -----------------------------------------------------------------------------
 #
 # Processing steps per year:
@@ -144,11 +159,33 @@ if (!("predicted_GCP_current_USD" %in% names(gdp_all))) {
 }
 
 # Filter for India across the full panel range
-gdp_india <- gdp_all[iso == "IND" & year >= 2015 & year <= 2021]
+gdp_india <- gdp_all[iso == "IND" & year >= 2015 & year <= 2024]
 years_in_india <- sort(unique(gdp_india$year))
-message("Available years for India (2015-2021): ", paste(years_in_india, collapse = ", "))
+message("Available years for India (2015-2024): ", paste(years_in_india, collapse = ", "))
 
-if (length(years_in_india) == 0) stop("ERROR: No India GDP data found for 2015-2021!")
+if (length(years_in_india) == 0) stop("ERROR: No India GDP data found for 2015-2024!")
+missing_gdp_years <- setdiff(2015:2024, years_in_india)
+if (length(missing_gdp_years) > 0) {
+  message("WARNING: GDP data missing for year(s): ", paste(missing_gdp_years, collapse = ", "),
+          " — these rows have no possible travel cost and are dropped below")
+}
+
+# Drop rows from years with no GDP coverage NOW, before the expensive
+# home-matching and cost-computation steps below -- these rows would end up
+# 100% NA travel_cost_combined regardless, so there's no reason to carry
+# them (and their full row/column footprint) through the rest of this
+# script and the final write. This is keyed off years_in_india (computed
+# from whatever's actually in the GDP file), not a hardcoded year, so it
+# self-adjusts if the GDP source is ever extended later.
+n_before_gdp_filter <- nrow(master_data)
+master_data <- master_data[year %in% years_in_india]
+n_after_gdp_filter <- nrow(master_data)
+message(sprintf(
+  "Dropped %s rows (%.1f%%) for years without GDP coverage -- kept years: %s",
+  format(n_before_gdp_filter - n_after_gdp_filter, big.mark = ","),
+  100 * (n_before_gdp_filter - n_after_gdp_filter) / n_before_gdp_filter,
+  paste(years_in_india, collapse = ", ")
+))
 
 # Remove zero-population cells (unreliable)
 gdp_india <- gdp_india[pop_cell > 0]
@@ -273,7 +310,9 @@ master_data <- master_data[as.data.table(driving_cost_df), on = "year", nomatch 
 
 missing_driving_cost <- sum(is.na(master_data$driving_cost))
 if (missing_driving_cost > 0) {
-  message("WARNING: ", missing_driving_cost, " rows missing driving_cost after join (check year coverage)")
+  missing_dc_years <- sort(unique(master_data[is.na(driving_cost), year]))
+  message("WARNING: ", missing_driving_cost, " rows missing driving_cost after join ",
+          "(years affected: ", paste(missing_dc_years, collapse = ", "), " — check driving_cost.rds year coverage)")
 }
 
 # Calculate travel cost components (all in real 2021 INR)
@@ -308,6 +347,17 @@ message("  Max: ₹", round(max(master_data$fuel_cost, na.rm = TRUE), 2))
 message("\n=== TRAVEL COST SUMMARY (real 2021 INR) ===")
 message("Total observations: ", nrow(master_data))
 message("NA count in travel_cost_combined: ", sum(is.na(master_data$travel_cost_combined)))
+
+# Coverage by year -- makes any remaining year gaps visible in the log,
+# rather than only showing up as a missing % buried in a later summary table
+message("\n=== TRAVEL COST COVERAGE BY YEAR ===")
+coverage_by_year <- master_data[, .(
+  n_rows = .N,
+  n_missing = sum(is.na(travel_cost_combined)),
+  pct_missing = round(100 * sum(is.na(travel_cost_combined)) / .N, 1)
+), by = year][order(year)]
+print(coverage_by_year)
+
 message("\nTravel cost statistics (INR):")
 message("  Mean: ₹", round(mean(master_data$travel_cost_combined, na.rm = TRUE), 2))
 message("  Median: ₹", round(median(master_data$travel_cost_combined, na.rm = TRUE), 2))
@@ -327,4 +377,12 @@ message("  Split: ", round(100 * time_cost_mean / (time_cost_mean + fuel_cost_me
 # -----------------------------------------------------------------------------
 # Save Output
 # -----------------------------------------------------------------------------
+# Drop pure-intermediate columns before writing -- these were only needed to
+# compute gdppc_real_2021_INR/travel_cost_combined and aren't referenced by
+# name anywhere downstream. Reduces peak memory during write_parquet()'s
+# conversion to Arrow's columnar format, which otherwise briefly holds both
+# the full R data.table and its Arrow Table copy in memory at once.
+intermediate_cols <- c("usd_to_inr", "gdppc_usd", "gdppc_nominal_INR", "cpi")
+master_data[, (intersect(intermediate_cols, names(master_data))) := NULL]
+
 write_parquet(master_data, outputs$master_data_with_travel_cost)

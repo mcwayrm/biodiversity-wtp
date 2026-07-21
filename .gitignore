@@ -8,3 +8,5 @@ logs/*
 scripts/R/temp_ryan.r
 summary_report.html
 .github/
+__pycache__
+.Renviron
