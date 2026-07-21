@@ -39,6 +39,45 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
+
+::: {.callout-note collapse="true"}
+# 07/21/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## Workshop Agenda: 
+- Create the main 3 panel figure displaying the core WTP results (Matt)
+    - A draft has been completed.
+- Try an estimate without site-season FE (Matt)
+- Read about concerns with static income variable (GDP) -- all we need is time-varying travel cost & finish theory section (Raahil)
+    - Completely fine. So no edits required from Jovin. 
+    - Can forward fill GDP to later years. 
+- Change the reference season to summer (Matt)
+    - Has been reset for seasonal reference. 
+- Potentially control for group size since that may be conflated with congestion (Matt)
+- For historgram of species richness should be within individual IDs (Matt)
+- We also want to report the within R2 for the regressions as indicator of variation after accounting for FE (Matt) --- Later
+- Add as stylized fact that individuals are choosing from a variety of hotspots. E.g., the SD of species richness across choice sets is large (Ryan)
+    - Two sets: Motivational facts and discussion of what is going in the results. 
+    - Motivational Facts (motivates decisions): 
+        - Fact 1: Demand fluctuates with seasonal supply. And the spikes get larger as bird watching increases (demand is increasing)
+        - Fact 2: Supply fluctations are specific to migratory species in migratory hotspots. 
+        - Fact 3: For individuals, they are selecting over diverse set of choices rather than a specific favorite hotspot. 
+        - Fact 4: Are individuals selecting hotspot locations on species richness, rarity of species, or charismatic species.
+        - Fact 5: We have heterogeneous preferences. E.g,. why the controls matter and result in variation in WTP on these attributes. 
+    - Sytlized Results (explains variation): 
+        - 
+- Need to add a rarity index for species and popularity index (Ryan/Jovin/Matt)
+    - Update script `07_compute_biodiversity_metric.R`
+    - Build the indices 
+        - Ryan making rarity (probability metric)
+        - Joving making the apperance index which provides mean, SD, max
+    - Then add them as a scenario version  
+- Need to come up with how the results are presented (Ryan)
+
+:::
+
+
 ::: {.callout-note collapse="true"}
 # 07/10/2026
 
