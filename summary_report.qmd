@@ -13,12 +13,15 @@ format:
 params:
   scenarios:
     value:
-      - baseline
+      - full_c5km_v5km_r50km_mInf
   models:
     value:
-      - Basic
+      - ER_indxyear-sitexseason_choiceset10
+      - ERmigrant_indxyear-sitexseason_choiceset10
   output_dir:
     value: "output/scenarios"
+  district_shp:
+    value: ""
 execute:
   echo: false
   warning: false
@@ -33,15 +36,18 @@ library(ggplot2)
 library(kableExtra)
 library(RColorBrewer)
 library(htmltools)
+library(arrow)
+library(data.table)
+library(sf)
 
 # Get parameters
 scenarios <- params$scenarios
 models <- params$models
 output_dir <- params$output_dir
+district_shp_path <- params$district_shp
 
 message("Scenarios: ", paste(scenarios, collapse = ", "))
 message("Models: ", paste(models, collapse = ", "))
-message("Output directory: ", output_dir)
 
 # Verify scenario directories exist
 for (scenario in scenarios) {
@@ -54,22 +60,70 @@ for (scenario in scenarios) {
 
 # Overview
 
-This report summarizes the Random Utility Model (RUM) analysis across **`r length(scenarios)` scenarios**: `r paste(scenarios, collapse = ", ")`.
+This report summarizes the Random Utility Model (RUM) analysis across **`r length(scenarios)` scenario(s)**: `r paste(scenarios, collapse = ", ")`.
 
 ---
 
 # Voronoi Clusters
 
+```{r voronoi-generate}
+# Generated directly here rather than by a separate script -- these are
+# cheap to (re)draw from the already-computed Voronoi polygons + hotspot
+# points, so there's no real benefit to caching a PNG on disk separately.
+india_boundary <- NULL
+if (nzchar(district_shp_path) && file.exists(district_shp_path)) {
+  india_boundary <- st_read(district_shp_path, quiet = TRUE) %>%
+    st_union() %>%
+    st_transform(crs = 4326)
+}
+
+make_voronoi_plot <- function(scenario) {
+  voronoi_path <- file.path("data", "intermediate", "scenarios", scenario, "ebird_hotspots_voronoi.gpkg")
+  hotspots_path <- file.path("data", "intermediate", "scenarios", scenario, "ebird_hotspots_clustered.parquet")
+
+  if (!file.exists(voronoi_path) || !file.exists(hotspots_path)) {
+    return(NULL)
+  }
+
+  voronoi_limited <- st_read(voronoi_path, layer = "cluster_voronoi_limited", quiet = TRUE)
+  hotspots <- read_parquet(hotspots_path)
+
+  p <- ggplot()
+  if (!is.null(india_boundary)) {
+    p <- p + geom_sf(data = india_boundary, fill = NA, color = "gray30", linewidth = 0.8)
+  }
+  p <- p +
+    geom_sf(data = st_transform(voronoi_limited, 4326),
+            fill = "lightblue", alpha = 0.3, color = "blue", linewidth = 0.3) +
+    geom_point(data = hotspots, aes(x = lon, y = lat),
+               color = "red", size = 0.8, alpha = 0.6) +
+    labs(
+      title = "Voronoi Clusters and Hotspot Locations",
+      subtitle = paste0("Scenario: ", scenario, " | ",
+                         nrow(voronoi_limited), " clusters, ", nrow(hotspots), " hotspots"),
+      x = "Longitude", y = "Latitude"
+    ) +
+    theme_minimal() +
+    theme(
+      plot.title = element_text(size = 14, face = "bold"),
+      plot.subtitle = element_text(size = 10),
+      panel.grid.minor = element_blank()
+    )
+  p
+}
+```
+
 :::{.panel-tabset}
 
-```{r voronoi-tabs, results='asis'}
+```{r voronoi-tabs, results='asis', fig.width=10, fig.height=12}
 for (scenario in scenarios) {
-  voronoi_file <- file.path("output", "figures", paste0("voronoi_map_", scenario, ".png"))
   cat('\n##', scenario, '\n\n')
-  if (!file.exists(voronoi_file)) {
-    cat("Voronoi map not found for scenario:", scenario, "\n\n")
+  p <- make_voronoi_plot(scenario)
+  if (is.null(p)) {
+    cat("Voronoi data not found for scenario:", scenario, "\n\n")
   } else {
-    cat('![](', voronoi_file, '){ width=100% }\n\n', sep = '')
+    print(p)
+    cat("\n\n")
   }
 }
 ```
@@ -80,134 +134,168 @@ for (scenario in scenarios) {
 
 # Data Summary
 
-```{r data-summary-combined}
-# Load data_summary.csv for each scenario
-summary_list <- list()
+```{r load-scenario-data}
+# Loaded ONCE per scenario here, reused by both the Data Summary table below
+# and the biodiversity histogram section further down -- avoids reading the
+# same multi-GB model_data parquet twice. Sourced from model_data_{scenario}
+# (the actual post-11a data used for estimation, filtered/cleaned), NOT the
+# pre-cleaning master_data_with_travel_cost file -- fixes a prior mismatch
+# where this report's summary stats described a different, larger sample
+# than what was actually estimated.
+#
+# Columns are pushed down via arrow's Dataset API rather than reading the
+# full wide table -- model_data has dozens of columns and can be tens of
+# millions of rows, so being selective here matters for memory.
+
+summary_vars <- c(
+  "expected_richness", "migrant_richness", "resident_richness",
+  "species_richness", "shannon_index", "simpson_index",
+  "expected_richness_Winter", "expected_richness_Spring", "expected_richness_Summer",
+  "migrant_richness_Winter", "migrant_richness_Spring", "migrant_richness_Summer",
+  "resident_richness_Winter", "resident_richness_Spring", "resident_richness_Summer",
+  "expected_congestion", "precip", "temp", "trees",
+  "travel_cost_combined", "dist_to_pa_km", "geo_dist", "choice_set_size"
+)
+# Note: no "_Fall" variants -- Fall is the omitted reference season and is
+# never materialized as its own column (Winter/Spring/Summer are relative to
+# it). species_richness/shannon_index/simpson_index also have no seasonal
+# split anywhere in the pipeline, unlike the three richness measures above.
+
+needed_cols <- c("trip_id", "user_id", "choice", "year", summary_vars)
+
+scenario_summaries <- list()
+scenario_histograms <- list()
+
 for (scenario in scenarios) {
-  summary_path <- file.path("output", "tables", paste0("data_summary_", scenario, ".csv"))
-  if (file.exists(summary_path)) {
-    df <- read.csv(summary_path, stringsAsFactors = FALSE)
-    # Add all variables used in WTP plots to the summary
-    wtp_plot_vars <- c(
-      "expected_richness", "migrant_richness", "resident_richness", "species_richness", "shannon_index", "simpson_index",
-      "expected_richness_Winter", "expected_richness_Spring", "expected_richness_Summer", "expected_richness_Fall",
-      "migrant_richness_Winter", "migrant_richness_Spring", "migrant_richness_Summer", "migrant_richness_Fall",
-      "resident_richness_Winter", "resident_richness_Spring", "resident_richness_Summer", "resident_richness_Fall",
-      "species_richness_Winter", "species_richness_Spring", "species_richness_Summer", "species_richness_Fall",
-      "shannon_index_Winter", "shannon_index_Spring", "shannon_index_Summer", "shannon_index_Fall",
-      "simpson_index_Winter", "simpson_index_Spring", "simpson_index_Summer", "simpson_index_Fall"
-    )
-        key_vars <- c("Sample Size", "Number of Trips", "Number of Users",
-          wtp_plot_vars,
-          "expected_congestion", "precip", 
-          "temp", "trees", "travel_cost_combined", "dist_to_pa_km",
-          "distance_to_site", "geo_dist", "choice_set_size")
-    found_vars <- intersect(key_vars, df$variable)
-    df_filtered <- df %>%
-      filter(variable %in% key_vars) %>%
-      select(variable, mean, sd)
-    df_filtered <- df_filtered %>%
-      mutate(
-        formatted = ifelse(
-          variable %in% c("Sample Size", "Number of Trips", "Number of Users"),
-          format(round(mean, 0), big.mark = ",", scientific = FALSE),
-          paste0(
-            format(round(mean, 2), nsmall = 2),
-            ifelse(!is.na(sd) & sd > 0, 
-                   paste0(" (", format(round(sd, 2), nsmall = 2), ")"),
-                   "")
-          )
-        )
-      )
-    summary_list[[scenario]] <- df_filtered %>%
-      select(variable, formatted)
-    names(summary_list[[scenario]])[2] <- scenario
-  } else {
-    cat("[DataSummary] NOT FOUND: ", summary_path)
+  model_data_path <- file.path("output", "models", paste0("model_data_", scenario, ".parquet"))
+  if (!file.exists(model_data_path)) {
+    message("model_data not found for scenario: ", scenario, " (", model_data_path, ")")
+    next
   }
+
+  ds <- arrow::open_dataset(model_data_path)
+  available_cols <- intersect(needed_cols, names(ds))
+  md <- ds %>% dplyr::select(dplyr::all_of(available_cols)) %>% dplyr::collect()
+  setDT(md)
+
+  # --- Summary stats for this scenario ---
+  avail_summary_vars <- intersect(summary_vars, names(md))
+  stats <- md[, lapply(.SD, function(x) {
+    list(mean = mean(x, na.rm = TRUE), sd = sd(x, na.rm = TRUE),
+         min = min(x, na.rm = TRUE), median = median(x, na.rm = TRUE),
+         max = max(x, na.rm = TRUE), n_missing = sum(is.na(x)),
+         pct_missing = 100 * sum(is.na(x)) / length(x))
+  }), .SDcols = avail_summary_vars]
+
+  long_df <- data.frame(
+    variable = rep(names(stats), each = 7),
+    statistic = rep(c("mean", "sd", "min", "median", "max", "n_missing", "pct_missing"), length(stats)),
+    value = unlist(stats)
+  )
+  wide_df <- long_df %>% pivot_wider(names_from = statistic, values_from = value)
+
+  scenario_summaries[[scenario]] <- rbind(
+    data.frame(variable = "Sample Size", mean = nrow(md), sd = NA, min = NA, median = NA, max = NA, n_missing = NA, pct_missing = NA),
+    data.frame(variable = "Number of Trips", mean = md[, uniqueN(trip_id)], sd = NA, min = NA, median = NA, max = NA, n_missing = NA, pct_missing = NA),
+    data.frame(variable = "Number of Users", mean = md[, uniqueN(user_id)], sd = NA, min = NA, median = NA, max = NA, n_missing = NA, pct_missing = NA),
+    data.frame(variable = "Year Range", mean = NA, sd = NA,
+               min = md[, min(year, na.rm = TRUE)], median = NA,
+               max = md[, max(year, na.rm = TRUE)], n_missing = NA, pct_missing = NA),
+    data.frame(variable = "Number of Years", mean = md[, uniqueN(year)], sd = NA, min = NA, median = NA, max = NA, n_missing = NA, pct_missing = NA),
+    wide_df
+  )
+
+  # --- Distilled data for the biodiversity histogram (choice + 3 richness vars only) ---
+  hist_cols <- intersect(c("choice", "expected_richness", "migrant_richness", "resident_richness"), names(md))
+  scenario_histograms[[scenario]] <- md[, ..hist_cols]
+
+  rm(md)
+  gc()
+}
+```
+
+```{r data-summary-combined}
+key_vars <- c(
+  "Sample Size", "Number of Trips", "Number of Users", "Year Range", "Number of Years",
+  "expected_richness", "migrant_richness", "resident_richness",
+  "shannon_index", "simpson_index",
+  "expected_richness_Winter", "expected_richness_Spring", "expected_richness_Summer",
+  "migrant_richness_Winter", "migrant_richness_Spring", "migrant_richness_Summer",
+  "resident_richness_Winter", "resident_richness_Spring", "resident_richness_Summer",
+  "expected_congestion", "precip", "temp", "trees",
+  "travel_cost_combined", "travel_cost_min", "travel_cost_median", "travel_cost_max",
+  "dist_to_pa_km", "geo_dist", "choice_set_size"
+)
+
+summary_list <- list()
+for (scenario in names(scenario_summaries)) {
+  df <- scenario_summaries[[scenario]]
+
+  # Pull out extra min/median/max detail rows for travel cost specifically --
+  # this is the price variable underlying every WTP estimate, so its full
+  # range matters more here than for other variables (where mean (SD) alone
+  # is enough for a presentation table)
+  tc_row <- df %>% filter(variable == "travel_cost_combined")
+  tc_detail <- if (nrow(tc_row) == 1) {
+    data.frame(
+      variable = c("travel_cost_min", "travel_cost_median", "travel_cost_max"),
+      mean = c(tc_row$min, tc_row$median, tc_row$max),
+      sd = NA
+    )
+  } else {
+    data.frame(variable = character(0), mean = numeric(0), sd = numeric(0))
+  }
+
+  df_filtered <- df %>%
+    filter(variable %in% key_vars) %>%
+    select(variable, mean, sd) %>%
+    bind_rows(tc_detail) %>%
+    mutate(
+      formatted = case_when(
+        variable == "Year Range" ~ paste0(df$min[df$variable == "Year Range"], "-", df$max[df$variable == "Year Range"]),
+        variable %in% c("Sample Size", "Number of Trips", "Number of Users", "Number of Years") ~
+          format(round(mean, 0), big.mark = ",", scientific = FALSE),
+        TRUE ~ paste0(format(round(mean, 2), nsmall = 2),
+                       ifelse(!is.na(sd) & sd > 0, paste0(" (", format(round(sd, 2), nsmall = 2), ")"), ""))
+      )
+    )
+  summary_list[[scenario]] <- df_filtered %>% select(variable, formatted)
+  names(summary_list[[scenario]])[2] <- scenario
 }
 
-# Merge all scenarios
 if (length(summary_list) > 0) {
-  summary_combined <- Reduce(function(x, y) {
-    full_join(x, y, by = "variable")
-  }, summary_list)
-  
-  # Reorder rows
-  var_order <- c(
-    "Sample Size", "Number of Trips", "Number of Users",
-    "expected_richness", "migrant_richness", "resident_richness", "shannon_index",  "simpson_index",
-    "expected_richness_Winter", "expected_richness_Spring",   "expected_richness_Summer", "expected_richness_Fall",
-    "migrant_richness_Winter", "migrant_richness_Spring", "migrant_richness_Summer",  "migrant_richness_Fall",
-    "resident_richness_Winter", "resident_richness_Spring",   "resident_richness_Summer", "resident_richness_Fall",
-    "shannon_index_Winter", "shannon_index_Spring", "shannon_index_Summer",   "shannon_index_Fall",
-    "simpson_index_Winter", "simpson_index_Spring", "simpson_index_Summer",   "simpson_index_Fall",
-    "expected_congestion", "precip", "temp", "trees", "travel_cost_combined",   "dist_to_pa_km",
-    "distance_to_site", "geo_dist", "choice_set_size"
-  )
-  
+  summary_combined <- Reduce(function(x, y) full_join(x, y, by = "variable"), summary_list)
+
   summary_combined <- summary_combined %>%
-    mutate(variable = factor(variable, levels = var_order)) %>%
+    mutate(variable = factor(variable, levels = key_vars)) %>%
     arrange(variable) %>%
-    filter(!is.na(variable)) %>%   # drop anything not in var_order
+    filter(!is.na(variable)) %>%
     mutate(variable = as.character(variable))
-  
-  # Clean variable names for display
+
+  var_labels <- c(
+    "Sample Size" = "Sample Size", "Number of Trips" = "Number of Trips", "Number of Users" = "Number of Users",
+    "Year Range" = "Year Range", "Number of Years" = "Number of Years",
+    "expected_richness" = "Expected Richness", "migrant_richness" = "Migrant Richness", "resident_richness" = "Resident Richness",
+    "shannon_index" = "Shannon Index", "simpson_index" = "Simpson Index",
+    "expected_richness_Winter" = "Expected Richness (Winter)", "expected_richness_Spring" = "Expected Richness (Spring)", "expected_richness_Summer" = "Expected Richness (Summer)",
+    "migrant_richness_Winter" = "Migrant Richness (Winter)", "migrant_richness_Spring" = "Migrant Richness (Spring)", "migrant_richness_Summer" = "Migrant Richness (Summer)",
+    "resident_richness_Winter" = "Resident Richness (Winter)", "resident_richness_Spring" = "Resident Richness (Spring)", "resident_richness_Summer" = "Resident Richness (Summer)",
+    "expected_congestion" = "Expected Congestion", "precip" = "Precipitation (mm)", "temp" = "Temperature (°C)", "trees" = "Tree Cover (%)",
+    "travel_cost_combined" = "Travel Cost (INR, mean)", "travel_cost_min" = "Travel Cost (INR, min)",
+    "travel_cost_median" = "Travel Cost (INR, median)", "travel_cost_max" = "Travel Cost (INR, max)",
+    "dist_to_pa_km" = "Distance to PA (km)", "geo_dist" = "Distance to Site (km)",
+    "choice_set_size" = "Choice Set Size"
+  )
+
   summary_combined <- summary_combined %>%
-    mutate(
-      Variable = case_when(
-        variable == "Sample Size" ~ "Sample Size",
-        variable == "Number of Trips" ~ "Number of Trips",
-        variable == "Number of Users" ~ "Number of Users",
-        variable == "expected_richness" ~ "Expected Richness",
-        variable == "expected_congestion" ~ "Expected Congestion",
-        variable == "precip" ~ "Precipitation (mm)",
-        variable == "temp" ~ "Temperature (°C)",
-        variable == "trees" ~ "Tree Cover (%)",
-        variable == "travel_cost_combined" ~ "Travel Cost (INR)",
-        variable == "dist_to_pa_km" ~ "Distance to PA (km)",
-        variable %in% c("distance_to_site", "geo_dist") ~ "Distance to Site (km)",
-        variable == "choice_set_size" ~ "Choice Set Size",
-          variable == "migrant_richness" ~ "Migrant Richness",
-          variable == "resident_richness" ~ "Resident Richness",
-          variable == "species_richness" ~ "Species Richness",
-          variable == "shannon_index" ~ "Shannon Index",
-          variable == "simpson_index" ~ "Simpson Index",
-          variable == "expected_richness_Winter" ~ "Expected Richness (Winter)",
-          variable == "expected_richness_Spring" ~ "Expected Richness (Spring)",
-          variable == "expected_richness_Summer" ~ "Expected Richness (Summer)",
-          variable == "expected_richness_Fall" ~ "Expected Richness (Fall)",
-          variable == "migrant_richness_Winter" ~ "Migrant Richness (Winter)",
-          variable == "migrant_richness_Spring" ~ "Migrant Richness (Spring)",
-          variable == "migrant_richness_Summer" ~ "Migrant Richness (Summer)",
-          variable == "migrant_richness_Fall" ~ "Migrant Richness (Fall)",
-          variable == "resident_richness_Winter" ~ "Resident Richness (Winter)",
-          variable == "resident_richness_Spring" ~ "Resident Richness (Spring)",
-          variable == "resident_richness_Summer" ~ "Resident Richness (Summer)",
-          variable == "resident_richness_Fall" ~ "Resident Richness (Fall)",
-          variable == "species_richness_Winter" ~ "Species Richness (Winter)",
-          variable == "species_richness_Spring" ~ "Species Richness (Spring)",
-          variable == "species_richness_Summer" ~ "Species Richness (Summer)",
-          variable == "species_richness_Fall" ~ "Species Richness (Fall)",
-          variable == "shannon_index_Winter" ~ "Shannon Index (Winter)",
-          variable == "shannon_index_Spring" ~ "Shannon Index (Spring)",
-          variable == "shannon_index_Summer" ~ "Shannon Index (Summer)",
-          variable == "shannon_index_Fall" ~ "Shannon Index (Fall)",
-          variable == "simpson_index_Winter" ~ "Simpson Index (Winter)",
-          variable == "simpson_index_Spring" ~ "Simpson Index (Spring)",
-          variable == "simpson_index_Summer" ~ "Simpson Index (Summer)",
-          variable == "simpson_index_Fall" ~ "Simpson Index (Fall)",
-        TRUE ~ variable
-      )
-    ) %>%
+    mutate(Variable = ifelse(variable %in% names(var_labels), var_labels[variable], variable)) %>%
     select(-variable) %>%
     select(Variable, everything())
-  
+
   kable(summary_combined,
         align = c("l", rep("r", length(scenarios))),
-        caption = "Summary Statistics Across Scenarios (Mean with SD in parentheses)") %>%
-    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),
-                  full_width = FALSE) %>%
+        caption = "Summary Statistics Across Scenarios (Mean with SD in parentheses, unless noted otherwise) -- computed from the post-cleaning model_data used for estimation") %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = FALSE) %>%
     row_spec(0, bold = TRUE) %>%
     row_spec(1:3, background = "#f0f0f0")
 } else {
@@ -215,26 +303,94 @@ if (length(summary_list) > 0) {
 }
 ```
 
+---
+
+# Biodiversity Distribution Across Choice Sets
+
+Distributions use the full candidate choice sets (before down-sampling to
+the fixed alternative-set size used for estimation) -- "Available" is every
+alternative a person could have chosen from; "Chosen" is the site they
+actually visited. Densities (not raw counts) are shown so the two groups'
+*shapes* are comparable despite very different sample sizes.
+
+:::{.panel-tabset}
+
+```{r biodiversity-histograms, results='asis', fig.width=10, fig.height=12}
+metric_labels <- c(
+  expected_richness = "Expected Richness",
+  migrant_richness = "Migrant Richness",
+  resident_richness = "Resident Richness"
+)
+
+for (scenario in scenarios) {
+  cat('\n##', scenario, '\n\n')
+
+  hd <- scenario_histograms[[scenario]]
+  if (is.null(hd) || nrow(hd) == 0) {
+    cat("No choice-set data available for scenario:", scenario, "\n\n")
+    next
+  }
+
+  metrics_present <- intersect(names(metric_labels), names(hd))
+  long_rows <- list()
+  for (m in metrics_present) {
+    vals <- hd[[m]]
+    long_rows[[paste0(m, "_avail")]] <- data.frame(value = vals, group = "Available", metric = metric_labels[[m]])
+    chosen_vals <- vals[hd$choice == 1]
+    long_rows[[paste0(m, "_chosen")]] <- data.frame(value = chosen_vals, group = "Chosen", metric = metric_labels[[m]])
+  }
+  long_data <- do.call(rbind, long_rows)
+  long_data <- long_data[!is.na(long_data$value), ]
+  long_data$metric <- factor(long_data$metric, levels = unname(metric_labels))
+  long_data$group <- factor(long_data$group, levels = c("Available", "Chosen"))
+
+  p <- ggplot(long_data, aes(x = value, fill = group)) +
+    geom_histogram(aes(y = after_stat(density)), position = "identity", alpha = 0.5, bins = 30, color = NA) +
+    facet_wrap(~metric, scales = "free", ncol = 1) +
+    scale_fill_manual(values = c("Available" = "gray50", "Chosen" = "#E41A1C")) +
+    labs(
+      title = "Biodiversity Distribution: Chosen Sites vs. Available Alternatives",
+      subtitle = paste0("Scenario: ", scenario, " | full candidate choice sets (pre-sampling)"),
+      x = "Value", y = "Density", fill = ""
+    ) +
+    theme_minimal() +
+    theme(legend.position = "top", strip.text = element_text(face = "bold"))
+
+  print(p)
+  cat("\n\n")
+}
+```
+
+:::
+
+---
+
 # Definitions
 
-### Species Richness Measures
+::: {.callout-note collapse=true}
+## Species Richness Measures
 
-**Expected Species Richness** is computed as the mean number of unique species 
-observed across all checklists recorded at a site within a given time period. 
-If expected richness cannot be computed directly for a group or time period, 
-the pipeline uses the following fallback:
+**Expected Species Richness** is computed as the mean number of unique
+species observed across all checklists recorded at a site within a given
+time period. If expected richness cannot be computed directly for a group
+or time period, the pipeline uses the following fallback:
 
-- If the previous week value is available, use that.
-- If not, use the previous month value.
-- If not, use the previous year-season value.
-- If none are available, the value is marked as missing.
+1. If the previous week value is available, use that.
+2. If not, use the previous month value.
+3. If not, use the previous year-season value.
+4. If none are available, the value is marked as missing.
 
-**Migrant Richness** and **Resident Richness** are computed analogously, 
+**Migrant Richness** and **Resident Richness** are computed analogously,
 restricted to species classified as migratory or resident, respectively.
+:::
 
-### Diversity Indices
+::: {.callout-note collapse=true}
+## Diversity Indices
 
-Diversity indices are computed at the checklist (trip) level using recorded observation counts. For checklists where counts were not recorded (entered as "X" in eBird), indices are set to missing. Unlike the richness measures above, no fallback imputation is applied.
+Diversity indices are computed at the checklist (trip) level using recorded
+observation counts. For checklists where counts were not recorded (entered
+as "X" in eBird), indices are set to missing. Unlike the richness measures
+above, no fallback imputation is applied.
 
 **Shannon Index ($H$):**
 
@@ -258,182 +414,112 @@ $$
 
 where $S$ is the number of species detected and 
 $p_i = \frac{n_i}{\sum_{j=1}^S n_j}$ is the proportion of total observed  individuals belonging to species $i$, based on recorded observation counts.  Values range from 0 (no diversity) to 1 (maximum diversity).
+:::
 
 ---
 
 # Willingness to Pay Estimates
 
-```{r wtp-data-prep, echo=FALSE, message=FALSE}
-# Load WTP data from CSV files created by 11b stage
+```{r wtp-data-prep}
 # File pattern: {model}_Mixed_{scenario}_wtp.csv in output/models/
-
 wtp_list <- list()
-models <- c()
-
-# List all WTP CSV files
 wtp_files <- list.files("output/models", pattern = "_Mixed_.*_wtp\\.csv$", full.names = TRUE)
 
 if (length(wtp_files) > 0) {
   for (wtp_path in wtp_files) {
     tryCatch({
-      # Extract model and scenario from filename using base R regex
-      # Pattern: {model}_Mixed_{scenario}_wtp.csv
       filename <- basename(wtp_path)
-      
-      # Use sub() to extract parts
-      # First, remove the trailing _wtp.csv
       temp <- sub("_wtp\\.csv$", "", filename)
-      
-      # Split on _Mixed_ to get model and scenario
       parts <- strsplit(temp, "_Mixed_")[[1]]
-      
+
       if (length(parts) == 2) {
         model_name <- parts[1]
         scenario_name <- parts[2]
-        
-        # Add to models list
-        models <- c(models, model_name)
-        
-        # Read WTP CSV
-        wtp_df <- read.csv(wtp_path, stringsAsFactors = FALSE)
-        
-        # Rename columns to match expected format
-        wtp_df <- wtp_df %>%
-          rename(
-            variable = Variable,
-            estimate = WTP,
-            se = Std.Err,
-            scenario = Scenario,
-            model = Model
-          ) %>%
+
+        wtp_df <- read.csv(wtp_path, stringsAsFactors = FALSE) %>%
+          rename(variable = Variable, estimate = WTP, se = Std.Err,
+                 scenario = Scenario, model = Model) %>%
           select(variable, estimate, se, scenario, model)
-        
-        # Store in list
+
         wtp_list[[paste(scenario_name, model_name, sep = "_")]] <- wtp_df
       }
     }, error = function(e) {
-      cat("\n[WARNING] Failed to load WTP from:", basename(wtp_path), "\n")
-      cat("Error:", conditionMessage(e), "\n")
+      cat("\n[WARNING] Failed to load WTP from:", basename(wtp_path), "-", conditionMessage(e), "\n")
     })
   }
 } else {
   cat("\n[WARNING] No WTP CSV files found in output/models/\n")
 }
+
+wtp_combined <- if (length(wtp_list) > 0) {
+  bind_rows(wtp_list) %>%
+    mutate(variable = gsub("_dm$", "", variable),
+           ci_lower = estimate - 1.96 * se,
+           ci_upper = estimate + 1.96 * se)
+} else {
+  NULL
+}
 ```
 
 ```{r wtp-prepare-plots}
-if (length(wtp_list) > 0) {
-  wtp_combined <- bind_rows(wtp_list)
-  wtp_combined <- wtp_combined %>% mutate(variable = gsub("_dm$", "", variable))
-  wtp_combined <- wtp_combined %>% mutate(
-    ci_lower = estimate - 1.96 * se,
-    ci_upper = estimate + 1.96 * se
+model_plots <- list()
+
+if (!is.null(wtp_combined)) {
+  desired_order <- c(
+    "expected_richness (Overall)", "expected_richness (Winter)", "expected_richness (Spring)", "expected_richness (Summer)",
+    "migrant_richness (Overall)", "migrant_richness (Winter)", "migrant_richness (Spring)", "migrant_richness (Summer)",
+    "resident_richness (Overall)", "resident_richness (Winter)", "resident_richness (Spring)", "resident_richness (Summer)"
   )
 
-  # Get unique models and prepare grouped data
-  unique_models <- unique(wtp_combined$model)
-  
-  # Create list to store plots
-  model_plots <- list()
-  
-  # For each model, combine ALL its variables (overall + seasonal)
-  for (curr_model in unique_models) {
-    # model_data <- wtp_combined %>% 
-    #   filter(model == curr_model) %>%
-    #   mutate(
-    #     variable_clean = case_when(
-    #       grepl("Winter", variable) ~ paste(sub("_Winter", "", variable), "(Winter)"),
-    #       grepl("Spring", variable) ~ paste(sub("_Spring", "", variable), "(Spring)"),
-    #       grepl("Summer", variable) ~ paste(sub("_Summer", "", variable), "(Summer)"),
-    #       grepl("Fall", variable) ~ paste(sub("_Fall", "", variable), "(Fall)"),
-    #       TRUE ~ paste(variable, "(Overall)")
-    #     )
-    #   )
-    model_data <- wtp_combined %>% 
+  for (curr_model in unique(wtp_combined$model)) {
+    model_data <- wtp_combined %>%
       filter(model == curr_model) %>%
       mutate(
         variable_clean = case_when(
-          grepl("Winter", variable) ~ paste(sub   ("_Winter", "", variable), "(Winter)"),
-          grepl("Spring", variable) ~ paste(sub   ("_Spring", "", variable), "(Spring)"),
-          grepl("Summer", variable) ~ paste(sub   ("_Summer", "", variable), "(Summer)"),
-          grepl("Fall", variable) ~ paste(sub("_Fall",    "", variable), "(Fall)"),
+          grepl("Winter", variable) ~ paste(sub("_Winter", "", variable), "(Winter)"),
+          grepl("Spring", variable) ~ paste(sub("_Spring", "", variable), "(Spring)"),
+          grepl("Summer", variable) ~ paste(sub("_Summer", "", variable), "(Summer)"),
           TRUE ~ paste(variable, "(Overall)")
         )
-      )
-
-    # ---- SELECT + ORDER VARIABLES ----
-    desired_order <- c(
-      # Expected richness
-      "expected_richness (Overall)",
-      "expected_richness (Winter)",
-      "expected_richness (Spring)",
-      "expected_richness (Summer)",
-      
-      # Migrant richness
-      "migrant_richness (Overall)",
-      "migrant_richness (Winter)",
-      "migrant_richness (Spring)",
-      "migrant_richness (Summer)",
-      
-      # Resident richness
-      "resident_richness (Overall)",
-      "resident_richness (Winter)",
-      "resident_richness (Spring)",
-      "resident_richness (Summer)"
-    )
-    
-    model_data <- model_data %>%
-      filter(variable_clean %in% desired_order) %>%   # keep only these
+      ) %>%
+      filter(variable_clean %in% desired_order) %>%
       mutate(variable_clean = factor(variable_clean, levels = desired_order))
-    
+
     if (nrow(model_data) > 0) {
       model_plots[[curr_model]] <- model_data
     }
   }
-} else {
-  cat("\n[WARNING] No WTP data found\n")
-  model_plots <- list()
 }
 ```
 
 ```{r wtp-plot-build}
-# Color map
-scenario_names <- unique(wtp_combined$scenario)
-n_scenarios <- length(scenario_names)
-
-if (n_scenarios <= 8) {
-  palette <- RColorBrewer::brewer.pal(n_scenarios, "Set1")
-} else {
-  palette <- colorRampPalette(RColorBrewer::brewer.pal(8, "Set1"))(n_scenarios)
-}
-
-scenario_color_map <- setNames(palette, scenario_names)
-
-# Create ONE plot per model with ALL variables together
 model_plots_list <- list()
 
-for (curr_model in unique(wtp_combined$model)) {
-  model_data <- model_plots[[curr_model]] %>%
-    mutate(variable_clean = factor(variable_clean, levels = unique(variable_clean)))
+if (!is.null(wtp_combined) && length(model_plots) > 0) {
+  scenario_names <- unique(wtp_combined$scenario)
+  n_scenarios <- length(scenario_names)
+  palette <- if (n_scenarios <= 8) {
+    RColorBrewer::brewer.pal(max(n_scenarios, 3), "Set1")[1:n_scenarios]
+  } else {
+    colorRampPalette(RColorBrewer::brewer.pal(8, "Set1"))(n_scenarios)
+  }
+  scenario_color_map <- setNames(palette, scenario_names)
 
-  if (nrow(model_data) > 0) {
+  for (curr_model in names(model_plots)) {
+    model_data <- model_plots[[curr_model]] %>%
+      mutate(variable_clean = factor(variable_clean, levels = unique(variable_clean)))
+
     p <- ggplot(model_data, aes(x = variable_clean, y = estimate, color = scenario, group = scenario)) +
       geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.5) +
-      geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper),
-                    width = 0.2, linewidth = 0.8,
-                    position = position_dodge(width = 0.6)) +
+      geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2, linewidth = 0.8, position = position_dodge(width = 0.6)) +
       geom_point(size = 3, position = position_dodge(width = 0.6)) +
       labs(
         title = paste0("WTP - ", gsub("_", " ", curr_model)),
         subtitle = "Point estimates with 95% confidence intervals",
-        x = "Variables",
-        y = "WTP (INR)",
-        color = "Scenario"
+        x = "Variables", y = "WTP (INR)", color = "Scenario"
       ) +
       theme_minimal() +
-      theme(
-        axis.text.x = element_text(angle = 45, hjust = 1)
-      ) +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
       scale_color_manual(values = scenario_color_map)
 
     model_plots_list[[curr_model]] <- p

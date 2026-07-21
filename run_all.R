@@ -202,9 +202,9 @@ for (scenario_name in names(scenarios)) {
     inputs = list(
       master_data_with_attributes = file.path(scenario_dir, "master_data_with_attributes.parquet"),
       district_shp = file.path(input_data_dir, "districts", "district-2011"),
-      cpi_csv = file.path(input_data_dir, "cpi", "INDCPIALLAINMEI.csv"),
+      cpi_xlsx = file.path(input_data_dir, "cpi", "INDCPIALLAINMEI.xlsx"),
       driving_cost_rds = file.path(input_data_dir, "driving_cost", "driving_cost.rds"),
-      gdp = file.path(input_data_dir, "gdp", "final_GDP_0_25deg_postadjust_pop_density.csv")
+      gdp = file.path(input_data_dir, "gdp", "final_GDPC_0_25deg_postadjust_pop_dens_0_01_adjust.csv")
     ),
     outputs = list(
       master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
@@ -214,24 +214,24 @@ for (scenario_name in names(scenarios)) {
   )
 
   # Stage 10: Compute IV
-  run_task(
-    "10_compute_iv.R",
-    inputs = list(
-      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet"),
-      district_shp = file.path(input_data_dir, "districts", "district-2011"),
-      species_ranges = file.path(input_data_dir, "species", "BOTW_2024_2.gpkg"),
-      migratory_status = file.path(input_data_dir, "migratory_status", "species_list_categorized.csv"),
-      missing_migration = file.path(input_data_dir, "migratory_status", "missing_migration.csv"),
-      flu_outbreaks = file.path(input_data_dir, "flu_outbreaks", "flu_outbreaks_with_country.csv"),
-      voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg")
-    ),
-    outputs = list(
-      master_data_with_iv = file.path(scenario_dir, "master_data_with_iv.parquet"),
-      iv_panel = file.path(scenario_dir, "iv_panel.parquet")
-    ),
-    params = params,
-    scenario_name = scenario_name
-  )
+  # run_task(
+  #   "10_compute_iv.R",
+  #   inputs = list(
+  #     master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet"),
+  #     district_shp = file.path(input_data_dir, "districts", "district-2011"),
+  #     species_ranges = file.path(input_data_dir, "species", "BOTW_2024_2.gpkg"),
+  #     migratory_status = file.path(input_data_dir, "migratory_status", "species_list_categorized.csv"),
+  #     missing_migration = file.path(input_data_dir, "migratory_status", "missing_migration.csv"),
+  #     flu_outbreaks = file.path(input_data_dir, "flu_outbreaks", "flu_outbreaks_with_country.csv"),
+  #     voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg")
+  #   ),
+  #   outputs = list(
+  #     master_data_with_iv = file.path(scenario_dir, "master_data_with_iv.parquet"),
+  #     iv_panel = file.path(scenario_dir, "iv_panel.parquet")
+  #   ),
+  #   params = params,
+  #   scenario_name = scenario_name
+  # )
   # --- Model Estimation & Output Tasks (11-12) ---
   
   # Stage 11: Estimate RUM Models via Python (one call per scenario)
@@ -240,7 +240,7 @@ for (scenario_name in names(scenarios)) {
   run_task(
     "11a_model_data_prep.R",
     inputs = list(
-      master_data_with_iv = file.path(scenario_dir, "master_data_with_iv.parquet")
+      master_data_with_iv = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
     ),
     outputs = list(
       model_data = file.path("output", "models", sprintf("model_data_%s.parquet", scenario_name))
@@ -249,55 +249,34 @@ for (scenario_name in names(scenarios)) {
     scenario_name = scenario_name
   )
   
-  # Load subprocess helper function
-  source(file.path("scripts", "R", "utils_xlogit_subprocess.R"))
-  
-  # Construct paths for Python script (uses PREPPED data from 11a, not raw)
+  source(file.path("scripts", "R", "utils_xlogit_reticulate.R"))
+
   input_data_prepped <- file.path("output", "models", sprintf("model_data_%s.parquet", scenario_name))
   output_dir_models <- file.path("output", "models")
-  
+
   if (!dir.exists(output_dir_models)) {
     dir.create(output_dir_models, recursive = TRUE, showWarnings = FALSE)
   }
 
-  # Call Python subprocess to estimate all models for this scenario
-  python_result <- call_xlogit_estimation(
+  if (!exists(".xlogit_env_ready")) {
+    setup_xlogit_env("wtp01")
+    .xlogit_env_ready <- TRUE
+  }
+
+  xlogit_result <- estimate_rum_models_reticulate(
     scenario_name = scenario_name,
-    scenario_dir = scenario_dir,
     input_data_path = input_data_prepped,
     output_dir = output_dir_models,
-    conda_env_name = "wtp01",
     models_config = "models.yml",
-    verbose = TRUE
+    save_demeaned = TRUE
   )
-  
-  if (!python_result$success) {
-    stop(paste0("Python XLogit estimation failed for scenario ", scenario_name, 
-                ". Check log: ", python_result$log_file))
+
+  if (!xlogit_result$success) {
+    stop(paste0("XLogit estimation had ", xlogit_result$fail_count,
+                " failed model(s) for scenario ", scenario_name))
   }
   
   message(paste0("  ✓ Python estimation complete for ", scenario_name))
-  
-  # Stage 12: Generate Scenario Outputs (once per scenario)
-  # ===================================================================
-  # Generate Voronoi map and data summary (model results already saved by Python)
-  
-  run_task(
-    "12_generate_scenario_outputs.R",
-    inputs = list(
-      voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
-      hotspots_clustered = file.path(scenario_dir, "ebird_hotspots_clustered.parquet"),
-      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet"),
-      district_shp = file.path(input_data_dir, "districts", "district-2011", "district-2011.shp"),
-      models_output_dir = output_dir_models
-    ),
-    outputs = list(
-      voronoi_plot = file.path("output", "figures", paste0("voronoi_map_", scenario_name, ".png")),
-      data_summary = file.path("output", "tables", paste0("data_summary_", scenario_name, ".csv"))
-    ),
-    params = params,
-    scenario_name = scenario_name
-  )
 }
 
 
@@ -306,9 +285,10 @@ message("Generating Summary Report...")
 quarto::quarto_render(
   input = here("summary_report.qmd"),
   execute_params = list(
-    scenarios = names(scenarios),
-    models = names(models),
-    output_dir = file.path("output", "scenarios")
+  scenarios = names(scenarios),
+  models = names(models),
+  output_dir = "output/scenarios",
+  district_shp = file.path(input_data_dir, "districts", "district-2011", "district-2011.shp")
   )
 )
 message("Summary report generated")

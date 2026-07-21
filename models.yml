@@ -1,9 +1,6 @@
-ER_indxyear-sitexseason_choiceset10:
+ER_indxyear-sitexseason-hour_choiceset10:
   model_vars:
     - expected_richness
-    - expected_richness_Winter
-    - expected_richness_Spring
-    - expected_richness_Summer
     - expected_congestion
     - precip
     - temp
@@ -16,16 +13,10 @@ ER_indxyear-sitexseason_choiceset10:
   mixed_vars:
     - expected_richness
   choice_set_sample_size: 10
-ERmigrant_indxyear-sitexseason_choiceset10:
+ERmigrant_indxyear-sitexseason-hour_choiceset10:
   model_vars:
     - migrant_richness
     - resident_richness
-    - migrant_richness_Winter
-    - migrant_richness_Spring
-    - migrant_richness_Summer
-    - resident_richness_Winter
-    - resident_richness_Spring
-    - resident_richness_Summer
     - expected_congestion
     - precip
     - temp
@@ -37,124 +28,64 @@ ERmigrant_indxyear-sitexseason_choiceset10:
     - hour_of_day
   mixed_vars:
     - migrant_richness
+    - resident_richness
   choice_set_sample_size: 10
-
-
-# ER_ind-sitexseason-hour_choiceset10:
-#   model_vars:
-#     - expected_richness
-#     - migrant_richness
-#     - expected_congestion
-#     - precip
-#     - temp
-#     - trees
-#     - travel_cost_combined
-#   fe_vars:
-#     - [cluster_id, season]
-#     - hour_of_day
-#   mixed_vars:
-#     - expected_richness
-#   choice_set_sample_size: 10
-# ERseason_ind-sitexseason-hour_choiceset10:
-#   model_vars:
-#     - expected_richness_Winter
-#     - expected_richness_Spring
-#     - expected_richness_Summer
-#     - expected_richness_Fall
-#     - migrant_richness_Winter
-#     - migrant_richness_Spring
-#     - migrant_richness_Summer
-#     - migrant_richness_Fall
-#     - expected_congestion
-#     - precip
-#     - temp
-#     - trees
-#     - travel_cost_combined
-#   fe_vars:
-#     - [cluster_id, season]
-#     - hour_of_day
-#   mixed_vars:
-#     - expected_richness_Winter
-#     - expected_richness_Spring
-#     - expected_richness_Summer
-#     - expected_richness_Fall
-#   choice_set_sample_size: 10
-
-# ER_ind-sitexseason_choiceset10:
-#   model_vars:
-#     - expected_richness
-#     - migrant_richness
-#     - expected_congestion
-#     - precip
-#     - temp
-#     - trees
-#     - travel_cost_combined
-#   fe_vars:
-#     - [cluster_id, season]
-#   mixed_vars:
-#     - expected_richness
-#   choice_set_sample_size: 10
-# ERseason_ind-sitexseason_choiceset10:
-#   model_vars:
-#     - expected_richness_Winter
-#     - expected_richness_Spring
-#     - expected_richness_Summer
-#     - expected_richness_Fall
-#     - migrant_richness_Winter
-#     - migrant_richness_Spring
-#     - migrant_richness_Summer
-#     - migrant_richness_Fall
-#     - expected_congestion
-#     - precip
-#     - temp
-#     - trees
-#     - travel_cost_combined
-#   fe_vars:
-#     - [cluster_id, season]
-#   mixed_vars:
-#     - expected_richness_Winter
-#     - expected_richness_Spring
-#     - expected_richness_Summer
-#     - expected_richness_Fall
-#   choice_set_sample_size: 10
-
-
-# ER_indxhour-sitexseason_choiceset10:
-#   model_vars:
-#     - expected_richness
-#     - migrant_richness
-#     - expected_congestion
-#     - precip
-#     - temp
-#     - trees
-#     - travel_cost_combined
-#   fe_vars:
-#     - [cluster_id, season]
-#     - [user_id, year]
-#   mixed_vars:
-#     - expected_richness
-#   choice_set_sample_size: 10
-# ERseason_indxhour-sitexseason_choiceset10:
-#   model_vars:
-#     - expected_richness_Winter
-#     - expected_richness_Spring
-#     - expected_richness_Summer
-#     - expected_richness_Fall
-#     - migrant_richness_Winter
-#     - migrant_richness_Spring
-#     - migrant_richness_Summer
-#     - migrant_richness_Fall
-#     - expected_congestion
-#     - precip
-#     - temp
-#     - trees
-#     - travel_cost_combined
-#   fe_vars:
-#     - [cluster_id, season]
-#     - [user_id, year]
-#   mixed_vars:
-#     - expected_richness_Winter
-#     - expected_richness_Spring
-#     - expected_richness_Summer
-#     - expected_richness_Fall
-#   choice_set_sample_size: 10
+ERmigrantseason_indxyear-sitexseason-hour_choiceset10:
+  model_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+    - expected_congestion
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - [cluster_id, season]
+    - hour_of_day
+  mixed_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+  choice_set_sample_size: 10
+# Test no seasonal fixed effects
+ERmigrantseason_indxyear-site-hour_choiceset10:
+  model_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+    - expected_congestion
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - cluster_id
+    - hour_of_day
+  mixed_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+  choice_set_sample_size: 10
