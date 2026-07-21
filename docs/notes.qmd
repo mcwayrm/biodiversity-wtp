@@ -39,7 +39,224 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
+::: {.callout-note collapse="true"}
+# 07/10/2026
 
+> Jovin, Ryan, Matt, Raahil
+
+## TODO: 
+- Create the main 3 panel figure displaying the core WTP results (Matt)
+- Try an estimate without site-season FE (Matt)
+- Read about concerns with static income variable (GDP) -- all we need is time-varying travel cost & finish theory section (Raahil)
+- Change the reference season to summer (Matt)
+- Potentially control for group size since that may be conflated with congestion (Matt)
+- For historgram of species richness should be within individual IDs (Matt)
+- We also want to report the within R2 for the regressions as indicator of variation after accounting for FE (Matt) --- Later
+- Add as stylized fact that individuals are choosing from a variety of hotspots. E.g., the SD of species richness across choice sets is large (Ryan)
+    - Two sets: Motivational facts and discussion of what is going in the results. 
+- Need to add a rarity index for species and popularity index (Ryan/Jovin/Matt)
+- Need to come up with how the results are presented (Ryan)
+- As a group, we need to do an e-bird field trip to understand this better (All)
+
+## Agenda: 
+- Updated results (Matt)
+    - De-standadrize coefficients make WTP bigger
+    - Fall is the higher (This is good. We expect this now.)
+- Updated travel cost transfer (Jovin/Matt)
+    - We have updated GDP data now. Part is only updated through 2022
+    - Still don't go through 2024.
+    - Can use GDP inflation to forward fill static income variable
+    - We have individual fixed effects, so we can use the individual fixed effects to account for income differences across individuals/regions.
+        - Probably site-season fixed effects will also account for income differences across regions.
+- Results presentation: 
+    - First WTP overall.
+        - This is small. Likely because they care about specific species (migrants). So they discount overall biodiversity to seek out specific species.
+    - Then migrant vs. resident species richness. 
+        - Ideally positive on migrant and zero on resident. 
+        - All the demand is being driven by the migrant species. Demand is driven by scarce natural amenity. 
+    - Then open it up to seasonal effects. 
+        - Migrants should be most abundant in winter. 
+        - Actually, the influx of migrant birds come in Sept. - Nov. Then they stay for 4 - 5 months. This is the nesting ground so the birds are hard to see in the winter while protecting babies.
+        - So, the scarce ameniety becomes abundant in a specific window in the fall. This is the time for consumers to purchase when abundant in the market.
+    - Figure 1: 
+        - Panel A: Value of species (average overall)
+        - Panel B: Species Types (migrant vs. resident)
+        - Panel C: Seasonal Effects (Each season with two points for migrant vs. resident)
+- Histogram of biodiversity over choice sets (Matt)
+    - What variation we are working with. 
+    - Currently have across choice sets rather than within individual
+    - We want the histogram of the SD for each individual. 
+        - For each person, what is distribution of species richness across choice sets
+        - Save the SD for each individual
+        - Plot the distribution of SD. 
+- Line graph of user visits by month and migrant hotspots (Jovin)
+- Continue writing (Raahil)
+- Incoporating species level appearance index (Jovin)
+    - AVONET data to match on species. But probably not good for looking at attractiveness of the bird.
+    - Jovin found a new e-bird driven visual aesthitic attractiveness index rated by humans
+    - We want at hotspot level, Max, SD, and max attractiveness by migrant and resident. 
+- Expand on how to do the control funciton efficently (Ryan)
+
+- Styilized Facts: 
+    - Fact 1: Demand fluctuates with seasonal supply. And the spikes get larger as bird watching increases (demand is increasing)
+    - Fact 2: Supply fluctations are specific to migratory species in migratory hotspots. 
+    - Fact 3: For individuals, they are selecting over diverse set of choices rather than a specific favorite hotspot. 
+    - Fact 4: Are individuals selecting hotspot locations on species richness, rarity of species, or charismatic species.
+    - Fact 5: We have heterogeneous preferences. E.g,. why the controls matter and result in variation in WTP on these attributes. 
+
+:::
+
+::: {.callout-note collapse="true"}
+# 07/07/2026
+
+> Jovin, Ryan, Raahil, Matt
+
+## Updates: 
+- Map specific tests to each explanation (Ryan)
+    - Supply and demand offsetting (compensating differential) 
+        - Logic: high-biodiversity sites already have offsetting costs (congestion, crowding, access restrictions, entrance fees) baked in, so coefficient understates true WTP because biodiversity is already "priced" through other channels.
+        - A version of model with / without the site-season FE
+        - Can use the IV because we cannot unbundle WTP from other unobserved determinates (in the epsilon)
+        - Counterargument: Site-season FE should have already accounted for this. Show model with successively adding FE (show a big difference in coefficient). 
+    - Seasonal Migration Demand
+        - Logic: Users trade off overall biodiversity to seek out rarer species (migrants) with seasonal inflow of supply  
+        - Site-Season FE should have already accounted for this
+        - Congestion is another control that should hold demand constant
+        - A historgram of relative migratory species captured should spike during winter while resident species visits are relatively flat. 
+        - If the average preference for residence is constant over time. And the sites that have migratory species should spike in migratory months. 
+            - Line graph with three lines: migrants at migrant sites, residents at migrant sites, residents at resident sites.
+    - WTP is actually low
+        - Logic: Envirodevonomics explantion of environmental goods as luxury goods.
+        - If we get individual WTP, then we can map this back to the gridded data. 
+        - Can observe does high WTP map onto the income. 
+        - Could try to show this with an Engle curve
+    - Charasmatic species instead of biodiversity. 
+        - Logic: Biodiversity is the nature attribute driving demand. This is omitted variable bias.
+        - An index of the fancy bird vistations by hotspot. 
+            - Could try to do a physical apperance index from e-bird
+                - Can consult with Colleen on ornothology
+                - https://opentraits.org/datasets/avonet.html
+            - Since data driven, is it actually rare or just undesirable.
+            - Should look up species rarity index. 
+        - Additionally, we can create a rarity index for each species. What are the least likley species to be observed in India. So hotspots with the highest likelihood of observing a rare species may drive specific users. 
+        - Add this into the model as an attribute. This may absorb the biodiversity effect.
+            - Will need to have counteracting effects. 
+            - So will rarity/charasmatic species postive or negatively correlated to biodiversity (does biodiversity crowd out)
+    - Insufficient identifying variation
+        - Logic: Too little variation to identify the effect of biodiversity on WTP attenutating effect size.
+        - Solution, successively add in FE to see what changes. 
+            - Empirically, what is the within R^2 at each point. 
+        - Would like to see the variation/distribution of biodiversity
+            - Summary Stat figure which is SD of biodiversity within choice sets (histogram). 
+            - Historam of expeceted diversity within an individual across choice sets.
+    - Artificial biodiversity Substitues (TV documentaries) -- Leave this one. 
+        - Logic: Subsistution effects drive down WTP
+        - The data starts in 2015 so we cannot do internet/TV expansion (also correlated with our measure of income)
+        - The closest we could speak to this would be some measure of nature documentary viewership.
+        - We could control for distance to nearest zoo 
+    - Sample selection on the extensive margin
+        - Logic: eBird users who already selected into birding — a group that plausibly has near-maximal WTP for biodiversity already baked into their choice to be birders at all.
+        - Untestable unless we get a different set of users for comparison.
+        - DROP THIS. The identifying variation comes from switching between sites, not the extensive margin.
+    - Reference dependence/novelty decay.
+        - Logic: Users may have a reference point for biodiversity and may not value additional biodiversity beyond that reference point.
+        - Test by restricting the sample of observations with first time a user visits a given site. 
+        - How many unique hotspots does a user visit? Histogram.
+- MODIS 2024 data transfer (Raahil/Matt)
+    - DONE. 
+- Stylized Facts section motivating the model (Ryan)
+    - Stylized Fact 1: Who are these users?
+    - Stylized Fact 2: Hotspot visitation fluctuate seasonally.
+    - Stylized Fact 3: Biodiversity varies across a user's choice set.
+- Updated travel cost transfer (Jovin/Matt)
+    - DONE. 
+    - Matt re-running pipeline to incorporate it.
+- Line graph of user visits by month and migrant hotspots (Jovin)
+    - Comparing number of user visist seasonally by sights that only see residents compared to sites that ever see migrants. 
+        - Comparing above and below median of migratory or resident species.
+    - Steps:  
+        - 1. Limit to the winter months. Classify sites by number of migrant species observations. This creates migrant/resident hotspots.
+        - 2. Then create the count of resident and migrant species observations by month for each hotspot. 
+        - 3. Then create a line graph for the four groups of hotspot type (resident/migrant) and species observation (resident/migrant).
+:::
+
+::: {.callout-note collapse="true"}
+# 06/23/2026
+
+> Raahil, Matt, Jovin, Ryan
+
+## TODO: 
+- Re-running the script 10 (Ryan)
+- Expand on how to do the control funciton efficently (Ryan)
+- Updated travel cost transfer (Jovin/Matt)
+- Histogram of biodiversity over choice sets (Matt)
+- Line graph of user visits by month and migrant hotspots (Jovin)
+- MODIS 2024 data transfer (Raahil/Matt)
+- Continue writing (Raahil)
+- Incoporating species level appearance index (Jovin)
+- Map specific tests to each explanation (Ryan)
+
+## AGENDA:
+
+1. Updating travel cost data (expand to 2024 and average cost across the four cities) (Jovin)
+    - We should be finalized on this. 
+    - 3 cities: Delhi, Chennai, Mumbai
+    - Average travel cost decreased to 140.49 rupees on average
+    - Range: 2015 - 2024
+2. Updating the results with expanded years and updated travel cost (Matt)
+    - No complete run with the new cost data. 
+        - Code is updated, but need the updated input data for travel cost measures. 
+        - Need to re-download. 
+    - Need to updated MODIS data for 2024 (Raahil)
+        - % Tree cover. 
+        - Already have other 2 ERA variables for the full time frame. 
+        - Can currently update for 2023.
+3. Incorporating the IV in the regression output (Ryan)
+    - Successfully ran the whole pipeline through. 
+    - Incorporated script 10 for the compute IV
+    - Will need to bootstrap the IV to get the correct standard errors. 
+    - Need an effecient way to do this given the long run time for the xlogit.
+4. Need to add a graphic of the demand changes by month over time (Jovin)   
+    - Explains one of the explanations for the WTP measures
+    - Could be the demand changes with time also
+    - Will make a line graph of user visits by month and migrant/resident. 
+5. Think through the story of the results (All)
+    - Potential explanations: 
+        - Supply and demand are off setting each other. 
+            - What is exactly is the variation we are identifying off considering the controls and FE?
+            - A version of model with / without the site-season FE. 
+            - But even with FE you can violate parallel trends in other ways (motivates IV)
+        - Demand during migration months 
+            - Can we hold the demand curve constant. 
+            - Site-Season FE should have already accounted for this
+            - Congestion is another control that should hold demand constant
+        - IV creates exogenous variation in expectation
+            - So, an outside variation in exected utility. 
+            - Can use the IV because we cannot unbundle WTP from other unobserved determinates (in the epsilon)
+        - Perhaps WTP is actually low
+            - Potential issue: we impute wealth so we don't observe it direlty. 
+            - This would be consistent with envriodevonomics literature that envrionmental quality is a luxury good. 
+            - But perhaps recreation is not culturally desriable. So closer to an inferior good relative to the outside option (staying at home to watch TV). 
+        - Folks do not actually care about biodiversity but rather just charasmatic species. 
+            - So, only seeking out places with very attractive species. 
+            - Could make an index of the fancy bird vistations by hotspot. 
+            - Sort of already observed by seasonality of WTP
+            - Could try to do a physical apperance index from e-bird
+                - Can consult with Colleen on ornothology
+                - https://opentraits.org/datasets/avonet.html
+        - Perhaps artificial biodiversity is avaliable at home
+            - At low cost, can see diverse species with a documentary instead of searching with hit/miss at hotspots. 
+        - We may have too little identifying variation
+            - All the fixed effects are soaking up all the variation. So very little to identify off of. 
+            - If different sites are very similar within states, then very little to identify off of. 
+            - Solution, successively add in FE to see what changes. 
+            - Would like to see the variation/distribution of biodiversity
+                - Summary Stat figure which is SD of biodiversity within choice sets (histogram). 
+                - Historam of expeceted diversity within an individual across choice sets.
+6. Plan for the remainder of the summer (All) 
+    - Potentially doing working sessions this summer. 
+
+:::
 
 ::: {.callout-note collapse="true"}
 # 06/05/2026
