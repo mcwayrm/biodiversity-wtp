@@ -89,3 +89,23 @@ ERmigrantseason_indxyear-site-hour_choiceset10:
     - migrant_richness_Spring
     - resident_richness_Spring
   choice_set_sample_size: 10
+# Basic Mixed Logit with Species Richness decomposed with Species Rarity and Species Apperance 
+# ER_indxyear-sitexseason-hour_rare-appearance_choiceset10:
+#   model_vars:
+#     - expected_richness
+#     - expected_rarity
+#     - expected_appearance
+#     - expected_congestion
+#     - precip
+#     - temp
+#     - trees
+#     - travel_cost_combined
+#   fe_vars:
+#     - [user_id, year]
+#     - [cluster_id, season]
+#     - hour_of_day
+#   mixed_vars:
+#     - expected_richness
+#     - expected_rarity
+#     - expected_appearance
+#   choice_set_sample_size: 10
