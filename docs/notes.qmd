@@ -40,6 +40,34 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
 
+::: {.callout-note collapse="true"}
+# 08/13/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## TODO: 
+- Complete stylized facts (Ryan)
+- Create rarity and apperance results table. (Ryan)
+- Troubleshooting adding new data (Matt)
+
+## Agenda: 
+- Controls: Group size and log-trips (Matt) 
+    - This is incremental (experience - learning)
+        - https://www.pnas.org/doi/10.1073/pnas.2013568117
+    - Added! Completed!
+- For historgram of species richness should be within individual IDs (Matt)
+    - Updating so *within* individuals
+    - They are correctly constructed. 
+- Stylized facts and motivating facts (Ryan)
+    - **PRIORITY**
+- Adding apperance and rarity 
+    - Simple table 4 columns (or figure)
+    - All measures Adding in apperance and rarity
+    - Then all 3 seperately. 
+
+:::
+
+
 
 ::: {.callout-note collapse="true"}
 # 07/24/2026
