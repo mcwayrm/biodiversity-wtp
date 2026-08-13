@@ -36,15 +36,41 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 import scipy.stats
 import yaml
 from xlogit import MixedLogit
+
+try:
+    import fastparquet
+except ImportError:
+    fastparquet = None
 
 warnings.filterwarnings("ignore")
 
 SEED = 12345
 PROGRESS_EVERY = 5000  # print a progress line every N trips while sampling
+
+
+def _read_parquet(path):
+    if fastparquet is not None:
+        return pd.read_parquet(path, engine="fastparquet")
+    return pd.read_parquet(path)
+
+
+def _write_parquet(df, path, index=False):
+    if fastparquet is not None:
+        df.to_parquet(path, index=index, engine="fastparquet")
+    else:
+        df.to_parquet(path, index=index)
+
+
+def _parquet_row_count(path):
+    if fastparquet is not None:
+        return fastparquet.ParquetFile(path).count()
+
+    # Fallback for environments without fastparquet. This keeps the script
+    # usable even if pyarrow is unavailable, at the cost of a one-time read.
+    return len(pd.read_parquet(path))
 
 
 # ============================================================================
@@ -107,7 +133,7 @@ def data_fingerprint(parquet_path):
     """
     p = Path(parquet_path)
     stat = p.stat()
-    n_rows = pq.ParquetFile(p).metadata.num_rows
+    n_rows = _parquet_row_count(p)
     return f"{n_rows}_{int(stat.st_mtime)}_{stat.st_size}"
 
 
@@ -204,7 +230,7 @@ def demean_by_fe_iterative(df, vars_to_demean, fe_groups, max_iter=1000, tol=1e-
         if use_cache:
             cache_path = fe_cache_path(fe_cache_dir, scenario, valid_fe_groups, model_data_path, var)
             if cache_path.exists():
-                cached = pd.read_parquet(cache_path)
+                cached = _read_parquet(cache_path)
                 if len(cached) == len(df):
                     df[f"{var}_dm"] = cached[f"{var}_dm"].to_numpy()
                     n_cache_hits += 1
@@ -263,7 +289,7 @@ def demean_by_fe_iterative(df, vars_to_demean, fe_groups, max_iter=1000, tol=1e-
         df[f"{var}_dm"] = resid
 
         if use_cache and cache_path is not None:
-            pd.DataFrame({f"{var}_dm": resid}).to_parquet(cache_path, index=False)
+            _write_parquet(pd.DataFrame({f"{var}_dm": resid}), cache_path, index=False)
 
     if use_cache:
         print(f"    FE cache: {n_cache_hits} hit(s), {n_cache_misses} miss(es)")
@@ -338,12 +364,12 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
 
     if demeaned_sampled_path is not None and Path(demeaned_sampled_path).exists():
         print(f"    Loading cached sampled+demeaned data: {Path(demeaned_sampled_path).name}")
-        cs_model = pd.read_parquet(demeaned_sampled_path)
+        cs_model = _read_parquet(demeaned_sampled_path)
         return cs_model, model_vars_for_demean
 
     if demeaned_full_path is not None and Path(demeaned_full_path).exists():
         print(f"    Loading cached demeaned data (pre-sampling): {Path(demeaned_full_path).name}")
-        cs_demeaned = pd.read_parquet(demeaned_full_path)
+        cs_demeaned = _read_parquet(demeaned_full_path)
     else:
         fe_groups = get_fe_groups(fe_vars)
         print(f"    FE dimensions (absorbed separately, iteratively): {fe_groups}")
@@ -354,7 +380,7 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
         )
         if demeaned_full_path is not None:
             Path(demeaned_full_path).parent.mkdir(parents=True, exist_ok=True)
-            cs_demeaned.to_parquet(demeaned_full_path, index=False)
+            _write_parquet(cs_demeaned, demeaned_full_path, index=False)
             print(f"    Saved full demeaned dataset: {Path(demeaned_full_path).name}")
 
     print(f"    Sampling choice sets (target size {choice_set_sample_size})...")
@@ -394,7 +420,7 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
 
     if demeaned_sampled_path is not None:
         Path(demeaned_sampled_path).parent.mkdir(parents=True, exist_ok=True)
-        cs_model.to_parquet(demeaned_sampled_path, index=False)
+        _write_parquet(cs_model, demeaned_sampled_path, index=False)
         print(f"    Saved sampled+demeaned dataset: {Path(demeaned_sampled_path).name}")
 
     return cs_model, model_vars_for_demean
@@ -569,7 +595,7 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
     print(f"Models to run: {len(model_names)}\n")
 
     print(f"[Loading Prepped Data]")
-    cs = pd.read_parquet(input_data_path)
+    cs = _read_parquet(input_data_path)
     print(f"  Loaded: {len(cs):,} rows, {cs['trip_id'].nunique():,} trips\n")
 
     if "avail" not in cs.columns:

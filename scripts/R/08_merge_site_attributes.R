@@ -211,6 +211,76 @@ message("Expected rarity enrichment available: ",
         choice_set[!is.na(expected_rarity_enrichment), .N], " / ", nrow(choice_set))
 
 
+# -----------------------------------------------------------------------------
+# Load and Merge Species Apperance
+# -----------------------------------------------------------------------------
+
+message("\n--- Merging Species Apperance ---")
+
+monthly_appearance <- read_parquet(inputs$monthly_apperance)
+weekly_appearance <- read_parquet(inputs$weekly_apperance)
+seasonal_appearance <- read_parquet(inputs$seasonal_apperance)
+
+setDT(monthly_appearance)
+setDT(weekly_appearance)
+setDT(seasonal_appearance)
+
+monthly_appearance[, cluster_id := as.character(cluster_id)]
+weekly_appearance[, cluster_id := as.character(cluster_id)]
+seasonal_appearance[, cluster_id := as.character(cluster_id)]
+
+choice_set <- merge(
+  choice_set,
+  weekly_appearance[, .(
+    cluster_id,
+    year_week,
+    prev_week_appearance = appearance_index
+  )],
+  by.x = c("cluster_id", "prev_week"),
+  by.y = c("cluster_id", "year_week"),
+  all.x = TRUE
+)
+
+choice_set <- merge(
+  choice_set,
+  monthly_appearance[, .(
+    cluster_id,
+    year_month,
+    prev_month_appearance = appearance_index
+  )],
+  by.x = c("cluster_id", "prev_month"),
+  by.y = c("cluster_id", "year_month"),
+  all.x = TRUE
+)
+
+choice_set <- merge(
+  choice_set,
+  seasonal_appearance[, .(
+    cluster_id,
+    year_season,
+    prev_year_season_appearance = appearance_index
+  )],
+  by.x = c("cluster_id", "prev_year_season"),
+  by.y = c("cluster_id", "year_season"),
+  all.x = TRUE
+)
+
+choice_set[, expected_appearance := fcoalesce(
+  prev_week_appearance,
+  prev_month_appearance,
+  prev_year_season_appearance
+)]
+
+choice_set[, expected_appearance_source := fcase(
+  !is.na(prev_week_appearance), "prev_week",
+  !is.na(prev_month_appearance), "prev_month",
+  !is.na(prev_year_season_appearance), "prev_year_season",
+  default = "missing"
+)]
+
+message("Expected appearance available: ",
+        choice_set[!is.na(expected_appearance), .N], " / ", nrow(choice_set))
+
 
 # -----------------------------------------------------------------------------
 # Load and Merge Congestion (with fallback logic)

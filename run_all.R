@@ -133,6 +133,7 @@ for (scenario_name in names(scenarios)) {
     inputs = list(
       ebird_basic = file.path(input_data_dir, "ebird", "ebd_IN_201501_202412_relDec-2024", "ebd_IN_201501_202412_relDec-2024.txt"),
       voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
+      appearance_index = file.path(input_data_dir, "appearance index", "20170082", "bird_appearance_index_final.csv"),
       migrant_species = file.path(input_data_dir, "species", "species_list_categorized.csv")
     ),
     outputs = list(
@@ -142,6 +143,9 @@ for (scenario_name in names(scenarios)) {
       monthly_rarity  = file.path(scenario_dir, "biodiv_monthly_rarity.parquet"),
       weekly_rarity = file.path(scenario_dir, "biodiv_weekly_rarity.parquet"),
       seasonal_rarity = file.path(scenario_dir, "biodiv_seasonal_rarity.parquet"),
+      monthly_apperance  = file.path(scenario_dir, "biodiv_monthlyapperancey.parquet"),
+      weekly_apperance = file.path(scenario_dir, "biodiv_weekly_apperance.parquet"),
+      seasonal_apperance = file.path(scenario_dir, "biodiv_seasonal_apperance.parquet"),
       monthly_congestion = file.path(scenario_dir, "biodiv_monthly_congestion.parquet"),
       weekly_congestion = file.path(scenario_dir, "biodiv_weekly_congestion.parquet"),
       seasonal_congestion = file.path(scenario_dir, "biodiv_seasonal_congestion.parquet"),
@@ -157,9 +161,6 @@ for (scenario_name in names(scenarios)) {
       monthly_resident = file.path(scenario_dir, "biodiv_monthly_resident.parquet"),
       weekly_resident = file.path(scenario_dir, "biodiv_weekly_resident.parquet"),
       seasonal_resident = file.path(scenario_dir, "biodiv_seasonal_resident.parquet"),
-      monthly_rarity = file.path(scenario_dir, "biodiv_monthly_rarity.parquet"),
-      weekly_rarity = file.path(scenario_dir, "biodiv_weekly_rarity.parquet"),
-      seasonal_rarity = file.path(scenario_dir, "biodiv_seasonal_rarity.parquet"),
       species_matching_log = file.path(scenario_dir, "species_matching_log.csv")
     ),
     params = params,
@@ -181,6 +182,9 @@ for (scenario_name in names(scenarios)) {
       monthly_rarity  = file.path(scenario_dir, "biodiv_monthly_rarity.parquet"),
       weekly_rarity = file.path(scenario_dir, "biodiv_weekly_rarity.parquet"),
       seasonal_rarity = file.path(scenario_dir, "biodiv_seasonal_rarity.parquet"),
+      monthly_apperance  = file.path(scenario_dir, "biodiv_monthlyapperancey.parquet"),
+      weekly_apperance = file.path(scenario_dir, "biodiv_weekly_apperance.parquet"),
+      seasonal_apperance = file.path(scenario_dir, "biodiv_seasonal_apperance.parquet"),
       monthly_congestion = file.path(scenario_dir, "biodiv_monthly_congestion.parquet"),
       weekly_congestion = file.path(scenario_dir, "biodiv_weekly_congestion.parquet"),
       seasonal_congestion = file.path(scenario_dir, "biodiv_seasonal_congestion.parquet"),
@@ -196,9 +200,6 @@ for (scenario_name in names(scenarios)) {
       monthly_resident = file.path(scenario_dir, "biodiv_monthly_resident.parquet"),
       weekly_resident = file.path(scenario_dir, "biodiv_weekly_resident.parquet"),
       seasonal_resident = file.path(scenario_dir, "biodiv_seasonal_resident.parquet"),
-      monthly_rarity = file.path(scenario_dir, "biodiv_monthly_rarity.parquet"),
-      weekly_rarity = file.path(scenario_dir, "biodiv_weekly_rarity.parquet"),
-      seasonal_rarity = file.path(scenario_dir, "biodiv_seasonal_rarity.parquet"),
       protected_areas_shp = file.path(input_data_dir, "protected_areas", "04_MainlandPAsShapefile")
     ),
     outputs = list(
