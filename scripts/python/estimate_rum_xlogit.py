@@ -21,8 +21,9 @@ was tried first and produced mostly-singleton groups in this project's data
 the estimation Hessian singular.
 
 When save_demeaned=True, the sampled + demeaned dataset used for estimation
-is written to <output_dir>/demeaned/<model>_Mixed_<scenario>_demeaned.parquet
-for debugging.
+is written to <output_dir>/demeaned/<model>_<Mixed|Conditional>_<scenario>_demeaned.parquet
+for debugging. "Mixed" vs "Conditional" depends on whether mixed_vars is
+non-empty for that model in models.yml (see estimate_model()).
 """
 
 import argparse
@@ -36,10 +37,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pyarrow.dataset as pa_dataset
 import pyarrow.parquet as pq
 import scipy.stats
 import yaml
-from xlogit import MixedLogit
+from xlogit import MixedLogit, MultinomialLogit
 
 warnings.filterwarnings("ignore")
 
@@ -80,6 +82,30 @@ def get_fe_groups(fe_vars):
     return fe_groups
 
 
+def compute_needed_columns(models_config, model_names):
+    """Union of all columns actually needed across the given models -- lets
+    the parquet load pull only what's required instead of the full table.
+    This dataset has grown to ~20M rows across 70+ columns (many of them
+    intermediate/diagnostic columns from earlier pipeline stages that no
+    model actually uses -- hourly_wage, fuel_cost, dist_to_pa_km, etc.), and
+    loading all of them was enough to OOM even an isolated Python process.
+    """
+    needed = {"trip_id", "obs_id_num", "choice", "user_id", "year", "travel_cost_combined", "avail"}
+    for name in model_names:
+        cfg = models_config[name]
+        model_vars = cfg["model_vars"]
+        fe_vars = cfg.get("fe_vars", [])
+        mixed_vars = cfg.get("mixed_vars") or []
+
+        for v in model_vars:
+            needed.add("log_travel_cost" if v == "travel_cost_combined" else v)
+        for v in mixed_vars:
+            needed.add(v)
+        for grp in get_fe_groups(fe_vars):
+            needed.update(grp)
+    return needed
+
+
 def _short_hash(s, length=10):
     return hashlib.md5(s.encode()).hexdigest()[:length]
 
@@ -104,11 +130,27 @@ def data_fingerprint(parquet_path):
     handling), the fingerprint changes, the filename changes, and old
     cache entries are simply never found again rather than silently
     misapplied to different data.
+
+    Handles both a single parquet file and a directory of parquet files
+    (e.g. 11a's year-partitioned output). For a directory, aggregates
+    across all files inside rather than relying on the directory's own
+    mtime -- some filesystems don't update a directory's mtime when an
+    existing file's contents change without adding/removing directory
+    entries, which would make the fingerprint unreliable.
     """
     p = Path(parquet_path)
-    stat = p.stat()
-    n_rows = pq.ParquetFile(p).metadata.num_rows
-    return f"{n_rows}_{int(stat.st_mtime)}_{stat.st_size}"
+    if p.is_dir():
+        files = sorted(p.glob("*.parquet"))
+        if not files:
+            raise FileNotFoundError(f"No .parquet files found in directory: {p}")
+        total_size = sum(f.stat().st_size for f in files)
+        max_mtime = max(f.stat().st_mtime for f in files)
+        n_rows = sum(pq.ParquetFile(f).metadata.num_rows for f in files)
+        return f"{n_rows}_{int(max_mtime)}_{total_size}_{len(files)}"
+    else:
+        stat = p.stat()
+        n_rows = pq.ParquetFile(p).metadata.num_rows
+        return f"{n_rows}_{int(stat.st_mtime)}_{stat.st_size}"
 
 
 def fe_cache_path(fe_cache_dir, scenario, fe_groups, model_data_path, var):
@@ -302,6 +344,18 @@ def sample_choice_set(group, choice_set_sample_size, seed=SEED):
     return sampled_group
 
 
+def read_parquet_selective(path, wanted_cols):
+    """Read only the columns that exist in the file among wanted_cols --
+    avoids crashing if a requested column isn't present, and avoids loading
+    everything else in the file (see build_model_data's cache reads for why
+    this matters: cached demeaned files were historically written as a copy
+    of the FULL wide table plus new _dm columns, not just the columns
+    actually needed downstream)."""
+    available = set(pa_dataset.dataset(path).schema.names)
+    cols = [c for c in wanted_cols if c in available]
+    return pd.read_parquet(path, columns=cols)
+
+
 def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size,
                       demeaned_full_path=None, demeaned_sampled_path=None,
                       fe_cache_dir=None, scenario=None, model_data_path=None):
@@ -336,14 +390,23 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
     ]
     vars_to_demean = list(dict.fromkeys(model_vars_for_demean + mixed_vars))
 
+    # Columns actually needed downstream, regardless of which cache layer
+    # (if any) is hit -- id/context columns plus this model's _dm columns.
+    # demeaned_sampled additionally has obs_id_num_seq/alt_id, assigned
+    # after sampling.
+    base_cols = ["trip_id", "choice", "obs_id_num", "avail"]
+    dm_cols = [f"{v}_dm" for v in vars_to_demean]
+
     if demeaned_sampled_path is not None and Path(demeaned_sampled_path).exists():
         print(f"    Loading cached sampled+demeaned data: {Path(demeaned_sampled_path).name}")
-        cs_model = pd.read_parquet(demeaned_sampled_path)
+        cs_model = read_parquet_selective(
+            demeaned_sampled_path, base_cols + dm_cols + ["obs_id_num_seq", "alt_id"]
+        )
         return cs_model, model_vars_for_demean
 
     if demeaned_full_path is not None and Path(demeaned_full_path).exists():
         print(f"    Loading cached demeaned data (pre-sampling): {Path(demeaned_full_path).name}")
-        cs_demeaned = pd.read_parquet(demeaned_full_path)
+        cs_demeaned = read_parquet_selective(demeaned_full_path, base_cols + dm_cols)
     else:
         fe_groups = get_fe_groups(fe_vars)
         print(f"    FE dimensions (absorbed separately, iteratively): {fe_groups}")
@@ -400,8 +463,115 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
     return cs_model, model_vars_for_demean
 
 
+# def estimate_model(X_data, y_data, ids_data, alts_data, avail_data, randvars, verbose=True):
+#     """Estimate an xlogit model with standardization.
+
+#     Branches on whether randvars is non-empty: MixedLogit (random
+#     coefficients, Halton-draw simulation) if mixed_vars was specified for
+#     this model in models.yml, otherwise MultinomialLogit (standard
+#     conditional logit, no simulation) if mixed_vars was left empty/omitted.
+#     Both classes share the same coeff_/stderr/pvalues/loglikelihood/aic/bic
+#     attribute conventions in xlogit, so extract_results()/calculate_wtp()
+#     downstream don't need to know which one ran -- NOT independently
+#     verified against xlogit's exact API for MultinomialLogit.fit(), worth
+#     a close look at the first conditional-logit run's output.
+#     """
+#     use_mixed = len(randvars) > 0
+#     try:
+#         if verbose:
+#             print(f"    Data validation:")
+#             print(f"      X shape: {X_data.shape}")
+#             print(f"      X NaN: {X_data.isna().sum().sum()}")
+#             print(f"      X std range: [{X_data.std().min():.6f}, {X_data.std().max():.6f}]")
+
+#         X_scaled = standardize_data(X_data)
+
+#         # ========== ADD DEBUGGING HERE ==========
+#         print("\n[DATA DIAGNOSTICS]")
+#         print(f"X shape: {X_scaled.shape}")
+#         print(f"X NaN: {X_scaled.isna().sum().sum()}")
+
+#         # Check post-standardization std devs
+#         X_std = X_scaled.std(axis=0)
+#         print("\nStandardized X std devs:")
+#         for col, std in zip(X_data.columns, X_std):
+#             print(f"  {col}: {std:.6f}")
+
+#         # Check for near-zero variance columns
+#         min_std = X_std.min()
+#         max_std = X_std.max()
+#         print(f"\nStd range: [{min_std:.6f}, {max_std:.6f}]")
+#         if min_std < 0.01:
+#             print("WARNING: At least one variable has near-zero variance!")
+#             print(f"  Variables with std < 0.01: {X_data.columns[X_std < 0.01].tolist()}")
+
+#         # Check correlation matrix
+#         import numpy as np
+#         corr_matrix = np.corrcoef(X_scaled.T)
+#         off_diag_corr = np.abs(corr_matrix[~np.eye(corr_matrix.shape[0], dtype=bool)])
+#         max_corr = np.nanmax(off_diag_corr)
+#         print(f"\nMax absolute correlation (off-diagonal): {max_corr:.6f}")
+#         if max_corr > 0.95:
+#             print("WARNING: High multicollinearity detected!")
+
+#         # Check choice distribution
+#         choice_count = y_data.sum()
+#         total_count = len(y_data)
+#         print(f"\nChoice distribution: {choice_count:,} chosen / {total_count:,} total ({100*choice_count/total_count:.2f}%)")
+
+#         # ========== END DEBUGGING ==========
+
+#         if verbose:
+#             print(f"    Standardized (mean=0, std=1)")
+#             print(f"      y choices: {y_data.sum()}/{len(y_data)}")
+#             print(f"      Choice situations: {ids_data.nunique()}")
+#             if use_mixed:
+#                 print(f"    Fitting MixedLogit (random coeff, 10 Halton draws):")
+#                 print(f"      Random vars: {list(randvars.keys())}")
+#             else:
+#                 print(f"    Fitting MultinomialLogit (standard conditional logit, no random coefficients):")
+
+#         start_time = time.time()
+#         if use_mixed:
+#             model = MixedLogit()
+#             model.fit(
+#                 X=X_scaled, y=y_data, varnames=list(X_data.columns),
+#                 ids=ids_data, alts=alts_data, avail=avail_data,
+#                 randvars=randvars, n_draws=10,
+#                 optim_method="L-BFGS-B",
+#                 skip_std_errs=False, mnl_init=False,
+#             )
+#         else:
+#             model = MultinomialLogit()
+#             model.fit(
+#                 X=X_scaled, y=y_data, varnames=list(X_data.columns),
+#                 ids=ids_data, alts=alts_data, avail=avail_data,
+#             )
+#         elapsed = time.time() - start_time
+#         if verbose:
+#             print(f"    Estimation complete in {elapsed:.1f}s")
+#         return model, elapsed, True
+
+#     except Exception as e:
+#         print(f"    ERROR: {type(e).__name__}: {str(e)}")
+#         traceback.print_exc()
+#         return None, 0, False
+
+
 def estimate_model(X_data, y_data, ids_data, alts_data, avail_data, randvars, verbose=True):
-    """Estimate xlogit MixedLogit model with standardization."""
+    """Estimate an xlogit model with standardization.
+
+    Branches on whether randvars is non-empty: MixedLogit (random
+    coefficients, Halton-draw simulation) if mixed_vars was specified for
+    this model in models.yml, otherwise MultinomialLogit (standard
+    conditional logit, no simulation) if mixed_vars was left empty/omitted.
+    Both classes share the same coeff_/stderr/pvalues/loglikelihood/aic/bic
+    attribute conventions in xlogit, so extract_results()/calculate_wtp()
+    downstream don't need to know which one ran -- NOT independently
+    verified against xlogit's exact API for MultinomialLogit.fit(), worth
+    a close look at the first conditional-logit run's output.
+    """
+    use_mixed = len(randvars) > 0
     try:
         if verbose:
             print(f"    Data validation:")
@@ -411,22 +581,67 @@ def estimate_model(X_data, y_data, ids_data, alts_data, avail_data, randvars, ve
 
         X_scaled = standardize_data(X_data)
 
+        # ========== ADD DEBUGGING HERE ==========
+        print("\n[DATA DIAGNOSTICS]")
+        print(f"X shape: {X_scaled.shape}")
+        print(f"X NaN: {X_scaled.isna().sum().sum()}")
+
+        # Check post-standardization std devs
+        X_std = X_scaled.std(axis=0)
+        print("\nStandardized X std devs:")
+        for col, std in zip(X_data.columns, X_std):
+            print(f"  {col}: {std:.6f}")
+
+        # Check for near-zero variance columns
+        min_std = X_std.min()
+        max_std = X_std.max()
+        print(f"\nStd range: [{min_std:.6f}, {max_std:.6f}]")
+        if min_std < 0.01:
+            print("WARNING: At least one variable has near-zero variance!")
+            print(f"  Variables with std < 0.01: {X_data.columns[X_std < 0.01].tolist()}")
+
+        # Check correlation matrix
+        import numpy as np
+        corr_matrix = np.corrcoef(X_scaled.T)
+        off_diag_corr = np.abs(corr_matrix[~np.eye(corr_matrix.shape[0], dtype=bool)])
+        max_corr = np.nanmax(off_diag_corr)
+        print(f"\nMax absolute correlation (off-diagonal): {max_corr:.6f}")
+        if max_corr > 0.95:
+            print("WARNING: High multicollinearity detected!")
+
+        # Check choice distribution
+        choice_count = y_data.sum()
+        total_count = len(y_data)
+        print(f"\nChoice distribution: {choice_count:,} chosen / {total_count:,} total ({100*choice_count/total_count:.2f}%)")
+
+        # ========== END DEBUGGING ==========
+
         if verbose:
             print(f"    Standardized (mean=0, std=1)")
             print(f"      y choices: {y_data.sum()}/{len(y_data)}")
             print(f"      Choice situations: {ids_data.nunique()}")
-            print(f"    Fitting MixedLogit (random coeff, 10 Halton draws):")
-            print(f"      Random vars: {list(randvars.keys())}")
+            if use_mixed:
+                print(f"    Fitting MixedLogit (random coeff, 10 Halton draws):")
+                print(f"      Random vars: {list(randvars.keys())}")
+            else:
+                print(f"    Fitting MultinomialLogit (standard conditional logit, no random coefficients):")
 
         start_time = time.time()
-        model = MixedLogit()
-        model.fit(
-            X=X_scaled, y=y_data, varnames=list(X_data.columns),
-            ids=ids_data, alts=alts_data, avail=avail_data,
-            randvars=randvars, n_draws=10,
-            optim_method="L-BFGS-B",
-            skip_std_errs=False, mnl_init=False,
-        )
+        
+        if use_mixed:
+            model = _fit_mixed_logit_with_retry(
+                X_scaled, y_data, X_data.columns, ids_data, alts_data, avail_data,
+                randvars, verbose
+            )
+            if model is None:
+                return None, 0, False
+        else:
+            model = MultinomialLogit()
+            model.fit(
+                X=X_scaled, y=y_data, varnames=list(X_data.columns),
+                ids=ids_data, alts=alts_data, avail=avail_data,
+            )
+        
         elapsed = time.time() - start_time
         if verbose:
             print(f"    Estimation complete in {elapsed:.1f}s")
@@ -436,6 +651,83 @@ def estimate_model(X_data, y_data, ids_data, alts_data, avail_data, randvars, ve
         print(f"    ERROR: {type(e).__name__}: {str(e)}")
         traceback.print_exc()
         return None, 0, False
+
+
+def _fit_mixed_logit_with_retry(X_scaled, y_data, varnames, ids_data, alts_data, avail_data,
+                                 randvars, verbose):
+    """Helper: Fit MixedLogit with fallback strategies for singular matrix errors."""
+    import numpy as np
+    
+    # Strategy 1: Try with mnl_init=True (warm start from MNL)
+    try:
+        if verbose:
+            print("      [Attempt 1] MixedLogit with mnl_init=True...")
+        model = MixedLogit()
+        model.fit(
+            X=X_scaled, y=y_data, varnames=list(varnames),
+            ids=ids_data, alts=alts_data, avail=avail_data,
+            randvars=randvars, n_draws=10,
+            optim_method="L-BFGS-B",
+            skip_std_errs=False, mnl_init=True,
+        )
+        if verbose:
+            print("      ✓ Success with mnl_init=True")
+        return model
+    except np.linalg.LinAlgError as e:
+        if verbose:
+            print(f"      ✗ Failed with singular matrix: {e}")
+    except Exception as e:
+        if verbose:
+            print(f"      ✗ Failed: {type(e).__name__}: {e}")
+        raise
+
+    # Strategy 2: Try with fewer Halton draws (5 instead of 10)
+    try:
+        if verbose:
+            print("      [Attempt 2] MixedLogit with 5 Halton draws...")
+        model = MixedLogit()
+        model.fit(
+            X=X_scaled, y=y_data, varnames=list(varnames),
+            ids=ids_data, alts=alts_data, avail=avail_data,
+            randvars=randvars, n_draws=5,
+            optim_method="L-BFGS-B",
+            skip_std_errs=False, mnl_init=False,
+        )
+        if verbose:
+            print("      ✓ Success with 5 Halton draws")
+        return model
+    except np.linalg.LinAlgError as e:
+        if verbose:
+            print(f"      ✗ Failed with singular matrix: {e}")
+    except Exception as e:
+        if verbose:
+            print(f"      ✗ Failed: {type(e).__name__}: {e}")
+        raise
+
+    # Strategy 3: Try with skip_std_errs=True (avoid Hessian calculation)
+    try:
+        if verbose:
+            print("      [Attempt 3] MixedLogit with skip_std_errs=True...")
+        model = MixedLogit()
+        model.fit(
+            X=X_scaled, y=y_data, varnames=list(varnames),
+            ids=ids_data, alts=alts_data, avail=avail_data,
+            randvars=randvars, n_draws=10,
+            optim_method="L-BFGS-B",
+            skip_std_errs=True, mnl_init=False,
+        )
+        if verbose:
+            print("      ✓ Success with skip_std_errs=True (no std errors)")
+        return model
+    except Exception as e:
+        if verbose:
+            print(f"      ✗ Failed: {type(e).__name__}: {e}")
+
+    # All strategies failed
+    if verbose:
+        print("      ✗ All MixedLogit strategies exhausted")
+    return None
+
 
 
 def extract_results(model, y_data, ids_data):
@@ -569,7 +861,15 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
     print(f"Models to run: {len(model_names)}\n")
 
     print(f"[Loading Prepped Data]")
-    cs = pd.read_parquet(input_data_path)
+    needed_cols = compute_needed_columns(models_config, model_names)
+    available_cols = set(pa_dataset.dataset(input_data_path).schema.names)
+    cols_to_read = sorted(needed_cols & available_cols)
+    missing_cols = needed_cols - available_cols
+    if missing_cols:
+        print(f"  NOTE: requested columns not found in data, skipping: {sorted(missing_cols)}")
+    print(f"  Reading {len(cols_to_read)} of {len(available_cols)} available columns "
+          f"(union of what {len(model_names)} model(s) need)")
+    cs = pd.read_parquet(input_data_path, columns=cols_to_read)
     print(f"  Loaded: {len(cs):,} rows, {cs['trip_id'].nunique():,} trips\n")
 
     if "avail" not in cs.columns:
@@ -589,8 +889,19 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
     summary_rows = []
 
     for model_idx, model_name in enumerate(model_names, 1):
-        print(f"\n[Run {model_idx}/{len(model_names)}] Model: {model_name}_Mixed")
-        output_prefix = f"{model_name}_Mixed_{scenario}"
+        model_config = models_config[model_name]
+        model_vars = model_config["model_vars"].copy()
+        fe_vars = model_config.get("fe_vars", [])
+        mixed_vars = model_config.get("mixed_vars") or []  # handles missing key, None, or []
+        choice_set_sample_size = model_config.get("choice_set_sample_size", 10)
+
+        # Empty/omitted mixed_vars -> standard conditional logit (MultinomialLogit)
+        # instead of MixedLogit. Determined here, before output_prefix, so
+        # filenames correctly say "Conditional" rather than "Mixed" for these.
+        model_type_label = "Mixed" if len(mixed_vars) > 0 else "Conditional"
+
+        print(f"\n[Run {model_idx}/{len(model_names)}] Model: {model_name}_{model_type_label}")
+        output_prefix = f"{model_name}_{model_type_label}_{scenario}"
         summary_file = output_dir / f"{output_prefix}_summary.txt"
         coef_file = output_dir / f"{output_prefix}_coefficients.csv"
 
@@ -600,12 +911,6 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             continue
 
         try:
-            model_config = models_config[model_name]
-            model_vars = model_config["model_vars"].copy()
-            fe_vars = model_config.get("fe_vars", [])
-            mixed_vars = model_config.get("mixed_vars", [])
-            choice_set_sample_size = model_config.get("choice_set_sample_size", 10)
-
             cs_model, model_vars_for_demean = build_model_data(
                 cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size,
                 demeaned_full_path=(demeaned_dir / f"{output_prefix}_demeaned_full.parquet") if save_demeaned else None,
@@ -617,11 +922,8 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
 
             model_vars_dm = [f"{v}_dm" for v in model_vars_for_demean]
             randvars = {f"{v}_dm": "n" for v in mixed_vars if f"{v}_dm" in model_vars_dm}
-
-            if len(randvars) == 0:
-                print(f"    ERROR: No random vars available")
-                fail_count += 1
-                continue
+            # No "randvars empty -> fail" check anymore -- estimate_model()
+            # branches to MultinomialLogit in that case instead of erroring.
 
             X_data = cs_model[model_vars_dm].fillna(0).reset_index(drop=True)
             y_data = cs_model["choice"].reset_index(drop=True)
@@ -652,7 +954,7 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             # ---- Save summary.txt (kept as a human-readable record) ----
             summary_lines = [
                 "=" * 70,
-                f"MODEL SUMMARY: {model_name}_Mixed",
+                f"MODEL SUMMARY: {model_name}_{model_type_label}",
                 "=" * 70,
                 f"Scenario: {scenario}",
                 f"Fixed Effects: {fe_vars}",
@@ -682,7 +984,7 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             if wtp_df is not None:
                 wtp_export = wtp_df.reset_index().rename(columns={"index": "Variable"})
                 wtp_export["Scenario"] = scenario
-                wtp_export["Model"] = f"{model_name}_Mixed"
+                wtp_export["Model"] = f"{model_name}_{model_type_label}"
                 wtp_csv = output_dir / f"{output_prefix}_wtp.csv"
                 wtp_export.to_csv(wtp_csv, index=False)
                 print(f"    WTP: {wtp_csv.name}")
@@ -690,7 +992,7 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             # ---- Save coefficients ----
             coef_export = coef_df.reset_index().rename(columns={"index": "Variable"})
             coef_export["Scenario"] = scenario
-            coef_export["Model"] = f"{model_name}_Mixed"
+            coef_export["Model"] = f"{model_name}_{model_type_label}"
             coef_csv = output_dir / f"{output_prefix}_coefficients.csv"
             coef_export.to_csv(coef_csv, index=False)
             print(f"    Coefficients: {coef_csv.name}")

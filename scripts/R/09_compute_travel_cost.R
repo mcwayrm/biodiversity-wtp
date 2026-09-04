@@ -3,7 +3,8 @@
 #############################################
 #  - Loads master dataset with attributes
 #  - Computes travel cost based on GDP-derived wages and travel parameters
-#  - Saves: outputs$master_data_with_travel_cost
+#  - Saves: outputs$master_data_with_travel_cost (a DIRECTORY of year-
+#           partitioned parquet files, not a single file -- see note below)
 #
 #  Required params:
 #    - projection_crs: CRS for spatial operations
@@ -17,35 +18,41 @@
 #    - cpi_xlsx: FRED INDCPIALLAINMEI CPI index, "Annual" sheet (base 2015=100),
 #                for deflating to real 2021 INR
 #    - driving_cost_rds: Year-specific driving cost in real 2021 INR/km
+#
+#  MEMORY ARCHITECTURE (changed after two real OOM crashes at ~37.6M rows):
+#  This script processes ONE YEAR AT A TIME -- computes travel cost for that
+#  year's slice, writes it to disk immediately, discards it, moves to the
+#  next year. It never holds the full multi-year dataset in memory
+#  simultaneously. Peak memory now scales with the largest single year
+#  (~4-7M rows) rather than all years combined (~37.6M rows).
+#
+#  This means outputs$master_data_with_travel_cost must be a DIRECTORY path
+#  now, not a single .parquet file path -- e.g.
+#    file.path(scenario_dir, "master_data_with_travel_cost")
+#  not
+#    file.path(scenario_dir, "master_data_with_travel_cost.parquet")
+#  A "_SUCCESS" marker file is written inside that directory on completion,
+#  and run_all.R's declared output for this task should point at that
+#  marker file (file.path(scenario_dir, "master_data_with_travel_cost",
+#  "_SUCCESS")) so the existing file.exists()-based skip-check keeps
+#  working unchanged. Downstream (11a), arrow::open_dataset() reads a
+#  directory of parquet files exactly the same way it reads a single file --
+#  no change needed on the reading side beyond pointing at the directory
+#  instead of the old single filename.
+#
+#  GDP coverage: forward-filled per grid cell from the most recent available
+#  year where an analysis year has no direct GDP data -- no rows are dropped
+#  for this reason. See gdp_year_used column in the output.
 #############################################
 
 # -----------------------------------------------------------------------------
 # Load Parameters (with defaults)
 # -----------------------------------------------------------------------------
 
-# Value of time from wage
-time_value_fraction <- if (!is.null(params$time_value_fraction)) {
-  params$time_value_fraction
-} else {
-  1/3  # Value of time assumed as 1/3 of wage (Jayalath et al., 2023)
-}
+time_value_fraction <- if (!is.null(params$time_value_fraction)) params$time_value_fraction else 1/3
+work_hours <- if (!is.null(params$work_hours_per_year)) params$work_hours_per_year else 2000
+travel_speed_kmph <- if (!is.null(params$travel_speed_kmph)) params$travel_speed_kmph else 30
 
-# Annual work hours
-work_hours <- if (!is.null(params$work_hours_per_year)) {
-  params$work_hours_per_year
-} else {
-  2000  # 250 working days x 8 hours/day
-}
-
-# Average travel speed
-travel_speed_kmph <- if (!is.null(params$travel_speed_kmph)) {
-  params$travel_speed_kmph
-} else {
-  30  # Average rural/urban travel speed (MoRTH road studies)
-}
-
-# Year-specific exchange rates (USD to INR), used to convert nominal USD GDP to nominal INR
-# Driving cost is loaded from driving_cost.rds (year-specific, real 2021 INR/km)
 exchange_df <- tibble(
   year = 2015:2024,
   usd_to_inr = c(64.15, 67.19, 65.12, 68.43, 70.41, 74.10, 73.93, 77.44, 82.57, 83.50)
@@ -55,16 +62,6 @@ message("Travel cost parameters:")
 message("  Time value fraction: ", time_value_fraction)
 message("  Work hours/year: ", work_hours)
 message("  Travel speed: ", travel_speed_kmph, " km/h")
-message("  Driving cost: year-specific from driving_cost.rds (real 2021 INR/km)")
-
-# -----------------------------------------------------------------------------
-# Load Master Dataset
-# -----------------------------------------------------------------------------
-
-master_data <- read_parquet(inputs$master_data_with_attributes)
-setDT(master_data)
-
-message("Loaded master dataset: ", nrow(master_data), " rows")
 
 # -----------------------------------------------------------------------------
 # Load District Centroids (for home locations without coordinates)
@@ -77,137 +74,72 @@ dist <- st_read(inputs$district_shp, quiet = TRUE) %>%
 
 dist_centroids <- dist %>%
   st_centroid() %>%
-  mutate(
-    lon_dist = st_coordinates(geometry)[, 1],
-    lat_dist = st_coordinates(geometry)[, 2]
-  ) %>%
+  mutate(lon_dist = st_coordinates(geometry)[, 1], lat_dist = st_coordinates(geometry)[, 2]) %>%
   st_drop_geometry()
-
-# Merge district centroids if needed (for users without home coordinates)
-if (!all(c("lon_home", "lat_home") %in% names(master_data))) {
-  master_data <- master_data %>%
-    left_join(dist_centroids, by = "c_code_2011")
-}
+rm(dist)
 
 # -----------------------------------------------------------------------------
-# Load CPI Data  (FRED — INDCPIALLAINMEI, "Annual" sheet, base 2015=100)
+# Load CPI Data (small -- fine to keep in memory whole)
 # -----------------------------------------------------------------------------
-#
-# Used to deflate nominal INR GDP per capita to real 2021 INR so that wages are
-# comparable in constant-purchasing-power terms across the panel.
-# Deflation formula: real_t = nominal_t x (CPI_2021 / CPI_t)
-#
-# Source switched from the FRED CSV export to the "Annual" sheet of an xlsx
-# workbook (matches the source your colleague is using). The "Annual" sheet
-# is not guaranteed to have exactly one row per year, so we aggregate
-# defensively with mean() -- if it already has one row per year this is a
-# no-op, but it protects against cpi_2021 silently becoming a length>1 vector
-# (which would recycle incorrectly in the deflation formula below, with no
-# error or warning).
 
 message("Loading CPI data...")
-cpi_raw <- readxl::read_excel(
-  inputs$cpi_xlsx,
-  sheet = "Annual"
-)
-
+cpi_raw <- readxl::read_excel(inputs$cpi_xlsx, sheet = "Annual")
 cpi_df <- cpi_raw %>%
   mutate(year = lubridate::year(as.Date(observation_date))) %>%
   rename(cpi = INDCPIALLAINMEI) %>%
   select(year, cpi) %>%
   group_by(year) %>%
   summarise(cpi = mean(cpi, na.rm = TRUE), .groups = "drop")
+rm(cpi_raw)
 
 cpi_2021 <- cpi_df$cpi[cpi_df$year == 2021]
 if (length(cpi_2021) == 0) stop("ERROR: CPI value for 2021 not found — cannot deflate to real 2021 INR!")
-if (length(cpi_2021) > 1) stop("ERROR: Multiple CPI values found for 2021 after aggregation — check the Annual sheet for duplicate years!")
+if (length(cpi_2021) > 1) stop("ERROR: Multiple CPI values found for 2021 after aggregation — check the Annual sheet!")
 message("CPI base value (2021): ", cpi_2021)
 
 # -----------------------------------------------------------------------------
-# Load Year-Specific Driving Cost
+# Load Year-Specific Driving Cost (small)
 # -----------------------------------------------------------------------------
-#
-# Driving cost per km varies by year and is measured in real 2021 INR/km.
-# Replaces the earlier fixed assumption of INR 7.5/km.
 
 message("Loading driving cost data...")
 driving_cost_df <- readRDS(inputs$driving_cost_rds) %>%
-  mutate(
-    year = as.integer(year),
-    driving_cost = as.numeric(driving_cost)
-  ) %>%
+  mutate(year = as.integer(year), driving_cost = as.numeric(driving_cost)) %>%
   filter(year >= 2015 & year <= 2024)
-
 message("Driving cost years available: ", paste(sort(driving_cost_df$year), collapse = ", "))
 
 # -----------------------------------------------------------------------------
-# Load and Process GDP Data (panel: 2015-2024)
+# Load and Process GDP Data (small -- one row per grid cell per year, not
+# per observation, so this stays in memory whole)
 # -----------------------------------------------------------------------------
-#
-# Processing steps per year:
-#   1. GDP per capita (USD) = (predicted_GCP_current_USD * 1e9) / pop_cell
-#   2. Nominal INR          = GDP per capita (USD) x year-specific USD/INR rate
-#   3. Real 2021 INR        = Nominal INR x (CPI_2021 / CPI_t)
 
 message("Loading GDP data...")
 gdp_all <- fread(inputs$gdp)
-
-# Verify GDP column exists
 if (!("predicted_GCP_current_USD" %in% names(gdp_all))) {
   stop("Cannot proceed: 'predicted_GCP_current_USD' column not found. ",
        "Available columns: ", paste(names(gdp_all), collapse = ", "))
 }
 
-# Filter for India across the full panel range
 gdp_india <- gdp_all[iso == "IND" & year >= 2015 & year <= 2024]
+rm(gdp_all)
 years_in_india <- sort(unique(gdp_india$year))
 message("Available years for India (2015-2024): ", paste(years_in_india, collapse = ", "))
-
 if (length(years_in_india) == 0) stop("ERROR: No India GDP data found for 2015-2024!")
 missing_gdp_years <- setdiff(2015:2024, years_in_india)
 if (length(missing_gdp_years) > 0) {
-  message("WARNING: GDP data missing for year(s): ", paste(missing_gdp_years, collapse = ", "),
-          " — these rows have no possible travel cost and are dropped below")
+  message("NOTE: GDP data missing for year(s): ", paste(missing_gdp_years, collapse = ", "),
+          " -- forward-filled per grid cell from the most recent available prior year")
 }
 
-# Drop rows from years with no GDP coverage NOW, before the expensive
-# home-matching and cost-computation steps below -- these rows would end up
-# 100% NA travel_cost_combined regardless, so there's no reason to carry
-# them (and their full row/column footprint) through the rest of this
-# script and the final write. This is keyed off years_in_india (computed
-# from whatever's actually in the GDP file), not a hardcoded year, so it
-# self-adjusts if the GDP source is ever extended later.
-n_before_gdp_filter <- nrow(master_data)
-master_data <- master_data[year %in% years_in_india]
-n_after_gdp_filter <- nrow(master_data)
-message(sprintf(
-  "Dropped %s rows (%.1f%%) for years without GDP coverage -- kept years: %s",
-  format(n_before_gdp_filter - n_after_gdp_filter, big.mark = ","),
-  100 * (n_before_gdp_filter - n_after_gdp_filter) / n_before_gdp_filter,
-  paste(years_in_india, collapse = ", ")
-))
-
-# Remove zero-population cells (unreliable)
 gdp_india <- gdp_india[pop_cell > 0]
-message("GDP records with pop > 0: ", nrow(gdp_india))
-
-# Convert to data.frame for dplyr joins
-gdp_india <- as.data.frame(gdp_india)
-
-# Step 1 & 2: GDP per capita in USD -> nominal INR (year-specific exchange rate)
-gdp_india <- gdp_india %>%
+gdp_india <- as.data.frame(gdp_india) %>%
   left_join(exchange_df, by = "year") %>%
   mutate(
-    gdppc_usd          = (predicted_GCP_current_USD * 1e9) / pop_cell,
-    gdppc_nominal_INR  = gdppc_usd * usd_to_inr
-  )
-
-# Step 3: Deflate nominal INR to real 2021 INR using CPI
-gdp_india <- gdp_india %>%
+    gdppc_usd = (predicted_GCP_current_USD * 1e9) / pop_cell,
+    gdppc_nominal_INR = gdppc_usd * usd_to_inr
+  ) %>%
   left_join(cpi_df, by = "year") %>%
-  mutate(
-    gdppc_real_2021_INR = round(gdppc_nominal_INR * (cpi_2021 / cpi), 2)
-  )
+  mutate(gdppc_real_2021_INR = round(gdppc_nominal_INR * (cpi_2021 / cpi), 2)) %>%
+  select(year, longitude, latitude, gdppc_real_2021_INR)
 
 message("\nGDP per capita (real 2021 INR) across panel years:")
 gdp_india %>%
@@ -215,174 +147,115 @@ gdp_india %>%
   summarise(mean_gdppc = round(mean(gdppc_real_2021_INR, na.rm = TRUE), 0), .groups = "drop") %>%
   { message(paste(sprintf("  %d: ₹%s", .$year, format(.$mean_gdppc, big.mark = ",")), collapse = "\n")) }
 
-# Convert to sf for spatial matching (keep year column for per-year join below)
 gdp_india_sf <- st_as_sf(gdp_india, coords = c("longitude", "latitude"), crs = 4326) %>%
   st_transform(crs = params$projection_crs)
+rm(gdp_india)
+available_gdp_years <- sort(unique(gdp_india_sf$year))
+gc()
 
 # -----------------------------------------------------------------------------
-# Match Home Locations to Nearest GDP Centroid — Per Year
+# Determine years present in the input data, WITHOUT loading full rows yet
 # -----------------------------------------------------------------------------
-#
-# For each year in the panel, match each user's home location to the nearest
-# GDP grid cell for *that year*, then compute hourly wage from real 2021 INR GDP.
 
-message("Matching home locations to GDP data (per year)...")
+analysis_years <- arrow::open_dataset(inputs$master_data_with_attributes) %>%
+  dplyr::distinct(year) %>%
+  dplyr::collect() %>%
+  dplyr::pull(year) %>%
+  as.integer() %>%
+  sort()
+message("\nYears present in input data: ", paste(analysis_years, collapse = ", "))
 
-master_data <- as.data.frame(master_data)
-master_data$year <- as.integer(master_data$year)
+# -----------------------------------------------------------------------------
+# Set up output directory + per-year loop
+# -----------------------------------------------------------------------------
 
-master_data_list <- split(master_data, master_data$year)
+output_dir <- outputs$master_data_with_travel_cost
+if (basename(output_dir) == "_SUCCESS") output_dir <- dirname(output_dir)  # tolerate either being passed
+if (!dir.exists(output_dir)) dir.create(output_dir, recursive = TRUE)
 
-matched_list <- lapply(names(master_data_list), function(yr) {
+coverage_rows <- list()
+n_forward_filled_total <- 0L
+n_rows_total <- 0L
 
-  yr_int <- as.integer(yr)
-  master_year <- master_data_list[[yr]]
+for (yr_int in analysis_years) {
+  message("\n--- Year ", yr_int, " ---")
 
-  gdp_year <- gdp_india_sf %>% filter(year == yr_int)
+  # Load ONLY this year's rows via arrow filter pushdown -- never loads
+  # other years' rows into memory
+  master_year <- arrow::open_dataset(inputs$master_data_with_attributes) %>%
+    dplyr::mutate(year_num = as.integer(year)) %>%
+    dplyr::filter(year_num == yr_int) %>%
+    dplyr::collect()
+  setDT(master_year)
+  master_year[, year := year_num]
+  master_year[, year_num := NULL]
+  message("  Loaded ", nrow(master_year), " rows")
 
-  if (nrow(gdp_year) == 0) {
-    message("WARNING: No GDP data for year ", yr_int, " — gdppc_real_2021_INR will be NA")
-    master_year$gdppc_real_2021_INR <- NA_real_
-    return(master_year)
+  if (!all(c("lon_home", "lat_home") %in% names(master_year))) {
+    master_year <- master_year %>% left_join(dist_centroids, by = "c_code_2011")
+    setDT(master_year)
   }
 
-  homes_sf <- st_as_sf(master_year, coords = c("lon_home", "lat_home"), crs = 4326) %>%
+  # Forward-fill: most recent available GDP year at or before this year
+  candidate_years <- available_gdp_years[available_gdp_years <= yr_int]
+  match_year <- if (length(candidate_years) > 0) max(candidate_years) else min(available_gdp_years)
+  if (match_year != yr_int) message("  No direct GDP data, forward-filling from ", match_year)
+  gdp_year <- gdp_india_sf %>% filter(year == match_year)
+
+  homes_sf <- st_as_sf(as.data.frame(master_year), coords = c("lon_home", "lat_home"), crs = 4326) %>%
     st_transform(crs = params$projection_crs)
-
   nearest_indices <- st_nearest_feature(homes_sf, gdp_year)
-  master_year$gdppc_real_2021_INR <- gdp_year$gdppc_real_2021_INR[nearest_indices]
+  master_year[, gdppc_real_2021_INR := gdp_year$gdppc_real_2021_INR[nearest_indices]]
+  master_year[, gdp_year_used := match_year]
+  master_year[, hourly_wage := gdppc_real_2021_INR / work_hours]
+  rm(homes_sf, nearest_indices, gdp_year)
 
-  message("  Year ", yr_int, ": matched ", nrow(master_year), " rows")
-  master_year
-})
+  # Driving cost for this year
+  dc_row <- driving_cost_df[driving_cost_df$year == yr_int, ]
+  master_year[, driving_cost := if (nrow(dc_row) > 0) dc_row$driving_cost[1] else NA_real_]
+  if (nrow(dc_row) == 0) message("  WARNING: no driving_cost for year ", yr_int)
 
-master_data <- bind_rows(matched_list)
-setDT(master_data)
+  master_year[, geo_dist := as.numeric(geo_dist)]
+  master_year[, `:=`(
+    travel_time_hours = geo_dist / travel_speed_kmph,
+    time_cost = 2 * time_value_fraction * hourly_wage * (geo_dist / travel_speed_kmph),
+    fuel_cost = geo_dist * driving_cost
+  )]
+  master_year[, travel_cost_combined := time_cost + fuel_cost]
+  master_year[, log_travel_cost := log1p(travel_cost_combined)]
 
-# Hourly wage from real 2021 INR GDP per capita
-master_data[, hourly_wage := gdppc_real_2021_INR / work_hours]
+  coverage_rows[[as.character(yr_int)]] <- data.table(
+    year = yr_int,
+    n_rows = nrow(master_year),
+    n_missing = sum(is.na(master_year$travel_cost_combined)),
+    mean_cost = mean(master_year$travel_cost_combined, na.rm = TRUE),
+    n_forward_filled = sum(master_year$gdp_year_used != master_year$year)
+  )
+  n_forward_filled_total <- n_forward_filled_total + sum(master_year$gdp_year_used != master_year$year)
+  n_rows_total <- n_rows_total + nrow(master_year)
 
-users_with_gdp <- master_data[!is.na(gdppc_real_2021_INR), uniqueN(user_id)]
-users_total    <- master_data[, uniqueN(user_id)]
-message("GDP data matched for ", users_with_gdp, " / ", users_total, " users")
+  write_parquet(master_year, file.path(output_dir, sprintf("year=%d.parquet", yr_int)))
+  message("  Wrote year=", yr_int, ".parquet (", nrow(master_year), " rows)")
 
-if (users_with_gdp < users_total) {
-  message("WARNING: ", users_total - users_with_gdp, " users missing GDP data!")
+  rm(master_year, dc_row)
+  gc()
 }
-
-# Diagnostic: Check GDP and wage ranges
-message("\n=== GDP DATA DIAGNOSTICS ===")
-message("GDP per capita (annual, real 2021 INR):")
-message("  Min: ₹",    round(min(master_data$gdppc_real_2021_INR, na.rm = TRUE), 2))
-message("  Mean: ₹",   round(mean(master_data$gdppc_real_2021_INR, na.rm = TRUE), 2))
-message("  Median: ₹", round(median(master_data$gdppc_real_2021_INR, na.rm = TRUE), 2))
-message("  Max: ₹",    round(max(master_data$gdppc_real_2021_INR, na.rm = TRUE), 2))
-message("Hourly wage (real 2021 INR/hour):")
-message("  Min: ₹",    round(min(master_data$hourly_wage, na.rm = TRUE), 2))
-message("  Mean: ₹",   round(mean(master_data$hourly_wage, na.rm = TRUE), 2))
-message("  Median: ₹", round(median(master_data$hourly_wage, na.rm = TRUE), 2))
-message("  Max: ₹",    round(max(master_data$hourly_wage, na.rm = TRUE), 2))
 
 # -----------------------------------------------------------------------------
-# Calculate Travel Costs
+# Summary diagnostics (from the small per-year rows collected above -- no
+# need to re-read the full written dataset back into memory for this)
 # -----------------------------------------------------------------------------
 
-message("\nComputing travel costs (all values in real 2021 INR)...")
-
-# Ensure distance is numeric and year is integer
-master_data[, geo_dist := as.numeric(geo_dist)]
-master_data[, year := as.integer(year)]
-
-# Diagnostic: Check distance range BEFORE calculations
-message("\n=== DISTANCE DIAGNOSTICS ===")
-message("Distance (km):")
-message("  Min: ",    round(min(master_data$geo_dist, na.rm = TRUE), 2), " km")
-message("  Mean: ",   round(mean(master_data$geo_dist, na.rm = TRUE), 2), " km")
-message("  Median: ", round(median(master_data$geo_dist, na.rm = TRUE), 2), " km")
-message("  Max: ",    round(max(master_data$geo_dist, na.rm = TRUE), 2), " km")
-message("  NA count: ", sum(is.na(master_data$geo_dist)))
-if (sum(master_data$geo_dist == 0, na.rm = TRUE) > 0) {
-  message("  WARNING: ", sum(master_data$geo_dist == 0, na.rm = TRUE), " observations with 0 km distance!")
-}
-
-# Join year-specific driving cost (real 2021 INR/km)
-master_data <- master_data[as.data.table(driving_cost_df), on = "year", nomatch = NA]
-
-missing_driving_cost <- sum(is.na(master_data$driving_cost))
-if (missing_driving_cost > 0) {
-  missing_dc_years <- sort(unique(master_data[is.na(driving_cost), year]))
-  message("WARNING: ", missing_driving_cost, " rows missing driving_cost after join ",
-          "(years affected: ", paste(missing_dc_years, collapse = ", "), " — check driving_cost.rds year coverage)")
-}
-
-# Calculate travel cost components (all in real 2021 INR)
-master_data[, `:=`(
-  # One-way travel time (hours)
-  travel_time_hours = geo_dist / travel_speed_kmph,
-  # Round-trip time cost = 2 x (time value fraction) x wage x time (real 2021 INR)
-  time_cost = 2 * time_value_fraction * hourly_wage * (geo_dist / travel_speed_kmph),
-  # One-way fuel cost using year-specific driving cost (real 2021 INR)
-  fuel_cost = geo_dist * driving_cost
-)]
-
-# Total travel cost in INR
-master_data[, travel_cost_combined := time_cost + fuel_cost]
-
-# Add log transformation (avoiding log(0))
-master_data[, log_travel_cost := log1p(travel_cost_combined)]
-
-# Diagnostic: Check intermediate calculations
-message("\n=== PRE-SUMMARY DIAGNOSTICS ===")
-message("Time cost (INR):")
-message("  NA count: ", sum(is.na(master_data$time_cost)))
-message("  Min: ₹", round(min(master_data$time_cost, na.rm = TRUE), 2))
-message("  Mean: ₹", round(mean(master_data$time_cost, na.rm = TRUE), 2))
-message("  Max: ₹", round(max(master_data$time_cost, na.rm = TRUE), 2))
-message("Fuel cost (INR):")
-message("  NA count: ", sum(is.na(master_data$fuel_cost)))
-message("  Min: ₹", round(min(master_data$fuel_cost, na.rm = TRUE), 2))
-message("  Mean: ₹", round(mean(master_data$fuel_cost, na.rm = TRUE), 2))
-message("  Max: ₹", round(max(master_data$fuel_cost, na.rm = TRUE), 2))
-
-message("\n=== TRAVEL COST SUMMARY (real 2021 INR) ===")
-message("Total observations: ", nrow(master_data))
-message("NA count in travel_cost_combined: ", sum(is.na(master_data$travel_cost_combined)))
-
-# Coverage by year -- makes any remaining year gaps visible in the log,
-# rather than only showing up as a missing % buried in a later summary table
+coverage_by_year <- rbindlist(coverage_rows)[order(year)]
 message("\n=== TRAVEL COST COVERAGE BY YEAR ===")
-coverage_by_year <- master_data[, .(
-  n_rows = .N,
-  n_missing = sum(is.na(travel_cost_combined)),
-  pct_missing = round(100 * sum(is.na(travel_cost_combined)) / .N, 1)
-), by = year][order(year)]
 print(coverage_by_year)
-
-message("\nTravel cost statistics (INR):")
-message("  Mean: ₹", round(mean(master_data$travel_cost_combined, na.rm = TRUE), 2))
-message("  Median: ₹", round(median(master_data$travel_cost_combined, na.rm = TRUE), 2))
-message("  Min: ₹", round(min(master_data$travel_cost_combined, na.rm = TRUE), 2))
-message("  Max: ₹", round(max(master_data$travel_cost_combined, na.rm = TRUE), 2))
-message("  SD: ₹", round(sd(master_data$travel_cost_combined, na.rm = TRUE), 2))
-
-# Sanity check: Time cost vs Fuel cost ratio
-time_cost_mean <- mean(master_data$time_cost, na.rm = TRUE)
-fuel_cost_mean <- mean(master_data$fuel_cost, na.rm = TRUE)
-message("\nTime cost vs Fuel cost (INR):")
-message("  Time cost (mean): ₹", round(time_cost_mean, 2))
-message("  Fuel cost (mean): ₹", round(fuel_cost_mean, 2))
-message("  Split: ", round(100 * time_cost_mean / (time_cost_mean + fuel_cost_mean), 1), "% time, ",
-        round(100 * fuel_cost_mean / (time_cost_mean + fuel_cost_mean), 1), "% fuel")
+message(sprintf("\nTotal rows: %s | Forward-filled GDP: %s (%.1f%%)",
+                 format(n_rows_total, big.mark = ","),
+                 format(n_forward_filled_total, big.mark = ","),
+                 100 * n_forward_filled_total / n_rows_total))
 
 # -----------------------------------------------------------------------------
-# Save Output
+# Marker file -- signals completion for run_task()'s skip-check
 # -----------------------------------------------------------------------------
-# Drop pure-intermediate columns before writing -- these were only needed to
-# compute gdppc_real_2021_INR/travel_cost_combined and aren't referenced by
-# name anywhere downstream. Reduces peak memory during write_parquet()'s
-# conversion to Arrow's columnar format, which otherwise briefly holds both
-# the full R data.table and its Arrow Table copy in memory at once.
-intermediate_cols <- c("usd_to_inr", "gdppc_usd", "gdppc_nominal_INR", "cpi")
-master_data[, (intersect(intermediate_cols, names(master_data))) := NULL]
-
-write_parquet(master_data, outputs$master_data_with_travel_cost)
+file.create(file.path(output_dir, "_SUCCESS"))
+message("\nDone: ", output_dir)

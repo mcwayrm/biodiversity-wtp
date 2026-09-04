@@ -206,7 +206,7 @@ for (scenario in scenarios) {
   )
 
   # --- Distilled data for the biodiversity histogram (choice + 3 richness vars only) ---
-  hist_cols <- intersect(c("choice", "expected_richness", "migrant_richness", "resident_richness"), names(md))
+  hist_cols <- intersect(c("user_id", "choice", "expected_richness", "migrant_richness", "resident_richness"), names(md))
   scenario_histograms[[scenario]] <- md[, ..hist_cols]
 
   rm(md)
@@ -307,11 +307,20 @@ if (length(summary_list) > 0) {
 
 # Biodiversity Distribution Across Choice Sets
 
-Distributions use the full candidate choice sets (before down-sampling to
-the fixed alternative-set size used for estimation) -- "Available" is every
-alternative a person could have chosen from; "Chosen" is the site they
-actually visited. Densities (not raw counts) are shown so the two groups'
-*shapes* are comparable despite very different sample sizes.
+For each individual, this computes the standard deviation of each richness
+measure across every alternative in their full candidate choice set (before
+down-sampling to the fixed alternative-set size used for estimation), then
+shows the distribution of those per-individual standard deviations. This is
+a different question from "what does a typical alternative look like" --
+it shows how much richness *variation* each person actually experiences
+across their own choice sets, which is what identifies the richness
+coefficients in a model with individual fixed effects. A person whose SD
+sits near zero contributes little identifying variation regardless of their
+average richness level.
+
+Note: this collapses each person's choice-set exposure to one number, so
+there's no "chosen vs. available" comparison here -- that distinction only
+applies at the level of individual alternatives, not at the person level.
 
 :::{.panel-tabset}
 
@@ -326,35 +335,33 @@ for (scenario in scenarios) {
   cat('\n##', scenario, '\n\n')
 
   hd <- scenario_histograms[[scenario]]
-  if (is.null(hd) || nrow(hd) == 0) {
+  if (is.null(hd) || nrow(hd) == 0 || !("user_id" %in% names(hd))) {
     cat("No choice-set data available for scenario:", scenario, "\n\n")
     next
   }
 
   metrics_present <- intersect(names(metric_labels), names(hd))
+  setDT(hd)
+  sd_by_user <- hd[, lapply(.SD, function(x) sd(x, na.rm = TRUE)), by = user_id, .SDcols = metrics_present]
+
   long_rows <- list()
   for (m in metrics_present) {
-    vals <- hd[[m]]
-    long_rows[[paste0(m, "_avail")]] <- data.frame(value = vals, group = "Available", metric = metric_labels[[m]])
-    chosen_vals <- vals[hd$choice == 1]
-    long_rows[[paste0(m, "_chosen")]] <- data.frame(value = chosen_vals, group = "Chosen", metric = metric_labels[[m]])
+    long_rows[[m]] <- data.frame(value = sd_by_user[[m]], metric = metric_labels[[m]])
   }
   long_data <- do.call(rbind, long_rows)
   long_data <- long_data[!is.na(long_data$value), ]
   long_data$metric <- factor(long_data$metric, levels = unname(metric_labels))
-  long_data$group <- factor(long_data$group, levels = c("Available", "Chosen"))
 
-  p <- ggplot(long_data, aes(x = value, fill = group)) +
-    geom_histogram(aes(y = after_stat(density)), position = "identity", alpha = 0.5, bins = 30, color = NA) +
+  p <- ggplot(long_data, aes(x = value)) +
+    geom_histogram(bins = 30, fill = "gray40", color = NA) +
     facet_wrap(~metric, scales = "free", ncol = 1) +
-    scale_fill_manual(values = c("Available" = "gray50", "Chosen" = "#E41A1C")) +
     labs(
-      title = "Biodiversity Distribution: Chosen Sites vs. Available Alternatives",
-      subtitle = paste0("Scenario: ", scenario, " | full candidate choice sets (pre-sampling)"),
-      x = "Value", y = "Density", fill = ""
+      title = "Within-Individual Standard Deviation of Richness Across Choice Sets",
+      subtitle = paste0("Scenario: ", scenario, " | one value per individual, full candidate choice sets (pre-sampling)"),
+      x = "SD of richness within individual", y = "Number of individuals"
     ) +
     theme_minimal() +
-    theme(legend.position = "top", strip.text = element_text(face = "bold"))
+    theme(strip.text = element_text(face = "bold"))
 
   print(p)
   cat("\n\n")
@@ -367,8 +374,7 @@ for (scenario in scenarios) {
 
 # Definitions
 
-::: {.callout-note collapse=true}
-## Species Richness Measures
+### Species Richness Measures
 
 **Expected Species Richness** is computed as the mean number of unique
 species observed across all checklists recorded at a site within a given
@@ -382,10 +388,8 @@ or time period, the pipeline uses the following fallback:
 
 **Migrant Richness** and **Resident Richness** are computed analogously,
 restricted to species classified as migratory or resident, respectively.
-:::
 
-::: {.callout-note collapse=true}
-## Diversity Indices
+### Diversity Indices
 
 Diversity indices are computed at the checklist (trip) level using recorded
 observation counts. For checklists where counts were not recorded (entered
@@ -414,7 +418,6 @@ $$
 
 where $S$ is the number of species detected and 
 $p_i = \frac{n_i}{\sum_{j=1}^S n_j}$ is the proportion of total observed  individuals belonging to species $i$, based on recorded observation counts.  Values range from 0 (no diversity) to 1 (maximum diversity).
-:::
 
 ---
 

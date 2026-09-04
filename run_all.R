@@ -207,7 +207,7 @@ for (scenario_name in names(scenarios)) {
       gdp = file.path(input_data_dir, "gdp", "final_GDPC_0_25deg_postadjust_pop_dens_0_01_adjust.csv")
     ),
     outputs = list(
-      master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
+    master_data_with_travel_cost = file.path(scenario_dir, "master_data_with_travel_cost", "_SUCCESS")
     ),
     params = params,
     scenario_name = scenario_name
@@ -240,10 +240,10 @@ for (scenario_name in names(scenarios)) {
   run_task(
     "11a_model_data_prep.R",
     inputs = list(
-      master_data_with_iv = file.path(scenario_dir, "master_data_with_travel_cost.parquet")
+      master_data_with_iv = file.path(scenario_dir, "master_data_with_travel_cost")
     ),
     outputs = list(
-      model_data = file.path("output", "models", sprintf("model_data_%s.parquet", scenario_name))
+      model_data = file.path("output", "models", sprintf("model_data_%s", scenario_name), "_SUCCESS")
     ),
     params = params,
     scenario_name = scenario_name
@@ -251,7 +251,7 @@ for (scenario_name in names(scenarios)) {
   
   source(file.path("scripts", "R", "utils_xlogit_reticulate.R"))
 
-  input_data_prepped <- file.path("output", "models", sprintf("model_data_%s.parquet", scenario_name))
+  input_data_prepped <- file.path("output", "models", sprintf("model_data_%s", scenario_name))
   output_dir_models <- file.path("output", "models")
 
   if (!dir.exists(output_dir_models)) {
@@ -275,8 +275,17 @@ for (scenario_name in names(scenarios)) {
     stop(paste0("XLogit estimation had ", xlogit_result$fail_count,
                 " failed model(s) for scenario ", scenario_name))
   }
-  
+
   message(paste0("  ✓ Python estimation complete for ", scenario_name))
+
+  # Stage 12: Individual-level (conditional/Bayesian) WTP -- post-processing
+  # only, no re-estimation. Main spec only (see
+  # scripts/python/12_individual_wtp.py); skipped automatically if its
+  # output already exists, or if the population model isn't estimated yet.
+  compute_individual_wtp_reticulate(
+    scenario_name = scenario_name,
+    output_dir = output_dir_models
+  )
 }
 
 

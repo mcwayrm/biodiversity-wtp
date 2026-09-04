@@ -1,0 +1,179 @@
+ERconditional_indxyear-sitexseason-hour_choiceset10:
+  model_vars:
+    - expected_richness
+    - expected_congestion
+    - log_trip_number
+    - group_size
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - [cluster_id, season]
+    - hour_of_day
+  mixed_vars: []
+  choice_set_sample_size: 10
+ER_indxyear-sitexseason-hour_choiceset10:
+  model_vars:
+    - expected_richness
+    - expected_congestion
+    - log_trip_number
+    - group_size
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - [cluster_id, season]
+    - hour_of_day
+  mixed_vars:
+    - expected_richness
+  choice_set_sample_size: 10
+ERmigrant_indxyear-sitexseason-hour_choiceset10:
+  model_vars:
+    - migrant_richness
+    - resident_richness
+    - expected_congestion
+    - log_trip_number
+    - group_size
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - [cluster_id, season]
+    - hour_of_day
+  mixed_vars:
+    - migrant_richness
+    - resident_richness
+  choice_set_sample_size: 10
+ERmigrantseason_indxyear-sitexseason-hour_choiceset10:
+  model_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+    - log_trip_number
+    - group_size
+    - expected_congestion
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - [cluster_id, season]
+    - hour_of_day
+  mixed_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+  choice_set_sample_size: 10
+# Robustness checks
+# site by season FE -> site FE
+ERmigrantseason_indxyear-site-hour_choiceset10:
+  model_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+    - log_trip_number
+    - group_size
+    - expected_congestion
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - cluster_id
+    - hour_of_day
+  mixed_vars:
+    - migrant_richness
+    - resident_richness
+    - migrant_richness_Fall
+    - resident_richness_Fall
+    - migrant_richness_Winter
+    - resident_richness_Winter
+    - migrant_richness_Spring
+    - resident_richness_Spring
+  choice_set_sample_size: 10
+# Build FE to main panel
+ER_ind_choiceset10:
+  model_vars:
+    - expected_richness
+    - expected_congestion
+    - log_trip_number
+    - group_size
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - user_id
+  mixed_vars:
+    - expected_richness
+  choice_set_sample_size: 10
+ER_indxyear_choiceset10:
+  model_vars:
+    - expected_richness
+    - expected_congestion
+    - log_trip_number
+    - group_size
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+  mixed_vars:
+    - expected_richness
+  choice_set_sample_size: 10
+ER_indxyear-site_choiceset10:
+  model_vars:
+    - expected_richness
+    - expected_congestion
+    - log_trip_number
+    - group_size
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - cluster_id
+  mixed_vars:
+    - expected_richness
+  choice_set_sample_size: 10
+ER_indxyear-sitexseason_choiceset10:
+  model_vars:
+    - expected_richness
+    - expected_congestion
+    - log_trip_number
+    - group_size
+    - precip
+    - temp
+    - trees
+    - travel_cost_combined
+  fe_vars:
+    - [user_id, year]
+    - [cluster_id, season]
+  mixed_vars:
+    - expected_richness
+  choice_set_sample_size: 10

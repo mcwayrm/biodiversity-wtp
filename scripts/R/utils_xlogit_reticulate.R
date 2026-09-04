@@ -142,3 +142,58 @@ estimate_rum_models_reticulate <- function(scenario_name,
     summary = result$summary_df  # data.frame: Model, Scenario, N_obs, N_choice_sits, LL, AIC, BIC
   )
 }
+
+#' Compute individual-level (conditional/Bayesian) WTP for one scenario, for
+#' the main spec only (ER_indxyear-sitexseason-hour_choiceset10, Mixed) --
+#' see scripts/python/12_individual_wtp.py for the estimator itself. Skips
+#' (no-op) if its output parquet already exists for this scenario, same
+#' file-exists convention as run_task() elsewhere in the pipeline.
+#'
+#' @param scenario_name  Scenario name (e.g. "full_c5km_v5km_r50km_mInf")
+#' @param output_dir     Directory holding coefficients/wtp/demeaned outputs
+#'                       (same output_dir passed to
+#'                       estimate_rum_models_reticulate())
+#' @param python_script  Path to the individual-WTP python module
+#'
+#' @return The output parquet path (invisibly), or NULL if the population
+#'         model this depends on hasn't been estimated yet for this scenario.
+compute_individual_wtp_reticulate <- function(scenario_name,
+                                               output_dir,
+                                               model_name = "ER_indxyear-sitexseason-hour_choiceset10",
+                                               model_type = "Mixed",
+                                               n_draws = 500,
+                                               python_script = file.path("scripts", "python", "12_individual_wtp.py")) {
+
+  output_prefix <- sprintf("%s_%s_%s", model_name, model_type, scenario_name)
+  coef_path <- file.path(output_dir, sprintf("%s_coefficients.csv", output_prefix))
+  demeaned_path <- file.path(output_dir, "demeaned", sprintf("%s_demeaned_sampled.parquet", output_prefix))
+  output_path <- file.path(output_dir, sprintf("%s_individual_wtp.parquet", output_prefix))
+
+  if (file.exists(output_path)) {
+    message("[Individual WTP] Skipping (output exists): ", basename(output_path))
+    return(invisible(output_path))
+  }
+  if (!file.exists(coef_path) || !file.exists(demeaned_path)) {
+    message("[Individual WTP] NOTE: population model not yet estimated for this scenario -- skipping (",
+            basename(coef_path), " or its demeaned_sampled.parquet not found yet)")
+    return(invisible(NULL))
+  }
+  if (!file.exists(python_script)) {
+    stop("Individual-WTP python script not found: ", python_script)
+  }
+
+  py_dir <- dirname(python_script)
+  py_module_name <- tools::file_path_sans_ext(basename(python_script))
+  py <- reticulate::import_from_path(py_module_name, path = py_dir, convert = TRUE)
+
+  message("\n[RETICULATE] Computing individual WTP for scenario: ", scenario_name)
+  py$compute_individual_wtp(
+    scenario = scenario_name,
+    model_name = model_name,
+    model_type = model_type,
+    n_draws = as.integer(n_draws),
+    models_dir = output_dir
+  )
+
+  invisible(output_path)
+}

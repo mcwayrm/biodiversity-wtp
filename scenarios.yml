@@ -1,17 +1,7 @@
 # scenarios:
 scenarios:
-  full_c5km_v5km_r50km_mInf:
-    user_type: full
-    clustering_method: complete
-    projection_crs: 8857.0
-    clust_size_km: 5.0
-    voronoi_limit_km: 5.0
-    choice_radius_km: 50.0
-    max_alternatives: .inf
-    analysis_start_year: 2016
-    analysis_end_year: 2022
-  # above_median_c5km_v5km_r50km_mInf:
-  #   user_type: above_median
+  # full_c5km_v5km_r50km_mInf:
+  #   user_type: full
   #   clustering_method: complete
   #   projection_crs: 8857.0
   #   clust_size_km: 5.0
@@ -20,6 +10,16 @@ scenarios:
   #   max_alternatives: .inf
   #   analysis_start_year: 2016
   #   analysis_end_year: 2024
+  above_median_c5km_v5km_r50km_mInf:
+    user_type: above_median
+    clustering_method: complete
+    projection_crs: 8857.0
+    clust_size_km: 5.0
+    voronoi_limit_km: 5.0
+    choice_radius_km: 50.0
+    max_alternatives: .inf
+    analysis_start_year: 2016
+    analysis_end_year: 2024
   # below_median_c5km_v5km_r50km_mInf:
   #   user_type: below_median
   #   clustering_method: complete
@@ -30,7 +30,17 @@ scenarios:
   #   max_alternatives: .inf
   #   analysis_start_year: 2016
   #   analysis_end_year: 2024
-
+  # only2015_c5km_v5km_r50km_mInf:
+  #   user_type: full
+  #   clustering_method: complete
+  #   projection_crs: 8857.0
+  #   clust_size_km: 5.0
+  #   voronoi_limit_km: 5.0
+  #   choice_radius_km: 50.0
+  #   max_alternatives: .inf
+  #   analysis_start_year: 2016
+  #   analysis_end_year: 2024
+  #   baseline_2015_users_only: True
   
 #   L_c5km_v5km_r50km_mInf:
 #     user_type: L

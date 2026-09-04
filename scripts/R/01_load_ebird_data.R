@@ -17,7 +17,7 @@ ebird <- fread(
     'PROTOCOL TYPE', 'DURATION MINUTES',
     'EFFORT DISTANCE KM', 'ALL SPECIES REPORTED',
     'LOCALITY', 'LOCALITY TYPE', 'OBSERVATION COUNT',
-    'TIME OBSERVATIONS STARTED'
+    'TIME OBSERVATIONS STARTED', 'GROUP IDENTIFIER'
   ),
   quote = ""
 )
@@ -36,7 +36,8 @@ ebird <- ebird %>%
     duration = duration_minutes,
     distance = effort_distance_km,
     complete = all_species_reported,
-    count = observation_count
+    count = observation_count,
+    group_id = group_identifier
   )
 
 # Set distance = 0 for stationary trips
@@ -65,7 +66,7 @@ ebird <- ebird %>%
 # Select Protocol (n=2,991,609 trips)
 protocol <- c('Stationary', 'Traveling')
 ebird <- filter(ebird, protocol_type %in% protocol)
-  stopifnot(nrow(ebird) == 2991609) # CHECK: Obs = 2,991,609 trips
+stopifnot(nrow(ebird) == 2991609) # CHECK: Obs = 2,991,609 trips
   # Note: 1,659 trips removed (0.05%)
 
 # Add district code to trips 
@@ -84,6 +85,43 @@ ebird$c_code_2011 <- st_join(st_as_sf(ebird,
 ebird <- filter(ebird, !is.na(c_code_2011))
   stopifnot(nrow(ebird) == 2964004) # CHECK: Obs = 2,964,004 trips
   # Note: 7,605 trips removed (0.25%)
+
+# Add learning variables: number of trips, trip number, log trip number, cumulative duration
+# Add group size (number of users in a group): default to 1 if missing ("", i.e. no group)
+# Clean IDs, isolate real groups to count sizes, and merge back
+ebird <- ebird %>%
+  arrange(user_id, date, trip_id) %>%
+  mutate(group_id = na_if(group_id, ""))
+
+group_counts <- ebird %>%
+  filter(!is.na(group_id)) %>%
+  group_by(group_id) %>%
+  summarise(group_size = n_distinct(user_id), .groups = "drop")
+
+ebird <- ebird %>%
+  left_join(group_counts, by = "group_id")
+
+ebird <- ebird %>%
+  group_by(user_id) %>%
+  mutate(
+    trip_number = row_number(),
+    log_trip_number = log1p(trip_number),
+    cumulative_duration = cumsum(replace_na(duration, 0)),
+    group_size = replace_na(group_size, 1)
+  ) %>%
+  ungroup()
+
+ebird <- ebird %>%
+  group_by(user_id) %>%
+  mutate(
+    trip_number = row_number(),
+    log_trip_number = log1p(trip_number),
+    cumulative_duration = cumsum(replace_na(duration, 0)),
+    group_size = replace_na(group_size, 1)
+  ) %>%
+  ungroup()
+
+
 
 #-----------------------------------------------------
 # Home Coordinates
