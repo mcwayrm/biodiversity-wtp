@@ -39,6 +39,184 @@ Monetary value is determined through the RUM by estimating the travel cost of th
 
 For notes, we present the most recent first so that notes are chronologically most recent. 
 
+
+::: {.callout-note collapse="true"}
+# 09/04/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## TODO: 
+- Push github edits for Ryan (Matt)
+- Tourist vs. Resident (Matt/Ryan)
+- Update results for Above sample (Matt)
+- Predict the panel WTP estimates (Matt)
+- Updated figures for stylized facts (Ryan)
+- Summary stats on rarity and apperance (by mean, IQR, max) (Ryan)
+- Rarity/Apperance regressions (Ryan)
+- Attempt to re-write for panel estimates = Equation 6 with \beta_{i,t} propogates through model. (Ryan/Raahil)
+
+## Agenda: 
+- Stylized facts and motivating facts (Ryan)
+    - Added some figures and completed them
+    - The apperance index may be constructed wrong.
+    - For the new rarity historgram, bin the tail (truncate)
+    - Redo this figure without the SD. 
+        - We could plot the within-user means of expected richness, rarity, and apperance index over time (month, years)
+        - Update the labels to match seasons for results table. 
+    - For appereance, need to show sum stats for: 
+        - Mean, IQR, Max
+        - Show there is variation here. 
+    - For hotspot seasonality, 
+        - Make a new figure. 
+        - Cummulative vists by month-year. Stacked filled area chart by migrant and resident. 
+        - Should have a time series of avg controls/choice variables by user for selected sites and non-selected sites
+            - Idea: What are the attributes they are selecting on average. 
+    - Style Notes on figures: 
+        - Font size bigger
+        - Make the histogram dimensions more squarish
+- Adding apperance and rarity 
+    - Simple table 4 columns (or figure)
+    - All measures Adding in apperance and rarity
+    - Then all 3 seperately. 
+- Regression
+    - Need to add something explict estimating difference of tourists vs. residents
+    - Need to update the results so "Above" is the main results presented in the manuscript
+    
+
+:::
+
+
+::: {.callout-note collapse="true"}
+# 08/13/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## TODO: 
+- Complete stylized facts (Ryan)
+- Create rarity and apperance results table. (Ryan)
+- Troubleshooting adding new data (Matt)
+
+## Agenda: 
+- Controls: Group size and log-trips (Matt) 
+    - This is incremental (experience - learning)
+        - https://www.pnas.org/doi/10.1073/pnas.2013568117
+    - Added! Completed!
+- For historgram of species richness should be within individual IDs (Matt)
+    - Updating so *within* individuals
+    - They are correctly constructed. 
+- Stylized facts and motivating facts (Ryan)
+    - **PRIORITY**
+- Adding apperance and rarity 
+    - Simple table 4 columns (or figure)
+    - All measures Adding in apperance and rarity
+    - Then all 3 seperately. 
+
+:::
+
+
+
+::: {.callout-note collapse="true"}
+# 07/24/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## TODO: 
+- 
+
+## Agenda: 
+- Create the main 3 panel figure displaying the core WTP results (Matt)
+    - Figure Completed!
+    - We want to add a panel with decomposition of species richness, rarity, and apperance index. 
+        - By resident and migrant (what about these products is driving the demand)
+- Change the reference season to summer (Matt)
+    - Completed reset 
+- Try an estimate without site-season FE (Matt)
+    - Completed!
+- Potentially control for group size since that may be conflated with congestion (Matt)
+    - Not re-run yet. 
+- Adding a control for dynamic learning/experience (Matt)
+    - Increments by 1 each time they have a trip. 
+    - Add as a fixed effect for bins of quintiles binned.
+- Read about concerns with static income variable (GDP) -- all we need is time-varying travel cost & finish theory section (Raahil)
+    - Completely fine. So no edits required from Jovin. 
+    - Can forward fill GDP to later years. 
+- Writing the beats of the paper: 
+    - Behavioral model of revealed preferences
+    - Construction of the data 
+    - Reporting the core results 
+        - Table of robustness for the appendix (different FE)
+            - Individual
+            - Individual by year
+            - Site by season
+            - Site (no season)
+            - Try stable sample: Only keep baseline users at 2015 (accounting for composition changes)
+            - Skill-level (frequency of usage) for users. 
+        - Table A2 from Kolstoe mimic
+        - - Want to report the within R2 for the regressions as indicator of variation after accounting for FE (Matt) --- Later
+    - Identificaiton concerns (IV)
+    - Expand on welfare implications
+- For historgram of species richness should be within individual IDs (Matt)
+    - Done.
+- Add as stylized fact that individuals are choosing from a variety of hotspots. E.g., the SD of species richness across choice sets is large (Ryan)
+    - Two sets: Motivational facts and discussion of what is going in the results. 
+    - Motivational Facts (motivates decisions): 
+        - Fact 1: Demand fluctuates with seasonal supply. And the spikes get larger as bird watching increases (demand is increasing)
+            - Jovin figure
+        - Fact 2: Supply fluctations are specific to migratory species in migratory hotspots. 
+        - Fact 3: For individuals, they are selecting over diverse set of choices rather than a specific favorite hotspot. 
+            - Matt histogram
+        - Fact 4: Are individuals selecting hotspot locations on species richness, rarity of species, or charismatic species.
+        - Fact 5: We have heterogeneous preferences. E.g,. why the controls matter and result in variation in WTP on these attributes. 
+    - Sytlized Results (explains variation): 
+        - 
+- Need to add a rarity index for species and popularity index (Ryan/Jovin/Matt)
+    - Update script `07_compute_biodiversity_metric.R`
+    - Build the indices 
+        - Ryan making rarity (probability metric)
+        - Joving making the apperance index which provides mean, SD, max
+    - Then add them as a scenario version  
+
+:::
+
+
+::: {.callout-note collapse="true"}
+# 07/21/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## Workshop Agenda: 
+- Create the main 3 panel figure displaying the core WTP results (Matt)
+    - A draft has been completed.
+- Try an estimate without site-season FE (Matt)
+- Read about concerns with static income variable (GDP) -- all we need is time-varying travel cost & finish theory section (Raahil)
+    - Completely fine. So no edits required from Jovin. 
+    - Can forward fill GDP to later years. 
+- Change the reference season to summer (Matt)
+    - Has been reset for seasonal reference. 
+- Potentially control for group size since that may be conflated with congestion (Matt)
+- For historgram of species richness should be within individual IDs (Matt)
+- We also want to report the within R2 for the regressions as indicator of variation after accounting for FE (Matt) --- Later
+- Add as stylized fact that individuals are choosing from a variety of hotspots. E.g., the SD of species richness across choice sets is large (Ryan)
+    - Two sets: Motivational facts and discussion of what is going in the results. 
+    - Motivational Facts (motivates decisions): 
+        - Fact 1: Demand fluctuates with seasonal supply. And the spikes get larger as bird watching increases (demand is increasing)
+        - Fact 2: Supply fluctations are specific to migratory species in migratory hotspots. 
+        - Fact 3: For individuals, they are selecting over diverse set of choices rather than a specific favorite hotspot. 
+        - Fact 4: Are individuals selecting hotspot locations on species richness, rarity of species, or charismatic species.
+        - Fact 5: We have heterogeneous preferences. E.g,. why the controls matter and result in variation in WTP on these attributes. 
+    - Sytlized Results (explains variation): 
+        - 
+- Need to add a rarity index for species and popularity index (Ryan/Jovin/Matt)
+    - Update script `07_compute_biodiversity_metric.R`
+    - Build the indices 
+        - Ryan making rarity (probability metric)
+        - Joving making the apperance index which provides mean, SD, max
+    - Then add them as a scenario version  
+- Need to come up with how the results are presented (Ryan)
+
+:::
+
+
 ::: {.callout-note collapse="true"}
 # 07/10/2026
 

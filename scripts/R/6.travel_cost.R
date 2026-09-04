@@ -48,7 +48,7 @@ master_cs50km <- readRDS(master_cs50km_path)
 master_cs50km <- master_cs50km %>%
   left_join(dist_centroids, by = "c_code_2011") %>%
   mutate(year = as.integer(year)) %>%
-  filter(year >= 2011 & year <= 2024)
+  filter(year >= 2011 & year <= 2022)
 
 min(master_cs50km$year, na.rm = TRUE)
 max(master_cs50km$year, na.rm = TRUE)
@@ -59,19 +59,19 @@ max(master_cs50km$year, na.rm = TRUE)
 gdp_path <- file.path(
   input_data_dir,
   "gdp_0_25deg",
-  "final_GDP_0_25deg_postadjust_pop_density.csv"
+  "final_GDPC_0_25deg_postadjust_pop_dens_0_01_adjust.csv"
 )
 
 gdp_all <- read_csv(gdp_path)
 
 gdp_india <- gdp_all %>%
-  filter(iso == "IND", year >= 2011, year <= 2024) %>%
+  filter(iso == "IND", year >= 2011, year <= 2022) %>%
   mutate(year = as.integer(year))
 
 range(master_cs50km$year, na.rm = TRUE)
 range(gdp_india$year, na.rm = TRUE)
 
-gdp_india <- gdp_india %>%filter(year >= 2015 & year <= 2024) # Conditioning to match choice set data time range
+gdp_india <- gdp_india %>%filter(year >= 2015 & year <= 2022) # Conditioning to match choice set data time range
 
 # ---- 3. CPI DEFLATOR  (FRED — INDCPIALLAINMEI, base 2015=100) ---------------
 #
@@ -107,7 +107,7 @@ cpi_2015 <- cpi_df$cpi[cpi_df$year == 2015]
 # to nominal INR using year-specific INR/USD exchange rates.
 
 exchange_df <- tibble(
-  year = 2015:2024,
+  year = 2015:2022,
   usd_to_inr = c(
     64.15,  # 2015
     67.19,  # 2016
@@ -117,8 +117,6 @@ exchange_df <- tibble(
     74.10,  # 2020
     73.93,  # 2021
     77.44,  # 2022
-    82.57,  # 2023
-    83.50   # 2024
   )
 )
 
@@ -223,7 +221,7 @@ driving_cost_df <- readRDS(driving_cost_path) %>%
     year = as.integer(year),
     driving_cost = as.numeric(driving_cost)
   ) %>%
-  filter(year >= 2015 & year <= 2024)
+  filter(year >= 2015 & year <= 2022)
 
 # --------------------------------------------------------
 # Calculate travel cost

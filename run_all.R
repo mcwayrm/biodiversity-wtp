@@ -133,12 +133,19 @@ for (scenario_name in names(scenarios)) {
     inputs = list(
       ebird_basic = file.path(input_data_dir, "ebird", "ebd_IN_201501_202412_relDec-2024", "ebd_IN_201501_202412_relDec-2024.txt"),
       voronoi_shp = file.path(scenario_dir, "ebird_hotspots_voronoi.gpkg"),
+      appearance_index = file.path(input_data_dir, "appearance index", "20170082", "bird_appearance_index_final.csv"),
       migrant_species = file.path(input_data_dir, "species", "species_list_categorized.csv")
     ),
     outputs = list(
       monthly_richness = file.path(scenario_dir, "biodiv_monthly_richness.parquet"),
       weekly_richness = file.path(scenario_dir, "biodiv_weekly_richness.parquet"),
       seasonal_richness = file.path(scenario_dir, "biodiv_seasonal_richness.parquet"),
+      monthly_rarity  = file.path(scenario_dir, "biodiv_monthly_rarity.parquet"),
+      weekly_rarity = file.path(scenario_dir, "biodiv_weekly_rarity.parquet"),
+      seasonal_rarity = file.path(scenario_dir, "biodiv_seasonal_rarity.parquet"),
+      monthly_apperance  = file.path(scenario_dir, "biodiv_monthlyapperancey.parquet"),
+      weekly_apperance = file.path(scenario_dir, "biodiv_weekly_apperance.parquet"),
+      seasonal_apperance = file.path(scenario_dir, "biodiv_seasonal_apperance.parquet"),
       monthly_congestion = file.path(scenario_dir, "biodiv_monthly_congestion.parquet"),
       weekly_congestion = file.path(scenario_dir, "biodiv_weekly_congestion.parquet"),
       seasonal_congestion = file.path(scenario_dir, "biodiv_seasonal_congestion.parquet"),
@@ -172,6 +179,12 @@ for (scenario_name in names(scenarios)) {
       monthly_richness = file.path(scenario_dir, "biodiv_monthly_richness.parquet"),
       weekly_richness = file.path(scenario_dir, "biodiv_weekly_richness.parquet"),
       seasonal_richness = file.path(scenario_dir, "biodiv_seasonal_richness.parquet"),
+      monthly_rarity  = file.path(scenario_dir, "biodiv_monthly_rarity.parquet"),
+      weekly_rarity = file.path(scenario_dir, "biodiv_weekly_rarity.parquet"),
+      seasonal_rarity = file.path(scenario_dir, "biodiv_seasonal_rarity.parquet"),
+      monthly_apperance  = file.path(scenario_dir, "biodiv_monthlyapperancey.parquet"),
+      weekly_apperance = file.path(scenario_dir, "biodiv_weekly_apperance.parquet"),
+      seasonal_apperance = file.path(scenario_dir, "biodiv_seasonal_apperance.parquet"),
       monthly_congestion = file.path(scenario_dir, "biodiv_monthly_congestion.parquet"),
       weekly_congestion = file.path(scenario_dir, "biodiv_weekly_congestion.parquet"),
       seasonal_congestion = file.path(scenario_dir, "biodiv_seasonal_congestion.parquet"),
@@ -256,6 +269,21 @@ for (scenario_name in names(scenarios)) {
 
   if (!dir.exists(output_dir_models)) {
     dir.create(output_dir_models, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  scenario_pattern <- paste0("_Mixed_", scenario_name, "_(summary\\.txt|coefficients\\.csv|wtp\\.csv)$")
+  model_artifacts <- list.files(output_dir_models, pattern = scenario_pattern, full.names = TRUE)
+  demeaned_dir <- file.path(output_dir_models, "demeaned")
+  demeaned_pattern <- paste0("_Mixed_", scenario_name, "_demeaned_(full|sampled)\\.parquet$")
+  demeaned_artifacts <- if (dir.exists(demeaned_dir)) {
+    list.files(demeaned_dir, pattern = demeaned_pattern, full.names = TRUE)
+  } else {
+    character()
+  }
+  stale_artifacts <- c(model_artifacts, demeaned_artifacts)
+  if (length(stale_artifacts) > 0) {
+    unlink(stale_artifacts)
+    message("Removed ", length(stale_artifacts), " stale model artifact(s) for ", scenario_name)
   }
 
   if (!exists(".xlogit_env_ready")) {

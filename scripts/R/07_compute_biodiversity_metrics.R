@@ -21,7 +21,7 @@ ebird <- fread(
               'OBSERVER ID', 'SAMPLING EVENT IDENTIFIER',
               'PROTOCOL TYPE', 'DURATION MINUTES',
               'EFFORT DISTANCE KM', 'ALL SPECIES REPORTED',
-              'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'CATEGORY',
+              'LOCALITY', 'LOCALITY TYPE', 'COMMON NAME', 'SCIENTIFIC NAME', 'CATEGORY',
               'OBSERVATION COUNT'),
   quote = ""
 )
@@ -37,6 +37,7 @@ dt <- ebird[
   locality_type == "H" & category == "species" &
     !is.na(observation_date) & !is.na(common_name),
   .(lat = latitude, lon = longitude, observation_date, common_name,
+    scientific_name,
     sampling_event_identifier, observer_id, protocol_type,
     duration_minutes, effort_distance_km, all_species_reported, observation_count)
 ]
@@ -264,6 +265,191 @@ write_parquet(seasonal_simpson, outputs$seasonal_simpson)
 write_parquet(seasonal_migrant, outputs$seasonal_migrant)
 write_parquet(seasonal_resident, outputs$seasonal_resident)
 message("\nShannon/Simpson indices and migrant/resident richness computed.")
+
+# -----------------------------------------------------------------------------
+# Compute Species Rarity Metrics
+# -----------------------------------------------------------------------------
+
+message("\nComputing species rarity metrics...")
+
+# Use checklist counts where available; otherwise treat presence as one observation.
+dt[, obs_weight := fifelse(is.na(observation_count) | observation_count <= 0, 1, observation_count)]
+
+# Attach hotspot/time identifiers to species-level observations.
+hotspot_species_obs <- merge(
+  dt[, .(sampling_event_identifier, observer_id, common_name, obs_weight)],
+  trip_richness[, .(sampling_event_identifier, cluster_id, year_week, year_month, year_season)],
+  by = "sampling_event_identifier",
+  all.x = TRUE
+)
+hotspot_species_obs <- hotspot_species_obs[!is.na(cluster_id)]
+
+# User-specific species frequencies and rarity weights.
+user_species_obs <- hotspot_species_obs[, .(
+  user_species_obs = sum(obs_weight, na.rm = TRUE)
+), by = .(observer_id, common_name)]
+user_total_obs <- user_species_obs[, .(
+  user_total_obs = sum(user_species_obs, na.rm = TRUE)
+), by = observer_id]
+user_species_obs <- merge(user_species_obs, user_total_obs, by = "observer_id", all.x = TRUE)
+user_species_obs[, p_i := pmax(user_species_obs / user_total_obs, .Machine$double.eps)]
+user_species_obs[, rarity_weight := -log(p_i)]
+
+compute_rarity_metrics <- function(period_col) {
+  species_counts <- hotspot_species_obs[, .(
+    c_hi = sum(obs_weight, na.rm = TRUE)
+  ), by = c("cluster_id", period_col, "observer_id", "common_name")]
+
+  species_counts <- merge(
+    species_counts,
+    user_species_obs[, .(observer_id, common_name, p_i, rarity_weight)],
+    by = c("observer_id", "common_name"),
+    all.x = TRUE
+  )
+
+  effort <- species_counts[, .(
+    N_h = sum(c_hi, na.rm = TRUE)
+  ), by = c("cluster_id", period_col, "observer_id")]
+
+  species_counts <- merge(
+    species_counts,
+    effort,
+    by = c("cluster_id", period_col, "observer_id"),
+    all.x = TRUE
+  )
+
+  user_rarity <- species_counts[, .(
+    rarity_index = sum(log1p(c_hi) * rarity_weight, na.rm = TRUE), # This is the "Effective Rarity" akin to a local population Hill index: https://winfreelab.com/wp-content/uploads/2023/10/Roswell2021_MeasuringDiversity.pdf
+    rarity_enrichment_index = sum(rarity_weight * log((c_hi + 1) / (N_h * p_i + 1)), na.rm = TRUE),
+    n_species_user = uniqueN(common_name),
+    total_observations_user = sum(c_hi, na.rm = TRUE)
+  ), by = c("cluster_id", period_col, "observer_id")]
+
+  rarity_metrics <- user_rarity[, .(
+    rarity_index = mean(rarity_index, na.rm = TRUE),
+    rarity_enrichment_index = mean(rarity_enrichment_index, na.rm = TRUE),
+    n_species = mean(n_species_user, na.rm = TRUE),
+    n_users = uniqueN(observer_id),
+    total_observations = sum(total_observations_user, na.rm = TRUE)
+  ), by = c("cluster_id", period_col)]
+
+  trip_counts <- trip_richness[, .(n_trips = .N), by = c("cluster_id", period_col)]
+  rarity_metrics <- merge(rarity_metrics, trip_counts, by = c("cluster_id", period_col), all.x = TRUE)
+
+  rarity_metrics
+}
+
+# Weekly
+weekly_rarity <- compute_rarity_metrics("year_week")
+write_parquet(weekly_rarity, outputs$weekly_rarity)
+message("Weekly rarity: ", nrow(weekly_rarity), " records")
+
+# Monthly
+monthly_rarity <- compute_rarity_metrics("year_month")
+write_parquet(monthly_rarity, outputs$monthly_rarity)
+message("Monthly rarity: ", nrow(monthly_rarity), " records")
+
+# Seasonal
+seasonal_rarity <- compute_rarity_metrics("year_season")
+write_parquet(seasonal_rarity, outputs$seasonal_rarity)
+message("Seasonal rarity: ", nrow(seasonal_rarity), " records")
+
+message("\nSpecies rarity metrics computed.")
+
+# -----------------------------------------------------------------------------
+# Compute Apperance Index
+# -----------------------------------------------------------------------------
+
+message("\nComputing species appearance metrics...")
+
+appearance_scores <- fread(
+  inputs$appearance_index,
+  encoding = "UTF-8",
+  na.strings = c("", "NA", "N/A", "NaN")
+)
+
+setnames(
+  appearance_scores,
+  old = names(appearance_scores),
+  new = tolower(gsub("[^a-zA-Z0-9]+", "_", names(appearance_scores)))
+)
+
+if (!all(c("sci_name", "appearance_index") %in% names(appearance_scores))) {
+  stop("Appearance input must contain sci_name and appearance_index columns.")
+}
+
+appearance_scores[, sci_name := tolower(gsub("\\s+", " ", trimws(sci_name)))]
+appearance_scores[, appearance_index := as.numeric(appearance_index)]
+appearance_scores <- appearance_scores[
+  !is.na(sci_name) & sci_name != "" & !is.na(appearance_index)
+]
+
+duplicate_appearance_scores <- appearance_scores[, .(
+  n_scores = uniqueN(appearance_index)
+), by = sci_name][n_scores > 1]
+
+if (nrow(duplicate_appearance_scores) > 0) {
+  stop("Appearance input contains conflicting scores for scientific names.")
+}
+
+appearance_scores <- unique(appearance_scores[, .(sci_name, appearance_index)])
+dt[, scientific_name := tolower(gsub("\\s+", " ", trimws(scientific_name)))]
+dt[, obs_weight := fifelse(
+  is.na(observation_count) | observation_count <= 0,
+  1,
+  observation_count
+)]
+
+hotspot_species_appearance <- merge(
+  dt[, .(sampling_event_identifier, scientific_name, obs_weight)],
+  trip_richness[, .(sampling_event_identifier, cluster_id, year_week, year_month, year_season)],
+  by = "sampling_event_identifier",
+  all.x = TRUE
+)
+hotspot_species_appearance <- merge(
+  hotspot_species_appearance,
+  appearance_scores,
+  by.x = "scientific_name",
+  by.y = "sci_name",
+  all.x = FALSE
+)
+
+message(
+  "Appearance scores matched to ",
+  uniqueN(hotspot_species_appearance$scientific_name),
+  " observed species."
+)
+
+compute_appearance_metrics <- function(period_col) {
+  appearance_metrics <- hotspot_species_appearance[, .(
+    appearance_index = weighted.mean(
+      appearance_index,
+      w = obs_weight,
+      na.rm = TRUE
+    ),
+    n_species = uniqueN(scientific_name),
+    total_observations = sum(obs_weight, na.rm = TRUE)
+  ), by = c("cluster_id", period_col)]
+
+  trip_counts <- trip_richness[, .(n_trips = .N), by = c("cluster_id", period_col)]
+  merge(appearance_metrics, trip_counts, by = c("cluster_id", period_col), all.x = TRUE)
+}
+
+weekly_appearance <- compute_appearance_metrics("year_week")
+write_parquet(weekly_appearance, outputs$weekly_apperance)
+message("Weekly appearance: ", nrow(weekly_appearance), " records")
+
+monthly_appearance <- compute_appearance_metrics("year_month")
+write_parquet(monthly_appearance, outputs$monthly_apperance)
+message("Monthly appearance: ", nrow(monthly_appearance), " records")
+
+seasonal_appearance <- compute_appearance_metrics("year_season")
+write_parquet(seasonal_appearance, outputs$seasonal_apperance)
+message("Seasonal appearance: ", nrow(seasonal_appearance), " records")
+
+message("\nSpecies appearance metrics computed.")
+
+
 # -----------------------------------------------------------------------------
 # Compute Congestion Metrics
 # -----------------------------------------------------------------------------

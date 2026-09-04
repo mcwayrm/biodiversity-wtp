@@ -121,6 +121,168 @@ message("Expected richness available: ",
         choice_set[!is.na(expected_richness), .N], " / ", nrow(choice_set))
 
 # -----------------------------------------------------------------------------
+# Load and Merge Species Rarity (with fallback logic)
+# -----------------------------------------------------------------------------
+
+message("\n--- Merging Species Rarity ---")
+
+monthly_rarity <- read_parquet(inputs$monthly_rarity)
+weekly_rarity <- read_parquet(inputs$weekly_rarity)
+seasonal_rarity <- read_parquet(inputs$seasonal_rarity)
+
+setDT(monthly_rarity)
+setDT(weekly_rarity)
+setDT(seasonal_rarity)
+
+monthly_rarity[, cluster_id := as.character(cluster_id)]
+weekly_rarity[, cluster_id := as.character(cluster_id)]
+seasonal_rarity[, cluster_id := as.character(cluster_id)]
+
+# Merge previous week rarity metrics
+choice_set <- merge(
+  choice_set,
+  weekly_rarity[, .(
+    cluster_id,
+    year_week,
+    prev_week_rarity = rarity_index,
+    prev_week_rarity_enrichment = rarity_enrichment_index
+  )],
+  by.x = c("cluster_id", "prev_week"),
+  by.y = c("cluster_id", "year_week"),
+  all.x = TRUE
+)
+
+# Merge previous month rarity metrics
+choice_set <- merge(
+  choice_set,
+  monthly_rarity[, .(
+    cluster_id,
+    year_month,
+    prev_month_rarity = rarity_index,
+    prev_month_rarity_enrichment = rarity_enrichment_index
+  )],
+  by.x = c("cluster_id", "prev_month"),
+  by.y = c("cluster_id", "year_month"),
+  all.x = TRUE
+)
+
+# Merge previous year season rarity metrics
+choice_set <- merge(
+  choice_set,
+  seasonal_rarity[, .(
+    cluster_id,
+    year_season,
+    prev_year_season_rarity = rarity_index,
+    prev_year_season_rarity_enrichment = rarity_enrichment_index
+  )],
+  by.x = c("cluster_id", "prev_year_season"),
+  by.y = c("cluster_id", "year_season"),
+  all.x = TRUE
+)
+
+# Apply fallback logic
+choice_set[, expected_rarity := fcoalesce(
+  prev_week_rarity,
+  prev_month_rarity,
+  prev_year_season_rarity
+)]
+choice_set[, expected_rarity_enrichment := fcoalesce(
+  prev_week_rarity_enrichment,
+  prev_month_rarity_enrichment,
+  prev_year_season_rarity_enrichment
+)]
+
+choice_set[, expected_rarity_source := fcase(
+  !is.na(prev_week_rarity), "prev_week",
+  !is.na(prev_month_rarity), "prev_month",
+  !is.na(prev_year_season_rarity), "prev_year_season",
+  default = "missing"
+)]
+choice_set[, expected_rarity_enrichment_source := fcase(
+  !is.na(prev_week_rarity_enrichment), "prev_week",
+  !is.na(prev_month_rarity_enrichment), "prev_month",
+  !is.na(prev_year_season_rarity_enrichment), "prev_year_season",
+  default = "missing"
+)]
+
+message("Expected rarity available: ",
+        choice_set[!is.na(expected_rarity), .N], " / ", nrow(choice_set))
+message("Expected rarity enrichment available: ",
+        choice_set[!is.na(expected_rarity_enrichment), .N], " / ", nrow(choice_set))
+
+
+# -----------------------------------------------------------------------------
+# Load and Merge Species Apperance
+# -----------------------------------------------------------------------------
+
+message("\n--- Merging Species Apperance ---")
+
+monthly_appearance <- read_parquet(inputs$monthly_apperance)
+weekly_appearance <- read_parquet(inputs$weekly_apperance)
+seasonal_appearance <- read_parquet(inputs$seasonal_apperance)
+
+setDT(monthly_appearance)
+setDT(weekly_appearance)
+setDT(seasonal_appearance)
+
+monthly_appearance[, cluster_id := as.character(cluster_id)]
+weekly_appearance[, cluster_id := as.character(cluster_id)]
+seasonal_appearance[, cluster_id := as.character(cluster_id)]
+
+choice_set <- merge(
+  choice_set,
+  weekly_appearance[, .(
+    cluster_id,
+    year_week,
+    prev_week_appearance = appearance_index
+  )],
+  by.x = c("cluster_id", "prev_week"),
+  by.y = c("cluster_id", "year_week"),
+  all.x = TRUE
+)
+
+choice_set <- merge(
+  choice_set,
+  monthly_appearance[, .(
+    cluster_id,
+    year_month,
+    prev_month_appearance = appearance_index
+  )],
+  by.x = c("cluster_id", "prev_month"),
+  by.y = c("cluster_id", "year_month"),
+  all.x = TRUE
+)
+
+choice_set <- merge(
+  choice_set,
+  seasonal_appearance[, .(
+    cluster_id,
+    year_season,
+    prev_year_season_appearance = appearance_index
+  )],
+  by.x = c("cluster_id", "prev_year_season"),
+  by.y = c("cluster_id", "year_season"),
+  all.x = TRUE
+)
+
+choice_set[, expected_appearance := fcoalesce(
+  prev_week_appearance,
+  prev_month_appearance,
+  prev_year_season_appearance
+)]
+
+choice_set[, expected_appearance_source := fcase(
+  !is.na(prev_week_appearance), "prev_week",
+  !is.na(prev_month_appearance), "prev_month",
+  !is.na(prev_year_season_appearance), "prev_year_season",
+  default = "missing"
+)]
+
+message("Expected appearance available: ",
+        choice_set[!is.na(expected_appearance), .N], " / ", nrow(choice_set))
+
+
+# -----------------------------------------------------------------------------
 # Load and Merge Congestion (with fallback logic)
 # -----------------------------------------------------------------------------
 

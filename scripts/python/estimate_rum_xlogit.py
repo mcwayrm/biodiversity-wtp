@@ -43,10 +43,37 @@ import scipy.stats
 import yaml
 from xlogit import MixedLogit, MultinomialLogit
 
+try:
+    import fastparquet
+except ImportError:
+    fastparquet = None
+
 warnings.filterwarnings("ignore")
 
 SEED = 12345
 PROGRESS_EVERY = 5000  # print a progress line every N trips while sampling
+
+
+def _read_parquet(path):
+    if fastparquet is not None:
+        return pd.read_parquet(path, engine="fastparquet")
+    return pd.read_parquet(path)
+
+
+def _write_parquet(df, path, index=False):
+    if fastparquet is not None:
+        df.to_parquet(path, index=index, engine="fastparquet")
+    else:
+        df.to_parquet(path, index=index)
+
+
+def _parquet_row_count(path):
+    if fastparquet is not None:
+        return fastparquet.ParquetFile(path).count()
+
+    # Fallback for environments without fastparquet. This keeps the script
+    # usable even if pyarrow is unavailable, at the cost of a one-time read.
+    return len(pd.read_parquet(path))
 
 
 # ============================================================================
@@ -246,7 +273,7 @@ def demean_by_fe_iterative(df, vars_to_demean, fe_groups, max_iter=1000, tol=1e-
         if use_cache:
             cache_path = fe_cache_path(fe_cache_dir, scenario, valid_fe_groups, model_data_path, var)
             if cache_path.exists():
-                cached = pd.read_parquet(cache_path)
+                cached = _read_parquet(cache_path)
                 if len(cached) == len(df):
                     df[f"{var}_dm"] = cached[f"{var}_dm"].to_numpy()
                     n_cache_hits += 1
@@ -305,7 +332,7 @@ def demean_by_fe_iterative(df, vars_to_demean, fe_groups, max_iter=1000, tol=1e-
         df[f"{var}_dm"] = resid
 
         if use_cache and cache_path is not None:
-            pd.DataFrame({f"{var}_dm": resid}).to_parquet(cache_path, index=False)
+            _write_parquet(pd.DataFrame({f"{var}_dm": resid}), cache_path, index=False)
 
     if use_cache:
         print(f"    FE cache: {n_cache_hits} hit(s), {n_cache_misses} miss(es)")
@@ -393,8 +420,12 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
     # Columns actually needed downstream, regardless of which cache layer
     # (if any) is hit -- id/context columns plus this model's _dm columns.
     # demeaned_sampled additionally has obs_id_num_seq/alt_id, assigned
-    # after sampling.
-    base_cols = ["trip_id", "choice", "obs_id_num", "avail"]
+    # after sampling. user_id is kept even though estimate_model()/
+    # calculate_wtp() don't need it -- 12_individual_wtp.py reads this same
+    # cached demeaned_sampled file and groups by user_id to compute
+    # individual-level conditional WTP; dropping it here would silently
+    # break that downstream script the next time this cache is rebuilt.
+    base_cols = ["trip_id", "user_id", "choice", "obs_id_num", "avail"]
     dm_cols = [f"{v}_dm" for v in vars_to_demean]
 
     if demeaned_sampled_path is not None and Path(demeaned_sampled_path).exists():
@@ -417,7 +448,7 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
         )
         if demeaned_full_path is not None:
             Path(demeaned_full_path).parent.mkdir(parents=True, exist_ok=True)
-            cs_demeaned.to_parquet(demeaned_full_path, index=False)
+            _write_parquet(cs_demeaned, demeaned_full_path, index=False)
             print(f"    Saved full demeaned dataset: {Path(demeaned_full_path).name}")
 
     print(f"    Sampling choice sets (target size {choice_set_sample_size})...")
@@ -457,7 +488,7 @@ def build_model_data(cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size
 
     if demeaned_sampled_path is not None:
         Path(demeaned_sampled_path).parent.mkdir(parents=True, exist_ok=True)
-        cs_model.to_parquet(demeaned_sampled_path, index=False)
+        _write_parquet(cs_model, demeaned_sampled_path, index=False)
         print(f"    Saved sampled+demeaned dataset: {Path(demeaned_sampled_path).name}")
 
     return cs_model, model_vars_for_demean
@@ -911,6 +942,19 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             continue
 
         try:
+            required_columns = set(model_vars) | set(mixed_vars)
+            required_columns.update(
+                column
+                for fe_spec in fe_vars
+                for column in (fe_spec if isinstance(fe_spec, list) else [fe_spec])
+            )
+            missing_columns = sorted(required_columns - set(cs.columns))
+            if missing_columns:
+                raise ValueError(
+                    f"Model '{model_name}' requires missing columns: "
+                    f"{', '.join(missing_columns)}"
+                )
+
             cs_model, model_vars_for_demean = build_model_data(
                 cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size,
                 demeaned_full_path=(demeaned_dir / f"{output_prefix}_demeaned_full.parquet") if save_demeaned else None,
@@ -930,6 +974,18 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             ids_data = cs_model["obs_id_num_seq"].reset_index(drop=True)
             alts_data = cs_model["alt_id"].reset_index(drop=True)
             avail_data = cs_model["avail"].reset_index(drop=True)
+
+            nonvarying_random_vars = [
+                variable
+                for variable in randvars
+                if not np.isfinite(X_data[variable]).all()
+                or X_data[variable].std() <= 1e-12
+            ]
+            if nonvarying_random_vars:
+                raise ValueError(
+                    f"Model '{model_name}' has non-estimable random variables: "
+                    f"{', '.join(nonvarying_random_vars)}"
+                )
 
             # Captured BEFORE standardize_data() runs inside estimate_model() --
             # this is what lets calculate_wtp() convert coefficients back to
