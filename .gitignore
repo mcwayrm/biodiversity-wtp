@@ -10,3 +10,5 @@ summary_report.html
 .github/
 __pycache__
 .Renviron
+_quarto_internal_scss_error.scss
+docs/slides_nct_20260817/*.html
