@@ -1,0 +1,490 @@
+---
+title: |
+  Willingness to Pay for Biodiversity in a Developing Country:<br>
+  Large Evidence From Citizen Science
+subtitle: |
+  | NatCap TEEMs
+  | August 13, 2026
+author:
+  - name: "Matthew Braaksma"
+    affiliation: "University of Minnesota"
+  - name: "Jovin Lasway"
+    affiliation: "University of Minnesota"
+  - name: "Raahil Madhok"
+    affiliation: "University of Minnesota"
+  - name: "Ryan McWay"
+    affiliation: "University of Minnesota"
+
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    slide-number: true
+    progress: true
+    embed-resources: true
+    logo: NCTs_Opt2-UMN-BlkColor.png
+    auto-stretch: false
+    html-math-method: katex
+    smaller: true
+bibliography: references.bib
+crossref:
+  appendix-title: "Appendix"
+  appendix-delim: "."
+execute:
+  echo: false
+  warning: false
+  message: false
+jupyter: teems_hb_dev
+---
+
+
+## Introduction
+### Landslides are a major global hazard
+
+:::: {.columns}
+::: {.column width="80%"}
+![UGLC Landslide Events by Fatality Count](../../../assets/landslide_mitigation/uglc_events_fatality_bins.png){width="100%" #fig-uglc}
+:::
+
+::: {.column width="20%"}
+Between 1903 and 2020, 161 countries registered 37,946 landslides associated with 185,753 fatalities [@gomez2023spatial].
+:::
+::::
+
+## Introduction
+### Mitigation via vegetation
+
+::: {style="font-size: 1.2em;"}
+- Forests stabilize slopes, but global quantification of avoided mortality is rare.
+- While landslide hazard modeling is developed, the link to human outcomes is underrepresented in global ecosystem-service valuation.
+- Landslide mitigation is a recognized ecosystem service, formally defined in the UN's System of Environmental Economic Accounting (SEEA EA).
+:::
+> Landslide mitigation services are the ecosystem contributions, particularly the stabilising effects of vegetation, that mitigates or prevents potential damage to human health and safety and damaging effects to buildings and infrastructure that arise from the mass movement (wasting) of soil, rock and snow [@seea_ea_2021].
+
+## Introduction
+### Previous work on ecosystem-service valuation of landslide mitigation is underdeveloped
+
+::: {style="font-size: 1.5em;"}
+- No global, high-resolution framework for cross-country comparison or ongoing monitoring over time.
+- Mortality is a more consistently available metric than property losses, and a common welfare-based endpoint.
+- Country-scale analyses show local socioeconomic and governance conditions shape vulnerability [@haque2019human], but findings rarely generalize across scales or geographies.
+:::
+
+## Methodology
+### Overview
+
+::: {style="font-size: 1.5em;"}
+- Replaces empirical statistical prediction of landslide occurrence with a mechanistic stability index, derived from the physics of slope failure rather than fitted from data alone.
+- Two-stage estimation: physically-grounded occurrence model + statistical severity (conditional mortality) model.
+- Single counterfactual bound: observed forest cover vs. complete loss of root cohesion, isolating the vegetation-mediated stabilization channel.
+- Pixel-level estimates aggregated to countries, regions, and globe.
+- Monetized using income-adjusted Value of a Statistical Life (VSL).
+:::
+
+## Methodology
+### Why a mechanistic index, not a purely empirical model
+
+- A regression fit directly on terrain/vegetation covariates learns correlations specific to the training catalog.
+- An infinite-slope stability index encodes the actual physics of shallow-landslide initiation (friction, cohesion, pore pressure) using literature-sourced soil-mechanics relationships [@taylor1948fundamentals; @skempton1957stability].
+- Only the link between the index and observed occurrence needs calibration against data.
+- Standard approach in the hazard-modeling literature (SHALSTAB, SINMAP, TRIGRS families).
+    - Steady-state wetness formulation follows SHALSTAB [@montgomery1994physically]; SINMAP [@pack1998sinmap] shares the same physics with a probabilistic parameter treatment; TRIGRS[@baum2002trigrs] instead models transient storm-driven infiltration.
+
+
+## Methodology
+### Data Sources
+
+| Dataset | Resolution | Role |
+|---|---:|---|
+| Unified Global Landslide Catalogue (UGLC) | point (aggregated to 1 km) | Occurrence + fatality outcomes |
+| Elevation | ~300 m (derived to 1 km) | DEM: slope, D8 routing |
+| SoilGrids v2.0 (ISRIC) | 250 m (aggregated) | Texture, organic carbon, bulk density |
+| HiHydroSoil v2.0 | 250 m (aggregated) | Saturated hydraulic conductivity |
+| Pelletier / ORNL DAAC | 1 km | Soil + regolith depth |
+| ESA-CCI | 300 m yearly (resampled) | Forest cover fraction (root cohesion driver) |
+| ERA5-Land | 0.1° daily (resampled) | Extreme daily precipitation |
+| LandScan | 1 km annual | Population exposure |
+| FAO GAEZ v5 | zone classes (57) | Environmental stratification, control sampling |
+| GRIP4 | ~9 km (resampled) | Road density |
+| OECD (2025) VSL | country / income-group | Mortality valuation |
+
+<!-- All layers reprojected to **EASE-Grid 2.0** (equal-area, 1 km, NSIDC canonical grid) -- avoids the latitude-dependent pixel-area distortion of a plain lat/lon grid, so raster sums are directly interpretable as areal totals without correction. -->
+
+## Methodology {.scrollable}
+### Physical Susceptibility Framework
+
+Infinite-slope stability index, computed per pixel:
+
+$$
+SI = \underbrace{\frac{\tan\phi}{\tan\beta}}_{\text{friction}} +
+\underbrace{\frac{c_{soil} + c_{root}}{\rho g \, h \, \sin\beta\cos\beta}}_{\text{cohesion}} -
+\underbrace{\min\!\left(1,\ \frac{q}{T\sin\beta}\right)}_{\text{pore-pressure / saturation}}
+$$
+
+| Term | Source |
+|---|---|
+| $\phi$ (friction angle) | Texture-based (sand/clay), SoilGrids |
+| $\beta$ (slope) | Horn (1981), computed at fine resolution then aggregated -- avoids the systematic downward bias of computing slope from an already-coarsened DEM |
+| $c_{soil}$ | Texture + organic carbon, SoilGrids |
+| $c_{root} = \text{forest\_share} \times c_{root,max}$ | ESA-CCI forest cover; $c_{root,max}=5$ kPa |
+| $\rho g$ (unit weight) | Derived from bulk density, not a literal constant |
+| $h$ (soil depth) | Pelletier / ORNL DAAC |
+| $T$ (transmissivity) | $K_{sat} \times h$; $K_{sat}$ from HiHydroSoil v2.0 |
+| $q$ (specific discharge) | Climatological daily rainfall $\times$ upslope contributing area (D8) $/$ cell width |
+
+<details>
+<summary>Term definitions and typical ranges</summary>
+
+| Symbol | Meaning | Typical range |
+|---|---|---|
+| $\phi$ | Friction angle -- resistance to sliding from soil grain interlocking | 15°-40° |
+| $\beta$ | Slope angle | 2°-90° (below 2° excluded from SI) |
+| $c_{soil}$ | Baseline soil cohesion (texture + organic carbon), independent of vegetation | 0-50 kPa |
+| $c_{root}$ | Additional cohesion from tree roots binding soil, scales with forest cover | 0-5 kPa |
+| $\rho g$ | Soil unit weight (weight per volume) | ~15-22 kN/m³ |
+| $h$ | Depth to bedrock/failure plane | 0-50 m |
+| $T$ | Transmissivity -- how readily water moves laterally through the soil layer | highly variable by soil type |
+| $q$ | Specific discharge -- water arriving per unit slope width from upslope | highly variable by terrain |
+
+</details>
+
+## Methodology
+### Physical Susceptibility Framework
+
+**Implementation details:**
+
+- SI ranges from negative (unstable) to positive (stable)
+    - Higher values indicate greater relative stability; strongly negative values indicate high instability
+    - For tractability, the index is clipped to [-10, 10]
+- The pore-pressure ratio $q/(T\sin\beta)$ is capped at 1
+    - Physically, a soil column cannot be more than fully saturated
+    - Uncapped, this term dominates and swamps all other signal on low-gradient, high-flow-accumulation terrain
+- SI is computed only where slope $\geq 2°$; the infinite-slope framework does not meaningfully describe near-flat ground.
+
+## Methodology
+### Global Stability Index, 2019
+
+![Higher values indicate greater relative slope stability under observed 2019 forest cover.](../../../assets/landslide_mitigation/si_observed_2019.png){width="100%" #fig-si-map}
+
+## Methodology
+### Sampling & Estimation
+
+**Sampling design:**
+
+- Landslide occurrence is rare at the pixel-year level
+    - Stratified case-control design (controls drawn uniformly across valid land pixels)
+    - GAEZ-zone proportionality emerges automatically from uniform sampling, no explicit quota needed
+- Case locations deduplicated to one per (pixel, year)
+    - Without this, a single spatially clustered disaster (e.g. one earthquake's landslide swarm) can dominate the training sample by orders of magnitude relative to more geographically dispersed events.
+- Case-control sampling inflates the apparent event rate relative to the true population; absolute probabilities are corrected via the standard case-control intercept adjustment [@prentice1979logistic], using an independently estimated population prevalence from the full annual event rasters.
+
+**Regression framework:**
+
+  - Logit model: occurrence as a function of the stability index and daily rainfall.
+  - Two-part (hurdle) model: conditional mortality given occurrence.
+
+## Methodology {.scrollable}
+### Landslide Occurrence Model
+
+$$
+\Pr(L_{i,t}=1) = \text{logit}^{-1}\big(\alpha + \beta_1\, SI_{i,t} + \beta_2\, R_{i,t}\big)
+$$
+
+where $R_{i,t}$ is daily maximum rainfall.
+
+The mechanistic index absorbs terrain, soil, and vegetation structure; rainfall enters separately as the triggering event. (Compare to the covariate list needed by a purely empirical specification: slope, roughness, TPI, elevation variability, road density, fault distance, deforestation lags, and zone fixed effects.)
+
+<details>
+<summary>Model Coefficients</summary>
+
+```{python}
+#| echo: false
+#| eval: false
+#| tbl-cap: "Hazard Model of Landslide Occurrence"
+#| label: tbl-hazard
+
+from pathlib import Path
+import pandas as pd
+from great_tables import GT
+
+ASSET_DIR = Path('../../../assets/landslide_mitigation')
+
+hazard_df = pd.read_csv(ASSET_DIR / 'hazard_model_table.csv')
+hazard_meta = pd.read_csv(ASSET_DIR / 'hazard_model_metadata.csv')
+
+for col in ['Coefficient', 'Std. Err.', 'z']:
+    hazard_df[col] = hazard_df[col].map(lambda v: f'{v:.4f}')
+hazard_df['P>|z|'] = hazard_df['P>|z|'].map(lambda v: f'{v:.4g}')
+
+(
+    GT(hazard_df)
+    .tab_source_note(
+        f"N = {int(hazard_meta['N (training)'][0]):,}  |  "
+        f"Pseudo R-sq. = {hazard_meta['Pseudo R2'][0]:.4f}  |  "
+        f"Case-control corrected intercept = {hazard_meta['Intercept (case-control corrected)'][0]:.4f}"
+    )
+)
+```
+
+</details>
+
+## Methodology {.scrollable}
+### Mortality Model
+
+$$
+\Pr(M_{i,t}>0 \mid L_{i,t}=1) = \text{logit}^{-1}\big(\gamma_0^{h} + \gamma_1^{h} P_{i,t} + \gamma_2^{h} R_{i,t} + \gamma_3^{h} Z_{i,t} + \gamma_4^{h} D_{i,t}\big)
+$$
+$$
+\mathbb{E}[M_{i,t} \mid M_{i,t}>0, L_{i,t}=1] = \exp\big(\gamma_0^{s} + \gamma_1^{s} P_{i,t} + \gamma_2^{s} R_{i,t} + \gamma_3^{s} Z_{i,t} + \gamma_4^{s} D_{i,t}\big)
+$$
+
+where $P_{i,t}$ is log(1+population), $R_{i,t}$ is daily maximum rainfall, $Z_{i,t}$ is slope, and $D_{i,t}$ is road density.
+
+- Fit only on realized landslide occurrences.
+- Severity back-transform uses Duan's [-@duan1983smearing] smearing correction to avoid retransformation bias (understating expected fatalities under a skewed residual distribution).
+
+<details>
+<summary>Model Coefficients (Occurrence given landslide)</summary>
+
+```{python}
+#| echo: false
+#| eval: false
+#| tbl-cap: "Fatality Occurrence Given Landslide"
+#| label: tbl-severity-a
+
+severity_a_df = pd.read_csv(ASSET_DIR / 'severity_part_a_table.csv')
+severity_meta = pd.read_csv(ASSET_DIR / 'severity_model_metadata.csv')
+
+for col in ['Coefficient', 'Std. Err.', 'z']:
+    severity_a_df[col] = severity_a_df[col].map(lambda v: f'{v:.4f}')
+severity_a_df['P>|z|'] = severity_a_df['P>|z|'].map(lambda v: f'{v:.4g}')
+
+(
+    GT(severity_a_df)
+    .tab_source_note(
+        f"N = {int(severity_meta['N (landslide occurrences)'][0]):,}  |  "
+        f"Pseudo R-sq. = {severity_meta['Part A Pseudo R2'][0]:.4f}"
+    )
+)
+```
+
+</details>
+
+<details>
+<summary>Model Coefficients (Severity given fatal)</summary>
+
+```{python}
+#| echo: false
+#| eval: false
+#| tbl-cap: "Expected Fatalities Given Fatal Landslide"
+#| label: tbl-severity-b
+
+severity_b_df = pd.read_csv(ASSET_DIR / 'severity_part_b_table.csv')
+
+for col in ['Coefficient', 'Std. Err.', 't']:
+    severity_b_df[col] = severity_b_df[col].map(lambda v: f'{v:.4f}')
+severity_b_df['P>|t|'] = severity_b_df['P>|t|'].map(lambda v: f'{v:.4g}')
+
+smearing_val = severity_meta["Duan's smearing factor"][0]
+(
+    GT(severity_b_df)
+    .tab_source_note(
+        f"N = {int(severity_meta['N (fatal events)'][0]):,}  |  "
+        f"R-sq. = {severity_meta['Part B R2'][0]:.4f}  |  "
+        f"Smearing factor = {smearing_val:.4f}"
+    )
+)
+```
+
+<!-- NOTE: Part B's R-sq. (~0.005) and mostly-insignificant p-values are
+     real and worth being upfront about live -- this table honestly shows
+     a weak fit, consistent with the "limited explanatory power" limitation
+     already stated elsewhere in the deck. Showing the real numbers here
+     (rather than hiding them) is more credible to an applied-econ audience
+     than a table that looks artificially clean. -->
+
+</details>
+
+
+## Methodology
+### Counterfactual Scenario
+
+::: {style="font-size: 1.2em;"}
+- **Observed**: actual 2019 forest cover, contributing up to 5 kPa of root cohesion where fully forested.
+- **Full impacts**: root cohesion set to zero everywhere, the complete removal of vegetation's mechanical stabilization, holding all other conditions (soil, terrain, climate) fixed.
+    - This is an upper-bound diagnostic, not a realistic deforestation-rate projection
+    - It isolates the maximum possible contribution of root cohesion to slope stability, rather than modeling any specific land-use trajectory.
+    - Only $c_{root}$ differs between scenarios; rainfall, soil properties, and terrain are identical in both.
+:::
+
+## Methodology
+### Valuation
+
+::: {style="font-size: 1.2em;"}
+- Value of Statistical Life (VSL) from OECD [-@oecd2025mortality], *Mortality Risk Valuation in Policy Assessment* 
+    - Meta-analysis of 277 studies, six country groups.
+    - Country-level estimates used directly where available.
+- All values deflated to constant 2019 USD via a single price-level scalar (not a country-by-country panel; the underlying PPP conversion already handles cross-country price-level differences; only the time dimension needs adjusting).
+:::
+
+## Methodology
+### Combining the Models: Expected and Avoided Mortality
+
+A hazard (occurrence) model, combined with a two-part hurdle severity model, multiply together at prediction time:
+
+$$
+\mathbb{E}[M_{i,t}] = \underbrace{\Pr(L_{i,t}=1)}_{\text{Hazard model}} \times \underbrace{\Pr(M_{i,t}>0 \mid L_{i,t}=1) \times \mathbb{E}[M_{i,t} \mid M_{i,t}>0, L_{i,t}=1]}_{\text{Two-part hurdle severity model}}
+$$
+
+- "Hurdle" specifically describes the severity stage: fatality count has a point mass at zero (most landslides kill no one) plus a distinct, skewed process governing the rare fatal events.
+- The hazard and severity models are estimated independently; they are only combined at prediction time, never jointly fit.
+- Population, rainfall, slope, and road density (severity covariates) are identical across scenarios -- only the hazard term's $SI_{i,t}$ differs.
+
+Avoided mortality is the difference in expected deaths across scenarios, holding severity fixed:
+
+$$
+\text{Avoided}_{i,t} = \mathbb{E}[M_{i,t} \mid c_{root}=0] - \mathbb{E}[M_{i,t} \mid c_{root}=\text{observed}]
+$$
+
+Monetized as $\text{Avoided}_{i,t} \times \text{VSL}_i$, then aggregated to country, region, and global totals.
+
+## Results
+### 609.15 avoided deaths
+
+![Global avoided mortality, 2019](../../../assets/landslide_mitigation/avoided_mortality_choropleth_2019.png){width="100%" #fig-global-avoided-mortality}
+
+
+## Results
+### $841.4M avoided mortality value
+
+![Global avoided mortality value, 2019](../../../assets/landslide_mitigation/avoided_mortality_value_choropleth_2019.png){width="100%" #fig-global-avoided-mortality-value}
+
+
+```{python}
+#| echo: false
+#| eval: false
+
+from pathlib import Path
+import pandas as pd
+from great_tables import GT
+
+ASSET_DIR = Path('../../../assets/landslide_mitigation')
+
+
+def regular_table(csv_name):
+    df = pd.read_csv(ASSET_DIR / csv_name).copy()
+    for column in df.columns:
+        if 'value' in column:
+            df[column] = df[column] / 1_000_000  # USD millions, not billions --
+                                                    # totals are smaller under this
+                                                    # counterfactual than the old
+                                                    # deck's, billions would round
+                                                    # most rows to $0.00
+
+    df = df.drop(columns=['iso3'], errors='ignore')
+    df = df.rename(columns={
+        'name_long': 'Country',
+        'region_wb': 'World Bank region',
+        'avoided_mortality_sum': 'Avoided mortality',
+        'value_sum': 'Value (US$ millions)',
+    })
+
+    for column in df.columns:
+        if pd.api.types.is_numeric_dtype(df[column]):
+            if 'Value' in column:
+                df[column] = df[column].map(lambda v: f'${v:,.2f}')
+            elif 'Avoided mortality' in column:
+                df[column] = df[column].map(lambda v: f'{v:,.2f}')  # 2dp, not 0dp --
+                                                                       # totals are
+                                                                       # small enough
+                                                                       # that most
+                                                                       # countries
+                                                                       # round to 0
+                                                                       # otherwise
+
+    return GT(df)
+
+
+def summary_table():
+    global_df = pd.read_csv(ASSET_DIR / 'global_summary_full_impacts_2019.csv')
+    region_df = pd.read_csv(ASSET_DIR / 'region_wb_summary_full_impacts_2019.csv')
+    region_df = region_df[region_df['region_wb'] != 'Antarctica'].copy()
+
+
+    total_row = pd.DataFrame({
+        'Geography': ['Total'],
+        'Avoided mortality': [global_df.loc[0, 'avoided_mortality_sum']],
+        'Value (US$ millions)': [global_df.loc[0, 'value_sum'] / 1_000_000],
+    })
+
+    region_table = region_df.rename(columns={
+        'region_wb': 'Geography',
+        'avoided_mortality_sum': 'Avoided mortality',
+        'value_sum': 'Value (US$ millions)',
+    })
+    region_table['Value (US$ millions)'] = region_table['Value (US$ millions)'] / 1_000_000
+
+    combined = pd.concat([total_row, region_table], ignore_index=True)
+    combined['Avoided mortality'] = combined['Avoided mortality'].map(lambda v: f'{v:,.2f}')
+    combined['Value (US$ millions)'] = combined['Value (US$ millions)'].map(lambda v: f'${v:,.2f}')
+
+    return GT(combined)
+```
+
+## Results
+### Aggregate Benefits by Region, 2019
+
+```{python}
+#| echo: false
+#| eval: false
+#| tbl-cap: "Aggregate Benefits by Region, 2019 (full-impacts counterfactual)"
+#| label: tbl-global-regional-summary-2019
+summary_table()
+```
+
+## Results {.scrollable}
+### Top 15 Countries by Avoided Mortality, 2019
+
+```{python}
+#| echo: false
+#| eval: false
+#| tbl-cap: "Top 15 Countries by Avoided Landslide Mortality, 2019, Full-Impacts Counterfactual"
+#| label: tbl-top-countries-mortality-2019
+regular_table('top_countries_mortality_full_impacts_2019.csv')
+```
+
+## Conclusion
+### Discussion
+
+::: {style="font-size: 1.2em;"}
+- Method allows for global, high-resolution estimation of avoided mortality from landslide mitigation, with a mechanistic slope-stability framework and a two-stage statistical model.
+- Couples hazard and mortality modeling in a single counterfactual workflow: global, spatially explicit estimates of avoided mortality attributable to forest cover.
+- The mechanistic core (versus a purely empirical fit) is designed to be reproducible: only the SI-to-probability link needs recalibration for a new region or time period, not a full covariate refit, particularly valuable for data-poor regions that lack resources for country-specific studies.
+:::
+
+## Conclusion
+
+:::: {.columns}
+::: {.column width="50%"}
+**Limitations**
+
+- Catalog completeness: under-represents landslides in remote, low-connectivity regions relative to well-monitored ones
+- Single realized year: annual estimates will vary with weather
+- Literature-sourced, not locally-fit constants: Root cohesion, friction angle, and soil cohesion formulas are drawn from published ranges rather than fit to this dataset
+- Uniform root cohesion globally: A single c_root_max is applied everywhere; published evidence suggests root cohesion varies severalfold by forest type
+- Severity model has limited explanatory power and does not include environmental zone fixed effects, which were dropped due to sample-size-driven estimation instability after event filtering.
+:::
+
+::: {.column width="50%"}
+**Future directions**
+
+- GAEZ-zone-specific root cohesion values, sourced from a broader literature synthesis.
+- Add downslope runout-path modeling (tracing debris travel from unstable source pixels) as a severity covariate, to capture landslide reach on mortality.
+:::
+::::
+
+---
+
+## References
+
+::: {#refs}
+:::

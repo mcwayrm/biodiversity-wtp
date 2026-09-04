@@ -1,0 +1,128 @@
+/*-- scss:defaults --*/
+
+// Colors & variables
+$jet: #131516;
+$accent: #9a2515;
+$accent2: #9a2515;
+$right-arrow: "\2192";
+
+// Import IBM Plex Sans Condensed (weights for light and bold headings)
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@300;400;600;700&display=swap');
+
+$font-family-sans-serif: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif !default;
+$presentation-heading-font: "IBM Plex Sans Condensed", "Helvetica Neue", Arial, sans-serif !default;
+$presentation-heading-color: $jet !default;
+$presentation-heading-font-weight: 600 !default;
+$presentation-font-size-root: 32px;
+
+$body-bg: #ffffff !default;
+$body-color: $jet !default;
+$link-color: $accent !default;
+$selection-bg: #dbeafe !default;
+
+/*-- scss:rules --*/
+
+.reveal {
+  background: $body-bg;
+  color: $body-color;
+  font-family: $font-family-sans-serif;
+}
+
+.reveal a { line-height: 1.5em; color: $link-color; }
+
+.reveal p { font-weight: 300; margin-top: 1.0em; }
+
+/* Title slide */
+#title-slide {
+  text-align: left;
+  .title { color: $body-color; font-size: 1.8em; font-weight: 300; }
+  .subtitle { color: $accent; font-style: italic; margin-top: 0; font-weight: 300; }
+  .line-block { color: $accent; font-style: italic; margin-top: 0; font-weight: 300; }
+  .quarto-title-authors { display: flex; justify-content: left; }
+  .quarto-title-author { padding-right: 0.5em; }
+}
+
+/* Headings */
+.reveal h1, .reveal h2, .reveal h3 { font-family: $presentation-heading-font; color: $presentation-heading-color; font-weight: $presentation-heading-font-weight; }
+.reveal h2 { font-size: 1.4em; font-weight: 600; }
+.reveal h3 { color: $accent; font-style: italic; font-weight: 600; font-size: 0.95em; }
+.reveal h4 { color: $accent2; font-weight: 400; margin-top: 1.0em; }
+
+/* Alerts */
+.alert { color: $accent2; }
+.fg { color: var(--col, $jet); }
+.bg { background-color: var(--col, #fff); padding: 0.1em; border-radius: 5px; display: inline-block; }
+
+/* Lists */
+.reveal ul { font-weight: 300; padding-left: 18px; }
+.reveal ul li::marker { color: mix($accent, white, 70%); }
+.reveal ul ul { list-style: none; }
+.reveal ul ul li:before { content: $right-arrow; color: mix($accent, white, 60%); display: inline-block; width: 1em; margin-left: -1em; margin-right: 0.5em; }
+.reveal ol { font-weight: 300; padding-left: 18px; }
+.reveal ol li::marker { color: $accent; }
+
+/* Menu / buttons */
+.reveal .slide-menu-button {
+  top: unset !important;           /* remove top positioning */
+  bottom: 12px !important;         /* position from bottom */
+  right: unset !important;         /* remove right positioning */
+  left: 0 !important;              /* align to left */
+  justify-content: flex-start;     /* align content to left */
+}
+.reveal .slide-menu-button > * { pointer-events: auto; }
+.reveal .slide-chalkboard-buttons { position: fixed; top: 12px; right: 24px; display: flex; pointer-events: none; }
+.reveal .slide-chalkboard-buttons > * { pointer-events: auto; }
+
+/* Logo */
+.reveal img.slide-logo {
+  display: block !important;
+  position: fixed !important;
+  bottom: 0 !important;
+  right: 10px !important;
+  left: unset !important; 
+  max-width: 500px !important; 
+  max-height: 100px !important;
+  height: 80px !important; 
+  width: auto !important; 
+  color: $body-color !important; 
+}
+.slide-number, .reveal.has-logo .slide-number { bottom: 6px !important; right: 10px !important; top: unset !important; color: #777777 !important; }
+
+/* Button */
+.button { display:inline-block; padding:6px 12px; font-size:14px; background-color:$accent; border:1px solid $accent; color:#fff !important; border-radius:4px; text-decoration:none; }
+.button:hover { background-color: darken($accent,8%); border-color: darken($accent,8%); }
+.button::before { content: "▶"; margin-right:5px; }
+
+/* Tables */
+.reveal table { margin:auto; border-collapse:collapse; font-size:0.9em; }
+.reveal table th, .reveal table td { border:none; padding:.3em; text-align:left; font-weight:300; }
+.reveal table thead th { font-weight:600; border-bottom:2px solid #D3D3D3; }
+.reveal table caption { color:#666666; font-variant: small-caps; }
+
+.quarto-float-caption,
+figcaption,
+caption {
+  text-align: center;
+}
+
+/* Logo */
+.reveal .slide-logo {
+  height: 30px !important;
+  width: 60px !important;
+  max-width: unset !important;
+  max-height: unset !important;
+}
+
+/* etable images */
+.etable { width:100%; height: calc(100% - 3em); display:flex; align-items:center; justify-content:center; }
+.etable img { max-width:100%; max-height:100%; object-fit:contain; }
+
+/* Columns width helpers */
+.reveal .columns3070 > div.column:first-child { width: 30%; }
+.reveal .columns3070 div.column:not(:first-child) { width: 70%; }
+.reveal .columns7030 > div.column:first-child { width: 70%; }
+.reveal .columns7030 div.column:not(:first-child) { width: 30%; }
+.reveal .columns4060 > div.column:first-child { width: 40%; }
+.reveal .columns4060 div.column:not(:first-child) { width: 60%; }
+.reveal .columns6040 > div.column:first-child { width: 60%; }
+.reveal .columns6040 div.column:not(:first-child) { width: 40%; }
