@@ -271,6 +271,21 @@ for (scenario_name in names(scenarios)) {
     dir.create(output_dir_models, recursive = TRUE, showWarnings = FALSE)
   }
 
+  scenario_pattern <- paste0("_Mixed_", scenario_name, "_(summary\\.txt|coefficients\\.csv|wtp\\.csv)$")
+  model_artifacts <- list.files(output_dir_models, pattern = scenario_pattern, full.names = TRUE)
+  demeaned_dir <- file.path(output_dir_models, "demeaned")
+  demeaned_pattern <- paste0("_Mixed_", scenario_name, "_demeaned_(full|sampled)\\.parquet$")
+  demeaned_artifacts <- if (dir.exists(demeaned_dir)) {
+    list.files(demeaned_dir, pattern = demeaned_pattern, full.names = TRUE)
+  } else {
+    character()
+  }
+  stale_artifacts <- c(model_artifacts, demeaned_artifacts)
+  if (length(stale_artifacts) > 0) {
+    unlink(stale_artifacts)
+    message("Removed ", length(stale_artifacts), " stale model artifact(s) for ", scenario_name)
+  }
+
   if (!exists(".xlogit_env_ready")) {
     setup_xlogit_env("wtp01")
     .xlogit_env_ready <- TRUE

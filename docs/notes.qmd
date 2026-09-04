@@ -41,6 +41,52 @@ For notes, we present the most recent first so that notes are chronologically mo
 
 
 ::: {.callout-note collapse="true"}
+# 09/04/2026
+
+> Jovin, Ryan, Matt, Raahil
+
+## TODO: 
+- Push github edits for Ryan (Matt)
+- Tourist vs. Resident (Matt/Ryan)
+- Update results for Above sample (Matt)
+- Predict the panel WTP estimates (Matt)
+- Updated figures for stylized facts (Ryan)
+- Summary stats on rarity and apperance (by mean, IQR, max) (Ryan)
+- Rarity/Apperance regressions (Ryan)
+- Attempt to re-write for panel estimates = Equation 6 with \beta_{i,t} propogates through model. (Ryan/Raahil)
+
+## Agenda: 
+- Stylized facts and motivating facts (Ryan)
+    - Added some figures and completed them
+    - The apperance index may be constructed wrong.
+    - For the new rarity historgram, bin the tail (truncate)
+    - Redo this figure without the SD. 
+        - We could plot the within-user means of expected richness, rarity, and apperance index over time (month, years)
+        - Update the labels to match seasons for results table. 
+    - For appereance, need to show sum stats for: 
+        - Mean, IQR, Max
+        - Show there is variation here. 
+    - For hotspot seasonality, 
+        - Make a new figure. 
+        - Cummulative vists by month-year. Stacked filled area chart by migrant and resident. 
+        - Should have a time series of avg controls/choice variables by user for selected sites and non-selected sites
+            - Idea: What are the attributes they are selecting on average. 
+    - Style Notes on figures: 
+        - Font size bigger
+        - Make the histogram dimensions more squarish
+- Adding apperance and rarity 
+    - Simple table 4 columns (or figure)
+    - All measures Adding in apperance and rarity
+    - Then all 3 seperately. 
+- Regression
+    - Need to add something explict estimating difference of tourists vs. residents
+    - Need to update the results so "Above" is the main results presented in the manuscript
+    
+
+:::
+
+
+::: {.callout-note collapse="true"}
 # 08/13/2026
 
 > Jovin, Ryan, Matt, Raahil
