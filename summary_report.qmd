@@ -541,3 +541,226 @@ if (exists("model_plots_list") && length(model_plots_list) > 0) {
   cat("No WTP estimates available\n")
 }
 ```
+
+# WTP Model Rarity and Appearance Coefficients
+
+```{r coefficient-data-prep}
+coefficient_list <- list()
+coefficient_files <- list.files(
+  "output/models",
+  pattern = "_Mixed_.*_coefficients\\.csv$",
+  full.names = TRUE
+)
+
+if (length(coefficient_files) > 0) {
+  for (coefficient_path in coefficient_files) {
+    tryCatch({
+      coefficient_df <- read.csv(coefficient_path, stringsAsFactors = FALSE) %>%
+        rename(
+          variable = Variable,
+          estimate = Estimate,
+          se = Std.Err,
+          scenario = Scenario,
+          model = Model
+        ) %>%
+        select(variable, estimate, se, scenario, model) %>%
+        mutate(variable = sub("_dm$", "", variable)) %>%
+        mutate(
+          ci_lower = estimate - 1.96 * se,
+          ci_upper = estimate + 1.96 * se
+        )
+
+      coefficient_list[[basename(coefficient_path)]] <- coefficient_df
+    }, error = function(e) {
+      cat(
+        "\n[WARNING] Failed to load coefficients from:",
+        basename(coefficient_path), "-", conditionMessage(e), "\n"
+      )
+    })
+  }
+} else {
+  cat("\n[WARNING] No coefficient CSV files found in output/models/\n")
+}
+
+coefficients_combined <- if (length(coefficient_list) > 0) {
+  bind_rows(coefficient_list)
+} else {
+  NULL
+}
+```
+
+```{r coefficient-plot-build}
+coefficient_plots <- list()
+
+if (!is.null(coefficients_combined)) {
+  for (curr_model in unique(coefficients_combined$model)) {
+    model_data <- coefficients_combined %>%
+      filter(model == curr_model) %>%
+      mutate(variable = factor(variable, levels = unique(variable)))
+
+    coefficient_plots[[curr_model]] <- ggplot(
+      model_data,
+      aes(x = variable, y = estimate, color = scenario, group = scenario)
+    ) +
+      geom_hline(
+        yintercept = 0,
+        linetype = "dashed",
+        color = "gray50",
+        linewidth = 0.5
+      ) +
+      geom_errorbar(
+        aes(ymin = ci_lower, ymax = ci_upper),
+        width = 0.2,
+        linewidth = 0.8,
+        position = position_dodge(width = 0.6)
+      ) +
+      geom_point(size = 3, position = position_dodge(width = 0.6)) +
+      labs(
+        title = paste0("Coefficients - ", gsub("_", " ", curr_model)),
+        subtitle = "Point estimates with 95% confidence intervals",
+        x = "Variables",
+        y = "Coefficient",
+        color = "Scenario"
+      ) +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  }
+}
+```
+
+```{r coefficient-model-plots}
+#| fig-height: !expr if(exists("coefficient_plots") && length(coefficient_plots) > 0) 8 else 2
+#| results: asis
+
+if (exists("coefficient_plots") && length(coefficient_plots) > 0) {
+  for (model_name in names(coefficient_plots)) {
+    cat("\n### ", gsub("_", " ", model_name), " {.unnumbered}\n\n")
+    print(coefficient_plots[[model_name]])
+    cat("\n\n")
+  }
+} else {
+  cat("No coefficient estimates available\n")
+}
+```
+
+# Variation in Biodiversity Attributes Observed by Users
+
+```{r user-attribute-variation-data}
+user_attribute_variation <- list()
+
+for (scenario in scenarios) {
+  scenario_dir <- file.path("data", "intermediate", "scenarios", scenario)
+  candidate_paths <- c(
+    file.path(scenario_dir, "master_data_with_travel_cost.parquet"),
+    file.path(scenario_dir, "master_data_with_attributes.parquet")
+  )
+  data_path <- NULL
+
+  for (candidate_path in candidate_paths) {
+    if (!file.exists(candidate_path)) {
+      next
+    }
+
+    candidate_data <- open_dataset(candidate_path)
+    required_columns <- c("user_id", "choice", "expected_rarity", "expected_appearance")
+    if (all(required_columns %in% names(candidate_data))) {
+      data_path <- candidate_path
+      break
+    }
+  }
+
+  if (is.null(data_path)) {
+    warning(
+      "No data with expected_rarity and expected_appearance found for scenario: ",
+      scenario
+    )
+    next
+  }
+
+  visited_hotspots <- open_dataset(data_path) %>%
+    filter(choice == 1, !is.na(user_id)) %>%
+    select(user_id, expected_rarity, expected_appearance) %>%
+    collect()
+
+  user_attribute_variation[[scenario]] <- visited_hotspots %>%
+    group_by(user_id) %>%
+    summarise(
+      rarity_sd = if (sum(!is.na(expected_rarity)) >= 2) sd(expected_rarity, na.rm = TRUE) else NA_real_,
+      appearance_sd = if (sum(!is.na(expected_appearance)) >= 2) sd(expected_appearance, na.rm = TRUE) else NA_real_,
+      .groups = "drop"
+    ) %>%
+    pivot_longer(
+      cols = c(rarity_sd, appearance_sd),
+      names_to = "measure",
+      values_to = "standard_deviation"
+    ) %>%
+    filter(!is.na(standard_deviation)) %>%
+    mutate(
+      scenario = scenario,
+      measure = recode(
+        measure,
+        rarity_sd = "Rarity",
+        appearance_sd = "Appearance"
+      )
+    )
+}
+
+user_attribute_variation <- bind_rows(user_attribute_variation)
+```
+
+```{r user-attribute-variation-summary}
+if (nrow(user_attribute_variation) > 0) {
+  user_attribute_variation %>%
+    group_by(measure) %>%
+    summarise(
+      users = n(),
+      zero_sd_users = sum(standard_deviation == 0),
+      minimum = min(standard_deviation),
+      first_quartile = quantile(standard_deviation, 0.25),
+      median = median(standard_deviation),
+      mean = mean(standard_deviation),
+      third_quartile = quantile(standard_deviation, 0.75),
+      maximum = max(standard_deviation),
+      .groups = "drop"
+    ) %>%
+    mutate(across(where(is.numeric), ~ round(.x, 4))) %>%
+    knitr::kable(
+      col.names = c(
+        "Measure", "Users", "Users with zero SD", "Minimum", "25th percentile",
+        "Median", "Mean", "75th percentile", "Maximum"
+      ),
+      caption = "Within-user standard deviations across visited hotspots"
+    )
+}
+```
+
+```{r user-attribute-variation-histogram}
+#| fig-width: 12
+#| fig-height: 6
+
+if (nrow(user_attribute_variation) > 0) {
+  ggplot(
+    user_attribute_variation,
+    aes(x = standard_deviation, fill = measure, color = measure)
+  ) +
+    geom_histogram(
+      aes(y = after_stat(density)),
+      bins = 50,
+      position = "identity",
+      alpha = 0.45,
+      linewidth = 0.3
+    ) +
+    scale_fill_manual(values = c(Rarity = "red", Appearance = "blue")) +
+    scale_color_manual(values = c(Rarity = "red", Appearance = "blue")) +
+    labs(
+      x = "Within-user standard deviation across visited hotspots",
+      y = "Density",
+      fill = "Measure",
+      color = "Measure"
+    ) +
+    theme_minimal() +
+    theme(legend.position = c(0.98, 0.98), legend.justification = c(1, 1))
+} else {
+  cat("No per-user rarity or appearance variation data are available.\n")
+}
+```

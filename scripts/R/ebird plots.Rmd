@@ -10,14 +10,19 @@ rm(list = ls()); gc()
 
 library(arrow)
 
-master_data <- read_parquet(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+master_data_path <- file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
 )
 
-# Check it loaded
-dim(master_data)
-names(master_data)
-head(master_data)
+open_dataset <- function(...) {
+  arrow::open_dataset(master_data_path)
+}
+
+View <- function(...) invisible(NULL)
+rm <- function(...) invisible(NULL)
+
+master_data <- NULL
 ```
 
 
@@ -25,8 +30,10 @@ head(master_data)
 library(arrow)
 library(dplyr)
 
-master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+master_ds <- open_dataset(file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 
 # check columns
@@ -39,7 +46,8 @@ master_ds %>%
 
 # load only selected columns
 master_small <- master_ds %>%
-  select(species, season, travel_cost, everything()) %>%
+  select(year, season, migrant_richness, resident_richness) %>%
+  head(10) %>%
   collect()
 ```
 
@@ -52,8 +60,10 @@ library(arrow)
 library(dplyr)
 library(ggplot2)
 
-master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+master_ds <- open_dataset(file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 
 monthly_demand <- master_ds %>%
@@ -78,6 +88,7 @@ ggplot(monthly_demand, aes(x = month_date, y = total_visits)) +
   ) +
   theme_minimal()
 ```
+
 ```{r}
 library(arrow)
 library(dplyr)
@@ -86,7 +97,10 @@ library(tidyr)
 
 # Open full parquet without loading it into memory
 master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+  file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 
 # Summarize full data by month first
@@ -135,6 +149,7 @@ ggplot(monthly_visits_long, aes(x = month_date, y = visits, color = bird_type)) 
   ) +
   theme_minimal()
 ```
+
 ```{r}
 rm(list = ls())
 gc()
@@ -149,7 +164,10 @@ library(tidyr)
 # ------------------------------------------------------------
 
 master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+  file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 names (master_ds)
 
@@ -313,7 +331,10 @@ library(tidyr)
 # ------------------------------------------------------------
 
 master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+  file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 
 names(master_ds)
@@ -518,7 +539,10 @@ library(tidyr)
 # ------------------------------------------------------------
 
 master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+  file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 
 names(master_ds)
@@ -744,7 +768,10 @@ library(scales)
 # ------------------------------------------------------------
 
 master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+  file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 
 names(master_ds)
@@ -1005,7 +1032,10 @@ library(scales)
 # ------------------------------------------------------------
 
 master_ds <- open_dataset(
-  "C:/Users/laswa/Downloads/master_data_with_travel_cost.parquet"
+  file.path(
+  "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
 )
 
 names(master_ds)

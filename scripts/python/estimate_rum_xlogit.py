@@ -632,6 +632,19 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             mixed_vars = model_config.get("mixed_vars", [])
             choice_set_sample_size = model_config.get("choice_set_sample_size", 10)
 
+            required_columns = set(model_vars) | set(mixed_vars)
+            required_columns.update(
+                column
+                for fe_spec in fe_vars
+                for column in (fe_spec if isinstance(fe_spec, list) else [fe_spec])
+            )
+            missing_columns = sorted(required_columns - set(cs.columns))
+            if missing_columns:
+                raise ValueError(
+                    f"Model '{model_name}' requires missing columns: "
+                    f"{', '.join(missing_columns)}"
+                )
+
             cs_model, model_vars_for_demean = build_model_data(
                 cs, model_vars, fe_vars, mixed_vars, choice_set_sample_size,
                 demeaned_full_path=(demeaned_dir / f"{output_prefix}_demeaned_full.parquet") if save_demeaned else None,
@@ -654,6 +667,18 @@ def run_all_models(scenario, input_data_path, output_dir, models_config_path="mo
             ids_data = cs_model["obs_id_num_seq"].reset_index(drop=True)
             alts_data = cs_model["alt_id"].reset_index(drop=True)
             avail_data = cs_model["avail"].reset_index(drop=True)
+
+            nonvarying_random_vars = [
+                variable
+                for variable in randvars
+                if not np.isfinite(X_data[variable]).all()
+                or X_data[variable].std() <= 1e-12
+            ]
+            if nonvarying_random_vars:
+                raise ValueError(
+                    f"Model '{model_name}' has non-estimable random variables: "
+                    f"{', '.join(nonvarying_random_vars)}"
+                )
 
             # Captured BEFORE standardize_data() runs inside estimate_model() --
             # this is what lets calculate_wtp() convert coefficients back to

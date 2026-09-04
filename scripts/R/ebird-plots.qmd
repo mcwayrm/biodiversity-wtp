@@ -1,0 +1,229 @@
+---
+title: "eBird Demand Plots"
+author: "Jovin Lasway"
+date: today
+format:
+  html:
+    toc: true
+    embed-resources: true
+    theme: cosmo
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(scales)
+
+project_root <- normalizePath(file.path("..", ".."), mustWork = TRUE)
+master_data_path <- file.path(
+  project_root, "data", "intermediate", "scenarios", "full_c5km_v5km_r50km_mInf",
+  "master_data_with_travel_cost.parquet"
+)
+
+if (!file.exists(master_data_path)) {
+  stop("Input data not found: ", normalizePath(master_data_path, mustWork = FALSE))
+}
+
+master_ds <- open_dataset(master_data_path)
+
+add_season_dates <- function(data) {
+  data %>%
+    mutate(
+      month = as.integer(format(month_date, "%m")),
+      season = case_when(
+        month %in% 3:5 ~ "Spring",
+        month %in% 6:8 ~ "Summer",
+        month %in% 9:11 ~ "Fall",
+        TRUE ~ "Winter"
+      ),
+      season_start_month = case_when(
+        season == "Spring" ~ 3L,
+        season == "Summer" ~ 6L,
+        season == "Fall" ~ 9L,
+        TRUE ~ 12L
+      ),
+      season_start_year = as.integer(format(month_date, "%Y")) -
+        as.integer(month %in% c(1, 2)),
+      season_start = as.Date(sprintf(
+        "%d-%02d-01", season_start_year, season_start_month
+      ))
+    )
+}
+```
+
+# Monthly Demand
+
+```{r}
+#| label: monthly-demand
+#| fig-width: 12
+#| fig-height: 5
+
+monthly_demand <- master_ds %>%
+  group_by(year_month) %>%
+  summarise(
+    total_visits = n(),
+    migrant_visits = sum(migrant_richness > 0, na.rm = TRUE),
+    resident_visits = sum(resident_richness > 0, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  collect() %>%
+  mutate(month_date = as.Date(paste0(as.character(year_month), "-01"))) %>%
+  arrange(month_date)
+
+ggplot(monthly_demand, aes(x = month_date, y = total_visits)) +
+  geom_line(linewidth = 0.9, color = "#0072B2") +
+  labs(x = "Month", y = "Number of Visits") +
+  theme_classic()
+```
+
+```{r}
+#| label: monthly-migrant-resident
+#| fig-width: 12
+#| fig-height: 5
+
+monthly_visits_long <- monthly_demand %>%
+  select(month_date, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    bird_type = recode(
+      bird_type,
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+ggplot(monthly_visits_long, aes(x = month_date, y = visits, color = bird_type)) +
+  geom_line(linewidth = 0.9) +
+  scale_color_manual(values = c(Migrant = "#D55E00", Resident = "#009E73")) +
+  labs(x = "Month", y = "Number of visits", color = NULL) +
+  theme_classic()
+```
+
+# Seasonal Demand
+
+```{r}
+#| label: seasonal-demand-data
+#| include: false
+
+seasonal_demand <- monthly_demand %>%
+  add_season_dates() %>%
+  group_by(season_start, season) %>%
+  summarise(
+    total_visits = sum(total_visits),
+    migrant_visits = sum(migrant_visits),
+    resident_visits = sum(resident_visits),
+    .groups = "drop"
+  ) %>%
+  arrange(season_start)
+```
+
+```{r}
+#| label: seasonal-total-migrant-resident
+#| fig-width: 12
+#| fig-height: 6
+
+seasonal_visits_long <- seasonal_demand %>%
+  select(season_start, season, total_visits, migrant_visits, resident_visits) %>%
+  pivot_longer(
+    cols = c(total_visits, migrant_visits, resident_visits),
+    names_to = "bird_type",
+    values_to = "visits"
+  ) %>%
+  mutate(
+    bird_type = recode(
+      bird_type,
+      total_visits = "Total",
+      migrant_visits = "Migrant",
+      resident_visits = "Resident"
+    )
+  )
+
+ggplot(seasonal_visits_long, aes(x = season_start, y = visits, color = bird_type, group = bird_type)) +
+  geom_line(linewidth = 0.9) +
+  geom_point(size = 1.5) +
+  scale_x_date(date_breaks = "3 months", date_labels = "%Y-%b") +
+  scale_y_continuous(labels = comma) +
+  scale_color_manual(values = c(Total = "#0072B2", Migrant = "#D55E00", Resident = "#009E73")) +
+  labs(x = "Year-season", y = "Number of visits", color = NULL) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+#| label: seasonal-migrant-share
+#| fig-width: 12
+#| fig-height: 5
+
+seasonal_share <- seasonal_demand %>%
+  mutate(migrant_share = migrant_visits / (migrant_visits + resident_visits))
+
+ggplot(seasonal_share, aes(x = season_start, y = migrant_share, group = 1)) +
+  geom_line(linewidth = 0.9, color = "#D55E00") +
+  geom_point(size = 1.5, color = "#D55E00") +
+  scale_x_date(date_breaks = "3 months", date_labels = "%Y-%b") +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(x = "Year-season", y = "Migrant share of visits") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+#| label: seasonal-migrant-resident-difference
+#| fig-width: 12
+#| fig-height: 5
+
+seasonal_difference <- seasonal_demand %>%
+  mutate(difference = migrant_visits - resident_visits)
+
+ggplot(seasonal_difference, aes(x = season_start, y = difference, group = 1)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_line(linewidth = 0.9, color = "#7B3294") +
+  geom_point(size = 1.5, color = "#7B3294") +
+  scale_x_date(date_breaks = "3 months", date_labels = "%Y-%b") +
+  scale_y_continuous(labels = comma) +
+  labs(x = "Year-season", y = "Migrant visits minus resident visits") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+# Average Visits Per Hotspot
+
+```{r}
+#| label: average-visits-per-hotspot
+#| fig-width: 12
+#| fig-height: 5
+
+hotspot_avg <- master_ds %>%
+  filter(!is.na(cluster_id), !is.na(year_month)) %>%
+  group_by(year_month, cluster_id) %>%
+  summarise(visits = n(), .groups = "drop") %>%
+  collect() %>%
+  mutate(month_date = as.Date(paste0(as.character(year_month), "-01"))) %>%
+  add_season_dates() %>%
+  group_by(season_start, season, cluster_id) %>%
+  summarise(visits = sum(visits), .groups = "drop") %>%
+  group_by(season_start, season) %>%
+  summarise(avg_visits = mean(visits), .groups = "drop") %>%
+  arrange(season_start)
+
+ggplot(hotspot_avg, aes(x = season_start, y = avg_visits, group = 1)) +
+  geom_line(linewidth = 0.9, color = "#0072B2") +
+  geom_point(size = 1.5, color = "#0072B2") +
+  scale_x_date(date_breaks = "3 months", date_labels = "%Y-%b") +
+  labs(x = "Year-season", y = "Average visits per hotspot") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
